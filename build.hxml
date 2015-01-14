@@ -1,0 +1,8 @@
+-js bin/flymaze.js
+-cp src
+-main Main
+-lib thx.core
+-lib thx.math
+-lib amaze
+-lib sui
+-lib minicanvas
