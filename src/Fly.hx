@@ -3,7 +3,7 @@ class Fly {
   public var y(default, null) : Float;
   public var v(default, null) : Float;
   public var d(default, null) : Float;
-  public var maxSteering = 15.0;
+  public var maxSteering = 5.0;
   public var trail(default, null) : Array<{ x : Float, y : Float }>;
   public var trailPos(default, null) : Int;
 

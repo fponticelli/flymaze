@@ -73,7 +73,7 @@ EReg.prototype = {
 	,__class__: EReg
 };
 var Fly = function(x,y) {
-	this.maxSteering = 15.0;
+	this.maxSteering = 5.0;
 	this.x = x;
 	this.y = y;
 	this.v = 3;
@@ -649,19 +649,6 @@ minicanvas.MiniCanvas.prototype = {
 	,onClick: function(callback) {
 		return this.onMouseEvent("click",null,callback);
 	}
-	,onKeyUp: function(callback) {
-		var _g = this;
-		this._keyUp = { listener : function(e) {
-			_g.keyUp(e.keyCode);
-		}, callback : callback};
-		if(this.isBrowser) {
-			if(minicanvas.BrowserCanvas.attachKeyEventsToCanvas) {
-				this.canvas.setAttribute("tabIndex","1");
-				this.canvas.addEventListener("keyup",this._keyUp.listener);
-			} else window.addEventListener("keyup",this._keyUp.listener);
-		}
-		return this;
-	}
 	,onKeyDown: function(callback) {
 		var _g = this;
 		this._keyDown = { listener : function(e) {
@@ -672,6 +659,42 @@ minicanvas.MiniCanvas.prototype = {
 				this.canvas.setAttribute("tabIndex","1");
 				this.canvas.addEventListener("keydown",this._keyDown.listener);
 			} else window.addEventListener("keydown",this._keyDown.listener);
+		}
+		return this;
+	}
+	,onKeyRepeat: function(callback) {
+		var _g = this;
+		var threshold = 20;
+		this._keyRepeat = { listener : function(e) {
+			_g.keyRepeat(e.keyCode);
+			var cancel = thx.core.Timer.repeat(function() {
+				_g.keyRepeat(e.keyCode);
+			},threshold);
+			var keyupListener = null;
+			var keyupListener1 = function(_) {
+				cancel();
+				if(minicanvas.BrowserCanvas.attachKeyEventsToCanvas) _g.canvas.removeEventListener("keyup",keyupListener); else window.removeEventListener("keyup",keyupListener);
+			};
+			if(minicanvas.BrowserCanvas.attachKeyEventsToCanvas) _g.canvas.addEventListener("keyup",keyupListener1); else window.addEventListener("keyup",keyupListener1);
+		}, callback : callback};
+		if(this.isBrowser) {
+			if(minicanvas.BrowserCanvas.attachKeyEventsToCanvas) {
+				this.canvas.setAttribute("tabIndex","1");
+				this.canvas.addEventListener("keydown",this._keyRepeat.listener);
+			} else window.addEventListener("keydown",this._keyRepeat.listener);
+		}
+		return this;
+	}
+	,onKeyUp: function(callback) {
+		var _g = this;
+		this._keyUp = { listener : function(e) {
+			_g.keyUp(e.keyCode);
+		}, callback : callback};
+		if(this.isBrowser) {
+			if(minicanvas.BrowserCanvas.attachKeyEventsToCanvas) {
+				this.canvas.setAttribute("tabIndex","1");
+				this.canvas.addEventListener("keyup",this._keyUp.listener);
+			} else window.addEventListener("keyup",this._keyUp.listener);
 		}
 		return this;
 	}
@@ -751,6 +774,10 @@ minicanvas.MiniCanvas.prototype = {
 		if(null != this._keyDown) this._keyDown.callback({ mini : this, keyCode : keyCode});
 		return this;
 	}
+	,keyRepeat: function(keyCode) {
+		if(null != this._keyRepeat) this._keyRepeat.callback({ mini : this, keyCode : keyCode});
+		return this;
+	}
 	,keyUp: function(keyCode) {
 		if(null != this._keyUp) this._keyUp.callback({ mini : this, keyCode : keyCode});
 		return this;
@@ -816,6 +843,7 @@ minicanvas.MiniCanvas.prototype = {
 	}
 	,_keyUp: null
 	,_keyDown: null
+	,_keyRepeat: null
 	,beforeAnimate: function() {
 	}
 	,afterAnimate: function() {
@@ -994,7 +1022,7 @@ Main.main = function() {
 	var f = Main.drawMaze(Main.maze);
 	var remainder = 0.0;
 	Main.fly = new Fly((Main.startColumn + 0.5) * Main.cellSize,(Main.startRow + 0.5) * Main.cellSize);
-	Main.mini.onKeyDown(function(e) {
+	Main.mini.onKeyRepeat(function(e) {
 		var _g = e.keyCode;
 		var c = _g;
 		switch(_g) {

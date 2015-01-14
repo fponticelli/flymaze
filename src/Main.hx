@@ -24,7 +24,7 @@ class Main {
 
     fly = new Fly((startColumn + 0.5) * cellSize, (startRow + 0.5) * cellSize);
 
-    mini.onKeyDown(function(e) switch e.keyCode {
+    mini.onKeyRepeat(function(e) switch e.keyCode {
       case 39, 68: // right
         fly.right();
       case 37, 65: // left
