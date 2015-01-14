@@ -13,16 +13,16 @@ class Main {
   static var startColumn = 8;
   static var startRow = 8;
   static var cellSize = 40;
-  static var maze = new Maze(cols, rows, new PseudoRandom());
+  static var maze = new Maze(cols, rows, new PseudoRandom(11));
   static var mini = MiniCanvas.create(width, height).display("flymaze");
-  static var fly = new Fly();
+  static var fly : Fly;
+  static var delta = 50;
 
   public static function main() {
     var f = drawMaze(maze);
     var remainder = 0.0;
 
-    fly.x = (startColumn + 0.5) * cellSize;
-    fly.y = (startRow + 0.5) * cellSize;
+    fly = new Fly((startColumn + 0.5) * cellSize, (startRow + 0.5) * cellSize);
 
     mini.onKeyDown(function(e) switch e.keyCode {
       case 39, 68: // right
@@ -34,8 +34,8 @@ class Main {
 
     Timer.frame(function(t) {
       t += remainder;
-      while(t > 20) {
-        t -= 20;
+      while(t > delta) {
+        t -= delta;
         update();
       }
       remainder = t;
@@ -59,6 +59,30 @@ class Main {
   }
 
   static function drawFly(mini : MiniCanvas) {
+    var p = fly.trailPos,
+        w = 1.5;
+    if(p == fly.trail.length)
+      p = 0;
+    //mini.ctx.lineWidth = w;
+
+    for(i in p+1...fly.trail.length) {
+      w *= 1.05;
+      mini.ctx.beginPath();
+      mini.ctx.lineWidth = w;
+      mini.ctx.moveTo(fly.trail[i-1].x, fly.trail[i-1].y);
+      mini.ctx.lineTo(fly.trail[i].x, fly.trail[i].y);
+      mini.ctx.stroke();
+    }
+
+    for(i in 0...p) {
+      w *= 1.05;
+      mini.ctx.beginPath();
+      mini.ctx.lineWidth = w;
+      var ip = (i == 0 ? fly.trail.length : i) - 1;
+      mini.ctx.moveTo(fly.trail[ip].x, fly.trail[ip].y);
+      mini.ctx.lineTo(fly.trail[i].x, fly.trail[i].y);
+      mini.ctx.stroke();
+    }
     mini.dot(fly.x, fly.y, 4, 0x000000FF);
   }
 
@@ -67,6 +91,7 @@ class Main {
     return function(mini : MiniCanvas) {
       mini.ctx.fillStyle = "rgba(255,255,255,0.5)";
       mini.ctx.fillRect(0, 0, cols * cellSize, rows * cellSize);
+      mini.ctx.lineWidth = 1;
       mini.ctx.strokeStyle = "rgba(0,0,0,0.8)";
       mini.ctx.beginPath();
       for(row in 0...maze.cells.length) {

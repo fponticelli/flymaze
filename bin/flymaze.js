@@ -72,12 +72,20 @@ EReg.prototype = {
 	}
 	,__class__: EReg
 };
-var Fly = function() {
-	this.maxSteering = 30.0;
-	this.x = 0.0;
-	this.y = 0.0;
-	this.v = 1.0;
+var Fly = function(x,y) {
+	this.maxSteering = 15.0;
+	this.x = x;
+	this.y = y;
+	this.v = 3;
 	this.d = -Math.PI / 2;
+	var _g = [];
+	var _g1 = 0;
+	while(_g1 < 25) {
+		var i = _g1++;
+		_g.push({ x : x, y : y});
+	}
+	this.trail = _g;
+	this.trailPos = 0;
 };
 Fly.__name__ = ["Fly"];
 Fly.prototype = {
@@ -86,11 +94,16 @@ Fly.prototype = {
 	,v: null
 	,d: null
 	,maxSteering: null
+	,trail: null
+	,trailPos: null
 	,_steer: null
 	,update: function() {
 		this.d += this.maxSteering * this._steer / 180 * Math.PI;
 		var dx = Math.cos(this.d) * this.v;
 		var dy = Math.sin(this.d) * this.v;
+		this.trail[this.trailPos].x = this.x;
+		this.trail[this.trailPos].y = this.y;
+		if(++this.trailPos == this.trail.length) this.trailPos = 0;
 		this.x += dx;
 		this.y += dy;
 		this._steer = 0;
@@ -162,7 +175,6 @@ Lambda.has = function(it,elt) {
 	}
 	return false;
 };
-Math.__name__ = ["Math"];
 var thx = {};
 thx.math = {};
 thx.math.random = {};
@@ -981,8 +993,7 @@ Main.__name__ = ["Main"];
 Main.main = function() {
 	var f = Main.drawMaze(Main.maze);
 	var remainder = 0.0;
-	Main.fly.x = (Main.startColumn + 0.5) * Main.cellSize;
-	Main.fly.y = (Main.startRow + 0.5) * Main.cellSize;
+	Main.fly = new Fly((Main.startColumn + 0.5) * Main.cellSize,(Main.startRow + 0.5) * Main.cellSize);
 	Main.mini.onKeyDown(function(e) {
 		var _g = e.keyCode;
 		var c = _g;
@@ -999,8 +1010,8 @@ Main.main = function() {
 	});
 	thx.core.Timer.frame(function(t) {
 		t += remainder;
-		while(t > 20) {
-			t -= 20;
+		while(t > Main.delta) {
+			t -= Main.delta;
 			Main.update();
 		}
 		remainder = t;
@@ -1011,6 +1022,32 @@ Main.update = function() {
 	Main.fly.update();
 };
 Main.drawFly = function(mini) {
+	var p = Main.fly.trailPos;
+	var w = 1.5;
+	if(p == Main.fly.trail.length) p = 0;
+	var _g1 = p + 1;
+	var _g = Main.fly.trail.length;
+	while(_g1 < _g) {
+		var i = _g1++;
+		w *= 1.05;
+		mini.ctx.beginPath();
+		mini.ctx.lineWidth = w;
+		mini.ctx.moveTo(Main.fly.trail[i - 1].x,Main.fly.trail[i - 1].y);
+		mini.ctx.lineTo(Main.fly.trail[i].x,Main.fly.trail[i].y);
+		mini.ctx.stroke();
+	}
+	var _g2 = 0;
+	while(_g2 < p) {
+		var i1 = _g2++;
+		w *= 1.05;
+		mini.ctx.beginPath();
+		mini.ctx.lineWidth = w;
+		var ip;
+		ip = (i1 == 0?Main.fly.trail.length:i1) - 1;
+		mini.ctx.moveTo(Main.fly.trail[ip].x,Main.fly.trail[ip].y);
+		mini.ctx.lineTo(Main.fly.trail[i1].x,Main.fly.trail[i1].y);
+		mini.ctx.stroke();
+	}
 	mini.dot(Main.fly.x,Main.fly.y,4,255);
 };
 Main.drawMaze = function(maze) {
@@ -1018,6 +1055,7 @@ Main.drawMaze = function(maze) {
 	return function(mini) {
 		mini.ctx.fillStyle = "rgba(255,255,255,0.5)";
 		mini.ctx.fillRect(0,0,Main.cols * Main.cellSize,Main.rows * Main.cellSize);
+		mini.ctx.lineWidth = 1;
 		mini.ctx.strokeStyle = "rgba(0,0,0,0.8)";
 		mini.ctx.beginPath();
 		var _g1 = 0;
@@ -1047,6 +1085,7 @@ Main.drawCell = function(ctx,cell,row,col,size) {
 		ctx.lineTo(0.5 + (col + 1) * size,0.5 + (1 + row) * size);
 	}
 };
+Math.__name__ = ["Math"];
 var Reflect = function() { };
 Reflect.__name__ = ["Reflect"];
 Reflect.hasField = function(o,field) {
@@ -7010,6 +7049,8 @@ thx.core.Types.typeInheritance = function(type) {
 };
 thx.core.Types.typeToString = function(type) {
 	switch(type[1]) {
+	case 0:
+		return "Null";
 	case 1:
 		return "Int";
 	case 2:
@@ -9205,9 +9246,9 @@ Main.rows = 12;
 Main.startColumn = 8;
 Main.startRow = 8;
 Main.cellSize = 40;
-Main.maze = new amaze.Maze(Main.cols,Main.rows,new thx.math.random.PseudoRandom());
+Main.maze = new amaze.Maze(Main.cols,Main.rows,new thx.math.random.PseudoRandom(11));
 Main.mini = minicanvas.MiniCanvas.create(Main.width,Main.height).display("flymaze");
-Main.fly = new Fly();
+Main.delta = 50;
 dots.Html.pattern = new EReg("[<]([^> ]+)","");
 dots.Query.doc = document;
 haxe.ds.ObjectMap.count = 0;
