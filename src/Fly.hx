@@ -4,7 +4,7 @@ class Fly {
   public var v(default, null) : Float;
   public var d(default, null) : Float;
   public var radius(default, null) : Float;
-  public var maxSteering = 6.0;
+  public var maxSteering = 10;
   public var trail(default, null) : Array<{ x : Float, y : Float }>;
   public var trailPos(default, null) : Int;
 
@@ -39,5 +39,13 @@ class Fly {
 
   public function right() {
     _steer++;
+  }
+
+  public function accellerate() {
+    v += 0.2;
+  }
+
+  public function decellerate() {
+    v -= 0.2;
   }
 }

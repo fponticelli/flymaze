@@ -29,6 +29,10 @@ class Main {
         fly.right();
       case 37, 65: // left
         fly.left();
+      case 38, 87: // accellerate
+        fly.accellerate();
+      case 40, 83: // decellerate
+        fly.decellerate();
       case c: trace(c);
     });
 
@@ -68,8 +72,10 @@ class Main {
       p = 0;
     //mini.ctx.lineWidth = w;
 
+    mini.ctx.lineCap = "round";
     for(i in p+1...fly.trail.length) {
       mini.ctx.beginPath();
+      mini.ctx.strokeStyle = counter % 2 != 0 ? "#000000" : "#ff9966";
       mini.ctx.lineWidth = w * scale * counter++;
       mini.ctx.moveTo(fly.trail[i-1].x, fly.trail[i-1].y);
       mini.ctx.lineTo(fly.trail[i].x, fly.trail[i].y);
@@ -78,6 +84,7 @@ class Main {
 
     for(i in 0...p) {
       mini.ctx.beginPath();
+      mini.ctx.strokeStyle = counter % 2 != 0 ? "#000000" : "#ff9966";
       mini.ctx.lineWidth = w * scale * counter++;
       var ip = (i == 0 ? fly.trail.length : i) - 1;
       mini.ctx.moveTo(fly.trail[ip].x, fly.trail[ip].y);

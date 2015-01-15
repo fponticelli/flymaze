@@ -72,7 +72,7 @@ EReg.prototype = {
 	,__class__: EReg
 };
 var Fly = function(x,y) {
-	this.maxSteering = 6.0;
+	this.maxSteering = 10;
 	this.radius = 4;
 	this.x = x;
 	this.y = y;
@@ -114,6 +114,12 @@ Fly.prototype = {
 	}
 	,right: function() {
 		this._steer++;
+	}
+	,accellerate: function() {
+		this.v += 0.2;
+	}
+	,decellerate: function() {
+		this.v -= 0.2;
 	}
 	,__class__: Fly
 };
@@ -665,7 +671,7 @@ minicanvas.MiniCanvas.prototype = {
 	}
 	,onKeyRepeat: function(callback) {
 		var _g = this;
-		var threshold = 20;
+		var threshold = 40;
 		var keys = thx.core._Set.Set_Impl_.create();
 		this._keyRepeat = { listener : function(e) {
 			var isEmpty = keys.length == 0;
@@ -1083,8 +1089,14 @@ Main.main = function() {
 			case 37:case 65:
 				Main.fly.left();
 				break;
+			case 38:case 87:
+				Main.fly.accellerate();
+				break;
+			case 40:case 83:
+				Main.fly.decellerate();
+				break;
 			default:
-				haxe.Log.trace(c,{ fileName : "Main.hx", lineNumber : 32, className : "Main", methodName : "main"});
+				haxe.Log.trace(c,{ fileName : "Main.hx", lineNumber : 36, className : "Main", methodName : "main"});
 			}
 		}
 	});
@@ -1108,11 +1120,13 @@ Main.drawFly = function(mini) {
 	var scale = 2;
 	var counter = 1;
 	if(p == Main.fly.trail.length) p = 0;
+	mini.ctx.lineCap = "round";
 	var _g1 = p + 1;
 	var _g = Main.fly.trail.length;
 	while(_g1 < _g) {
 		var i = _g1++;
 		mini.ctx.beginPath();
+		if(counter % 2 != 0) mini.ctx.strokeStyle = "#000000"; else mini.ctx.strokeStyle = "#ff9966";
 		mini.ctx.lineWidth = w * scale * counter++;
 		mini.ctx.moveTo(Main.fly.trail[i - 1].x,Main.fly.trail[i - 1].y);
 		mini.ctx.lineTo(Main.fly.trail[i].x,Main.fly.trail[i].y);
@@ -1122,6 +1136,7 @@ Main.drawFly = function(mini) {
 	while(_g2 < p) {
 		var i1 = _g2++;
 		mini.ctx.beginPath();
+		if(counter % 2 != 0) mini.ctx.strokeStyle = "#000000"; else mini.ctx.strokeStyle = "#ff9966";
 		mini.ctx.lineWidth = w * scale * counter++;
 		var ip;
 		ip = (i1 == 0?Main.fly.trail.length:i1) - 1;
