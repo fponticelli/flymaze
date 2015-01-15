@@ -1,6 +1,5 @@
 (function () { "use strict";
 var console = (1,eval)('this').console || {log:function(){}};
-var $estr = function() { return js.Boot.__string_rec(this,''); };
 function $extend(from, fields) {
 	function Inherit() {} Inherit.prototype = from; var proto = new Inherit();
 	for (var name in fields) proto[name] = fields[name];
@@ -73,14 +72,15 @@ EReg.prototype = {
 	,__class__: EReg
 };
 var Fly = function(x,y) {
-	this.maxSteering = 5.0;
+	this.maxSteering = 6.0;
+	this.radius = 4;
 	this.x = x;
 	this.y = y;
 	this.v = 3;
 	this.d = -Math.PI / 2;
 	var _g = [];
 	var _g1 = 0;
-	while(_g1 < 25) {
+	while(_g1 < 35) {
 		var i = _g1++;
 		_g.push({ x : x, y : y});
 	}
@@ -93,6 +93,7 @@ Fly.prototype = {
 	,y: null
 	,v: null
 	,d: null
+	,radius: null
 	,maxSteering: null
 	,trail: null
 	,trailPos: null
@@ -376,7 +377,7 @@ minicanvas.MiniCanvas.prototype = {
 	,events: null
 	,display: function(name) {
 		this.deltaTime = performance.now() - this.startTime;
-		if(!minicanvas.MiniCanvas.displayGenerationTime) haxe.Log.trace("generated \"" + name + "\" in " + thx.core.Floats.roundTo(this.deltaTime,2) + "ms",{ fileName : "MiniCanvas.hx", lineNumber : 52, className : "minicanvas.MiniCanvas", methodName : "display"});
+		if(!minicanvas.MiniCanvas.displayGenerationTime) haxe.Log.trace("generated \"" + name + "\" in " + thx.core.Floats.roundTo(this.deltaTime,2) + "ms",{ fileName : "MiniCanvas.hx", lineNumber : 53, className : "minicanvas.MiniCanvas", methodName : "display"});
 		this.nativeDisplay(name);
 		return this;
 	}
@@ -665,13 +666,18 @@ minicanvas.MiniCanvas.prototype = {
 	,onKeyRepeat: function(callback) {
 		var _g = this;
 		var threshold = 20;
+		var keys = thx.core._Set.Set_Impl_.create();
 		this._keyRepeat = { listener : function(e) {
-			_g.keyRepeat(e.keyCode);
+			var isEmpty = keys.length == 0;
+			thx.core._Set.Set_Impl_.add(keys,e.keyCode);
+			if(!isEmpty) return;
 			var cancel = thx.core.Timer.repeat(function() {
-				_g.keyRepeat(e.keyCode);
+				_g.keyRepeat(thx.core._Set.Set_Impl_.setToArray(keys));
 			},threshold);
 			var keyupListener = null;
-			var keyupListener1 = function(_) {
+			var keyupListener1 = function(e1) {
+				HxOverrides.remove(keys,e1.keyCode);
+				if(keys.length > 0) return;
 				cancel();
 				if(minicanvas.BrowserCanvas.attachKeyEventsToCanvas) _g.canvas.removeEventListener("keyup",keyupListener); else window.removeEventListener("keyup",keyupListener);
 			};
@@ -774,8 +780,8 @@ minicanvas.MiniCanvas.prototype = {
 		if(null != this._keyDown) this._keyDown.callback({ mini : this, keyCode : keyCode});
 		return this;
 	}
-	,keyRepeat: function(keyCode) {
-		if(null != this._keyRepeat) this._keyRepeat.callback({ mini : this, keyCode : keyCode});
+	,keyRepeat: function(keyCodes) {
+		if(null != this._keyRepeat) this._keyRepeat.callback({ mini : this, keyCodes : keyCodes});
 		return this;
 	}
 	,keyUp: function(keyCode) {
@@ -799,20 +805,20 @@ minicanvas.MiniCanvas.prototype = {
 			var rect = _g.canvas.getBoundingClientRect();
 			_g.trigger(name,e.clientX - rect.left,e.clientY - rect.top);
 		};
-		this.events.h["$" + name] = { callback : callback, listener : listener};
+		this.events.set(name,{ callback : callback, listener : listener});
 		if(this.isBrowser) this.canvas.addEventListener(type,listener,false);
 		return this;
 	}
 	,offMouseEvent: function(type,name) {
 		if(null == name) name = type;
-		var item = this.events.h["$" + name];
+		var item = this.events.get(name);
 		if(null == item) return this;
 		this.events.remove(name);
 		if(this.isBrowser) this.canvas.removeEventListener(type,item.listener,false);
 		return this;
 	}
 	,trigger: function(name,x,y) {
-		var item = this.events.h["$" + name];
+		var item = this.events.get(name);
 		if(null == item) return this;
 		item.callback({ mini : this, x : x, y : y});
 		return this;
@@ -858,12 +864,10 @@ minicanvas.MiniCanvas.prototype = {
 };
 minicanvas.ScaleMode = { __ename__ : ["minicanvas","ScaleMode"], __constructs__ : ["NoScale","Auto","Scaled"] };
 minicanvas.ScaleMode.NoScale = ["NoScale",0];
-minicanvas.ScaleMode.NoScale.toString = $estr;
 minicanvas.ScaleMode.NoScale.__enum__ = minicanvas.ScaleMode;
 minicanvas.ScaleMode.Auto = ["Auto",1];
-minicanvas.ScaleMode.Auto.toString = $estr;
 minicanvas.ScaleMode.Auto.__enum__ = minicanvas.ScaleMode;
-minicanvas.ScaleMode.Scaled = function(v) { var $x = ["Scaled",2,v]; $x.__enum__ = minicanvas.ScaleMode; $x.toString = $estr; return $x; };
+minicanvas.ScaleMode.Scaled = function(v) { var $x = ["Scaled",2,v]; $x.__enum__ = minicanvas.ScaleMode; return $x; };
 minicanvas.NodeCanvas = function(width,height,scaleMode) {
 	this.hasFrames = false;
 	this.isNode = true;
@@ -929,6 +933,49 @@ minicanvas.NodeCanvas.prototype = $extend(minicanvas.MiniCanvas.prototype,{
 	}
 	,__class__: minicanvas.NodeCanvas
 });
+var haxe = {};
+haxe.IMap = function() { };
+haxe.IMap.__name__ = ["haxe","IMap"];
+haxe.IMap.prototype = {
+	get: null
+	,set: null
+	,exists: null
+	,remove: null
+	,keys: null
+	,__class__: haxe.IMap
+};
+haxe.ds = {};
+haxe.ds.StringMap = function() {
+	this.h = { };
+};
+haxe.ds.StringMap.__name__ = ["haxe","ds","StringMap"];
+haxe.ds.StringMap.__interfaces__ = [haxe.IMap];
+haxe.ds.StringMap.prototype = {
+	h: null
+	,set: function(key,value) {
+		this.h["$" + key] = value;
+	}
+	,get: function(key) {
+		return this.h["$" + key];
+	}
+	,exists: function(key) {
+		return this.h.hasOwnProperty("$" + key);
+	}
+	,remove: function(key) {
+		key = "$" + key;
+		if(!this.h.hasOwnProperty(key)) return false;
+		delete(this.h[key]);
+		return true;
+	}
+	,keys: function() {
+		var a = [];
+		for( var key in this.h ) {
+		if(this.h.hasOwnProperty(key)) a.push(key.substr(1));
+		}
+		return HxOverrides.iter(a);
+	}
+	,__class__: haxe.ds.StringMap
+};
 minicanvas.BrowserCanvas = function(width,height,scaleMode) {
 	this.isNode = false;
 	this.isBrowser = true;
@@ -1023,17 +1070,22 @@ Main.main = function() {
 	var remainder = 0.0;
 	Main.fly = new Fly((Main.startColumn + 0.5) * Main.cellSize,(Main.startRow + 0.5) * Main.cellSize);
 	Main.mini.onKeyRepeat(function(e) {
-		var _g = e.keyCode;
-		var c = _g;
-		switch(_g) {
-		case 39:case 68:
-			Main.fly.right();
-			break;
-		case 37:case 65:
-			Main.fly.left();
-			break;
-		default:
-			haxe.Log.trace(c,{ fileName : "Main.hx", lineNumber : 32, className : "Main", methodName : "main"});
+		var _g = 0;
+		var _g1 = e.keyCodes;
+		while(_g < _g1.length) {
+			var code = _g1[_g];
+			++_g;
+			var c = code;
+			switch(code) {
+			case 39:case 68:
+				Main.fly.right();
+				break;
+			case 37:case 65:
+				Main.fly.left();
+				break;
+			default:
+				haxe.Log.trace(c,{ fileName : "Main.hx", lineNumber : 32, className : "Main", methodName : "main"});
+			}
 		}
 	});
 	thx.core.Timer.frame(function(t) {
@@ -1051,15 +1103,17 @@ Main.update = function() {
 };
 Main.drawFly = function(mini) {
 	var p = Main.fly.trailPos;
-	var w = 1.5;
+	var radius = Main.fly.radius;
+	var w = radius / Main.fly.trail.length;
+	var scale = 2;
+	var counter = 1;
 	if(p == Main.fly.trail.length) p = 0;
 	var _g1 = p + 1;
 	var _g = Main.fly.trail.length;
 	while(_g1 < _g) {
 		var i = _g1++;
-		w *= 1.05;
 		mini.ctx.beginPath();
-		mini.ctx.lineWidth = w;
+		mini.ctx.lineWidth = w * scale * counter++;
 		mini.ctx.moveTo(Main.fly.trail[i - 1].x,Main.fly.trail[i - 1].y);
 		mini.ctx.lineTo(Main.fly.trail[i].x,Main.fly.trail[i].y);
 		mini.ctx.stroke();
@@ -1067,16 +1121,15 @@ Main.drawFly = function(mini) {
 	var _g2 = 0;
 	while(_g2 < p) {
 		var i1 = _g2++;
-		w *= 1.05;
 		mini.ctx.beginPath();
-		mini.ctx.lineWidth = w;
+		mini.ctx.lineWidth = w * scale * counter++;
 		var ip;
 		ip = (i1 == 0?Main.fly.trail.length:i1) - 1;
 		mini.ctx.moveTo(Main.fly.trail[ip].x,Main.fly.trail[ip].y);
 		mini.ctx.lineTo(Main.fly.trail[i1].x,Main.fly.trail[i1].y);
 		mini.ctx.stroke();
 	}
-	mini.dot(Main.fly.x,Main.fly.y,4,255);
+	mini.dot(Main.fly.x,Main.fly.y,radius,255);
 };
 Main.drawMaze = function(maze) {
 	maze.generate(Main.startRow,Main.startColumn);
@@ -1222,27 +1275,20 @@ StringTools.hex = function(n,digits) {
 };
 var ValueType = { __ename__ : ["ValueType"], __constructs__ : ["TNull","TInt","TFloat","TBool","TObject","TFunction","TClass","TEnum","TUnknown"] };
 ValueType.TNull = ["TNull",0];
-ValueType.TNull.toString = $estr;
 ValueType.TNull.__enum__ = ValueType;
 ValueType.TInt = ["TInt",1];
-ValueType.TInt.toString = $estr;
 ValueType.TInt.__enum__ = ValueType;
 ValueType.TFloat = ["TFloat",2];
-ValueType.TFloat.toString = $estr;
 ValueType.TFloat.__enum__ = ValueType;
 ValueType.TBool = ["TBool",3];
-ValueType.TBool.toString = $estr;
 ValueType.TBool.__enum__ = ValueType;
 ValueType.TObject = ["TObject",4];
-ValueType.TObject.toString = $estr;
 ValueType.TObject.__enum__ = ValueType;
 ValueType.TFunction = ["TFunction",5];
-ValueType.TFunction.toString = $estr;
 ValueType.TFunction.__enum__ = ValueType;
-ValueType.TClass = function(c) { var $x = ["TClass",6,c]; $x.__enum__ = ValueType; $x.toString = $estr; return $x; };
-ValueType.TEnum = function(e) { var $x = ["TEnum",7,e]; $x.__enum__ = ValueType; $x.toString = $estr; return $x; };
+ValueType.TClass = function(c) { var $x = ["TClass",6,c]; $x.__enum__ = ValueType; return $x; };
+ValueType.TEnum = function(e) { var $x = ["TEnum",7,e]; $x.__enum__ = ValueType; return $x; };
 ValueType.TUnknown = ["TUnknown",8];
-ValueType.TUnknown.toString = $estr;
 ValueType.TUnknown.__enum__ = ValueType;
 var Type = function() { };
 Type.__name__ = ["Type"];
@@ -1455,15 +1501,13 @@ dots.Query.childrenOf = function(children,parent) {
 		return child.parentElement == parent;
 	});
 };
-var haxe = {};
 haxe.StackItem = { __ename__ : ["haxe","StackItem"], __constructs__ : ["CFunction","Module","FilePos","Method","LocalFunction"] };
 haxe.StackItem.CFunction = ["CFunction",0];
-haxe.StackItem.CFunction.toString = $estr;
 haxe.StackItem.CFunction.__enum__ = haxe.StackItem;
-haxe.StackItem.Module = function(m) { var $x = ["Module",1,m]; $x.__enum__ = haxe.StackItem; $x.toString = $estr; return $x; };
-haxe.StackItem.FilePos = function(s,file,line) { var $x = ["FilePos",2,s,file,line]; $x.__enum__ = haxe.StackItem; $x.toString = $estr; return $x; };
-haxe.StackItem.Method = function(classname,method) { var $x = ["Method",3,classname,method]; $x.__enum__ = haxe.StackItem; $x.toString = $estr; return $x; };
-haxe.StackItem.LocalFunction = function(v) { var $x = ["LocalFunction",4,v]; $x.__enum__ = haxe.StackItem; $x.toString = $estr; return $x; };
+haxe.StackItem.Module = function(m) { var $x = ["Module",1,m]; $x.__enum__ = haxe.StackItem; return $x; };
+haxe.StackItem.FilePos = function(s,file,line) { var $x = ["FilePos",2,s,file,line]; $x.__enum__ = haxe.StackItem; return $x; };
+haxe.StackItem.Method = function(classname,method) { var $x = ["Method",3,classname,method]; $x.__enum__ = haxe.StackItem; return $x; };
+haxe.StackItem.LocalFunction = function(v) { var $x = ["LocalFunction",4,v]; $x.__enum__ = haxe.StackItem; return $x; };
 haxe.CallStack = function() { };
 haxe.CallStack.__name__ = ["haxe","CallStack"];
 haxe.CallStack.callStack = function() {
@@ -1557,21 +1601,11 @@ haxe.CallStack.makeStack = function(s) {
 		return m;
 	} else return s;
 };
-haxe.IMap = function() { };
-haxe.IMap.__name__ = ["haxe","IMap"];
-haxe.IMap.prototype = {
-	get: null
-	,set: null
-	,exists: null
-	,keys: null
-	,__class__: haxe.IMap
-};
 haxe.Log = function() { };
 haxe.Log.__name__ = ["haxe","Log"];
 haxe.Log.trace = function(v,infos) {
 	js.Boot.__trace(v,infos);
 };
-haxe.ds = {};
 haxe.ds.IntMap = function() {
 	this.h = { };
 };
@@ -1587,6 +1621,11 @@ haxe.ds.IntMap.prototype = {
 	}
 	,exists: function(key) {
 		return this.h.hasOwnProperty(key);
+	}
+	,remove: function(key) {
+		if(!this.h.hasOwnProperty(key)) return false;
+		delete(this.h[key]);
+		return true;
 	}
 	,keys: function() {
 		var a = [];
@@ -1616,6 +1655,13 @@ haxe.ds.ObjectMap.prototype = {
 	,exists: function(key) {
 		return this.h.__keys__[key.__id__] != null;
 	}
+	,remove: function(key) {
+		var id = key.__id__;
+		if(this.h.__keys__[id] == null) return false;
+		delete(this.h[id]);
+		delete(this.h.__keys__[id]);
+		return true;
+	}
 	,keys: function() {
 		var a = [];
 		for( var key in this.h.__keys__ ) {
@@ -1626,41 +1672,9 @@ haxe.ds.ObjectMap.prototype = {
 	,__class__: haxe.ds.ObjectMap
 };
 haxe.ds.Option = { __ename__ : ["haxe","ds","Option"], __constructs__ : ["Some","None"] };
-haxe.ds.Option.Some = function(v) { var $x = ["Some",0,v]; $x.__enum__ = haxe.ds.Option; $x.toString = $estr; return $x; };
+haxe.ds.Option.Some = function(v) { var $x = ["Some",0,v]; $x.__enum__ = haxe.ds.Option; return $x; };
 haxe.ds.Option.None = ["None",1];
-haxe.ds.Option.None.toString = $estr;
 haxe.ds.Option.None.__enum__ = haxe.ds.Option;
-haxe.ds.StringMap = function() {
-	this.h = { };
-};
-haxe.ds.StringMap.__name__ = ["haxe","ds","StringMap"];
-haxe.ds.StringMap.__interfaces__ = [haxe.IMap];
-haxe.ds.StringMap.prototype = {
-	h: null
-	,set: function(key,value) {
-		this.h["$" + key] = value;
-	}
-	,get: function(key) {
-		return this.h["$" + key];
-	}
-	,exists: function(key) {
-		return this.h.hasOwnProperty("$" + key);
-	}
-	,remove: function(key) {
-		key = "$" + key;
-		if(!this.h.hasOwnProperty(key)) return false;
-		delete(this.h[key]);
-		return true;
-	}
-	,keys: function() {
-		var a = [];
-		for( var key in this.h ) {
-		if(this.h.hasOwnProperty(key)) a.push(key.substr(1));
-		}
-		return HxOverrides.iter(a);
-	}
-	,__class__: haxe.ds.StringMap
-};
 var js = {};
 js.Boot = function() { };
 js.Boot.__name__ = ["js","Boot"];
@@ -2345,9 +2359,9 @@ sui.components.Grid.prototype = {
 	,__class__: sui.components.Grid
 };
 sui.components.CellContent = { __ename__ : ["sui","components","CellContent"], __constructs__ : ["Single","VerticalPair","HorizontalPair"] };
-sui.components.CellContent.Single = function(control) { var $x = ["Single",0,control]; $x.__enum__ = sui.components.CellContent; $x.toString = $estr; return $x; };
-sui.components.CellContent.VerticalPair = function(top,bottom) { var $x = ["VerticalPair",1,top,bottom]; $x.__enum__ = sui.components.CellContent; $x.toString = $estr; return $x; };
-sui.components.CellContent.HorizontalPair = function(left,right) { var $x = ["HorizontalPair",2,left,right]; $x.__enum__ = sui.components.CellContent; $x.toString = $estr; return $x; };
+sui.components.CellContent.Single = function(control) { var $x = ["Single",0,control]; $x.__enum__ = sui.components.CellContent; return $x; };
+sui.components.CellContent.VerticalPair = function(top,bottom) { var $x = ["VerticalPair",1,top,bottom]; $x.__enum__ = sui.components.CellContent; return $x; };
+sui.components.CellContent.HorizontalPair = function(left,right) { var $x = ["HorizontalPair",2,left,right]; $x.__enum__ = sui.components.CellContent; return $x; };
 sui.controls = {};
 sui.controls.IControl = function() { };
 sui.controls.IControl.__name__ = ["sui","controls","IControl"];
@@ -3359,36 +3373,26 @@ sui.controls.NumberSelectControl.prototype = $extend(sui.controls.SelectControl.
 });
 sui.controls.DateKind = { __ename__ : ["sui","controls","DateKind"], __constructs__ : ["DateOnly","DateTime"] };
 sui.controls.DateKind.DateOnly = ["DateOnly",0];
-sui.controls.DateKind.DateOnly.toString = $estr;
 sui.controls.DateKind.DateOnly.__enum__ = sui.controls.DateKind;
 sui.controls.DateKind.DateTime = ["DateTime",1];
-sui.controls.DateKind.DateTime.toString = $estr;
 sui.controls.DateKind.DateTime.__enum__ = sui.controls.DateKind;
 sui.controls.FloatKind = { __ename__ : ["sui","controls","FloatKind"], __constructs__ : ["FloatNumber","FloatTime"] };
 sui.controls.FloatKind.FloatNumber = ["FloatNumber",0];
-sui.controls.FloatKind.FloatNumber.toString = $estr;
 sui.controls.FloatKind.FloatNumber.__enum__ = sui.controls.FloatKind;
 sui.controls.FloatKind.FloatTime = ["FloatTime",1];
-sui.controls.FloatKind.FloatTime.toString = $estr;
 sui.controls.FloatKind.FloatTime.__enum__ = sui.controls.FloatKind;
 sui.controls.TextKind = { __ename__ : ["sui","controls","TextKind"], __constructs__ : ["TextEmail","TextPassword","TextSearch","TextTel","PlainText","TextUrl"] };
 sui.controls.TextKind.TextEmail = ["TextEmail",0];
-sui.controls.TextKind.TextEmail.toString = $estr;
 sui.controls.TextKind.TextEmail.__enum__ = sui.controls.TextKind;
 sui.controls.TextKind.TextPassword = ["TextPassword",1];
-sui.controls.TextKind.TextPassword.toString = $estr;
 sui.controls.TextKind.TextPassword.__enum__ = sui.controls.TextKind;
 sui.controls.TextKind.TextSearch = ["TextSearch",2];
-sui.controls.TextKind.TextSearch.toString = $estr;
 sui.controls.TextKind.TextSearch.__enum__ = sui.controls.TextKind;
 sui.controls.TextKind.TextTel = ["TextTel",3];
-sui.controls.TextKind.TextTel.toString = $estr;
 sui.controls.TextKind.TextTel.__enum__ = sui.controls.TextKind;
 sui.controls.TextKind.PlainText = ["PlainText",4];
-sui.controls.TextKind.PlainText.toString = $estr;
 sui.controls.TextKind.PlainText.__enum__ = sui.controls.TextKind;
 sui.controls.TextKind.TextUrl = ["TextUrl",5];
-sui.controls.TextKind.TextUrl.toString = $estr;
 sui.controls.TextKind.TextUrl.__enum__ = sui.controls.TextKind;
 sui.controls.PasswordControl = function(value,options) {
 	sui.controls.BaseTextControl.call(this,value,"text","password",options);
@@ -5604,12 +5608,12 @@ thx.color.parse.ColorInfo.prototype = {
 	,__class__: thx.color.parse.ColorInfo
 };
 thx.color.parse.ChannelInfo = { __ename__ : ["thx","color","parse","ChannelInfo"], __constructs__ : ["CIPercent","CIFloat","CIDegree","CIInt8","CIInt","CIBool"] };
-thx.color.parse.ChannelInfo.CIPercent = function(value) { var $x = ["CIPercent",0,value]; $x.__enum__ = thx.color.parse.ChannelInfo; $x.toString = $estr; return $x; };
-thx.color.parse.ChannelInfo.CIFloat = function(value) { var $x = ["CIFloat",1,value]; $x.__enum__ = thx.color.parse.ChannelInfo; $x.toString = $estr; return $x; };
-thx.color.parse.ChannelInfo.CIDegree = function(value) { var $x = ["CIDegree",2,value]; $x.__enum__ = thx.color.parse.ChannelInfo; $x.toString = $estr; return $x; };
-thx.color.parse.ChannelInfo.CIInt8 = function(value) { var $x = ["CIInt8",3,value]; $x.__enum__ = thx.color.parse.ChannelInfo; $x.toString = $estr; return $x; };
-thx.color.parse.ChannelInfo.CIInt = function(value) { var $x = ["CIInt",4,value]; $x.__enum__ = thx.color.parse.ChannelInfo; $x.toString = $estr; return $x; };
-thx.color.parse.ChannelInfo.CIBool = function(value) { var $x = ["CIBool",5,value]; $x.__enum__ = thx.color.parse.ChannelInfo; $x.toString = $estr; return $x; };
+thx.color.parse.ChannelInfo.CIPercent = function(value) { var $x = ["CIPercent",0,value]; $x.__enum__ = thx.color.parse.ChannelInfo; return $x; };
+thx.color.parse.ChannelInfo.CIFloat = function(value) { var $x = ["CIFloat",1,value]; $x.__enum__ = thx.color.parse.ChannelInfo; return $x; };
+thx.color.parse.ChannelInfo.CIDegree = function(value) { var $x = ["CIDegree",2,value]; $x.__enum__ = thx.color.parse.ChannelInfo; return $x; };
+thx.color.parse.ChannelInfo.CIInt8 = function(value) { var $x = ["CIInt8",3,value]; $x.__enum__ = thx.color.parse.ChannelInfo; return $x; };
+thx.color.parse.ChannelInfo.CIInt = function(value) { var $x = ["CIInt",4,value]; $x.__enum__ = thx.color.parse.ChannelInfo; return $x; };
+thx.color.parse.ChannelInfo.CIBool = function(value) { var $x = ["CIBool",5,value]; $x.__enum__ = thx.color.parse.ChannelInfo; return $x; };
 thx.core = {};
 thx.core.Arrays = function() { };
 thx.core.Arrays.__name__ = ["thx","core","Arrays"];
@@ -6046,8 +6050,8 @@ thx.core.ArrayStrings.min = function(arr) {
 	},arr[0]);
 };
 thx.core.Either = { __ename__ : ["thx","core","Either"], __constructs__ : ["Left","Right"] };
-thx.core.Either.Left = function(value) { var $x = ["Left",0,value]; $x.__enum__ = thx.core.Either; $x.toString = $estr; return $x; };
-thx.core.Either.Right = function(value) { var $x = ["Right",1,value]; $x.__enum__ = thx.core.Either; $x.toString = $estr; return $x; };
+thx.core.Either.Left = function(value) { var $x = ["Left",0,value]; $x.__enum__ = thx.core.Either; return $x; };
+thx.core.Either.Right = function(value) { var $x = ["Right",1,value]; $x.__enum__ = thx.core.Either; return $x; };
 thx.core.Error = function(message,stack,pos) {
 	Error.call(this,message);
 	this.message = message;
@@ -6223,12 +6227,12 @@ thx.core.Functions1.memoize = function(callback,resolver) {
 	if(null == resolver) resolver = function(v) {
 		return "" + Std.string(v);
 	};
-	var map_h = { };
+	var map = new haxe.ds.StringMap();
 	return function(v1) {
 		var key = resolver(v1);
-		if(map_h.hasOwnProperty("$" + key)) return map_h["$" + key];
+		if(map.exists(key)) return map.get(key);
 		var result = callback(v1);
-		map_h["$" + key] = result;
+		map.set(key,result);
 		return result;
 	};
 };
@@ -6264,12 +6268,12 @@ thx.core.Functions2.memoize = function(callback,resolver) {
 	if(null == resolver) resolver = function(v1,v2) {
 		return "" + Std.string(v1) + ":" + Std.string(v2);
 	};
-	var map_h = { };
+	var map = new haxe.ds.StringMap();
 	return function(v11,v21) {
 		var key = resolver(v11,v21);
-		if(map_h.hasOwnProperty("$" + key)) return map_h["$" + key];
+		if(map.exists(key)) return map.get(key);
 		var result = callback(v11,v21);
-		map_h["$" + key] = result;
+		map.set(key,result);
 		return result;
 	};
 };
@@ -6284,12 +6288,12 @@ thx.core.Functions3.memoize = function(callback,resolver) {
 	if(null == resolver) resolver = function(v1,v2,v3) {
 		return "" + Std.string(v1) + ":" + Std.string(v2) + ":" + Std.string(v3);
 	};
-	var map_h = { };
+	var map = new haxe.ds.StringMap();
 	return function(v11,v21,v31) {
 		var key = resolver(v11,v21,v31);
-		if(map_h.hasOwnProperty("$" + key)) return map_h["$" + key];
+		if(map.exists(key)) return map.get(key);
 		var result = callback(v11,v21,v31);
-		map_h["$" + key] = result;
+		map.set(key,result);
 		return result;
 	};
 };
@@ -6470,7 +6474,6 @@ thx.core.Iterators.toArray = function(it) {
 };
 thx.core.Nil = { __ename__ : ["thx","core","Nil"], __constructs__ : ["nil"] };
 thx.core.Nil.nil = ["nil",0];
-thx.core.Nil.nil.toString = $estr;
 thx.core.Nil.nil.__enum__ = thx.core.Nil;
 thx.core.Nulls = function() { };
 thx.core.Nulls.__name__ = ["thx","core","Nulls"];
@@ -6605,6 +6608,86 @@ thx.core._Result.Result_Impl_.get_isFailure = function(this1) {
 	default:
 		return false;
 	}
+};
+thx.core._Set = {};
+thx.core._Set.Set_Impl_ = {};
+thx.core._Set.Set_Impl_.__name__ = ["thx","core","_Set","Set_Impl_"];
+thx.core._Set.Set_Impl_.arrayToSet = function(arr) {
+	var set = [];
+	var _g = 0;
+	while(_g < arr.length) {
+		var v = arr[_g];
+		++_g;
+		thx.core._Set.Set_Impl_.push(set,v);
+	}
+	return set;
+};
+thx.core._Set.Set_Impl_.create = function(arr) {
+	if(null == arr) return []; else return thx.core._Set.Set_Impl_.arrayToSet(arr);
+};
+thx.core._Set.Set_Impl_._new = function(arr) {
+	return arr;
+};
+thx.core._Set.Set_Impl_.add = function(this1,v) {
+	if(thx.core._Set.Set_Impl_.exists(this1,v)) return false; else {
+		this1.push(v);
+		return true;
+	}
+};
+thx.core._Set.Set_Impl_.copy = function(this1) {
+	var arr = this1.slice();
+	return arr;
+};
+thx.core._Set.Set_Impl_.difference = function(this1,set) {
+	var result = this1.slice();
+	var $it0 = HxOverrides.iter(set);
+	while( $it0.hasNext() ) {
+		var item = $it0.next();
+		HxOverrides.remove(result,item);
+	}
+	return result;
+};
+thx.core._Set.Set_Impl_.exists = function(this1,v) {
+	var _g = 0;
+	while(_g < this1.length) {
+		var t = this1[_g];
+		++_g;
+		if(t == v) return true;
+	}
+	return false;
+};
+thx.core._Set.Set_Impl_.get = function(this1,index) {
+	return this1[index];
+};
+thx.core._Set.Set_Impl_.intersection = function(this1,set) {
+	var result = [];
+	var _g = 0;
+	while(_g < this1.length) {
+		var item = this1[_g];
+		++_g;
+		if(thx.core._Set.Set_Impl_.exists(set,item)) result.push(item);
+	}
+	return result;
+};
+thx.core._Set.Set_Impl_.push = function(this1,v) {
+	thx.core._Set.Set_Impl_.add(this1,v);
+};
+thx.core._Set.Set_Impl_.slice = function(this1,pos,end) {
+	var arr = this1.slice(pos,end);
+	return arr;
+};
+thx.core._Set.Set_Impl_.splice = function(this1,pos,len) {
+	var arr = this1.splice(pos,len);
+	return arr;
+};
+thx.core._Set.Set_Impl_.union = function(this1,set) {
+	return thx.core._Set.Set_Impl_.arrayToSet(this1.concat(thx.core._Set.Set_Impl_.setToArray(set)));
+};
+thx.core._Set.Set_Impl_.setToArray = function(this1) {
+	return this1.slice();
+};
+thx.core._Set.Set_Impl_.toString = function(this1) {
+	return "{" + this1.join(", ") + "}";
 };
 thx.core.Strings = function() { };
 thx.core.Strings.__name__ = ["thx","core","Strings"];
@@ -8639,10 +8722,10 @@ thx.stream.EmitterStrings.truthy = function(emitter) {
 };
 thx.stream.EmitterStrings.unique = function(emitter) {
 	return emitter.filter((function() {
-		var buf_h = { };
+		var buf = new haxe.ds.StringMap();
 		return function(v) {
-			if(buf_h.hasOwnProperty("$" + v)) return false; else {
-				buf_h["$" + v] = true;
+			if(buf.exists(v)) return false; else {
+				buf.set(v,true);
 				return true;
 			}
 		};
@@ -8726,10 +8809,10 @@ thx.stream.EmitterInts.toBool = function(emitter) {
 };
 thx.stream.EmitterInts.unique = function(emitter) {
 	return emitter.filter((function() {
-		var buf_h = { };
+		var buf = new haxe.ds.IntMap();
 		return function(v) {
-			if(buf_h.hasOwnProperty(v)) return false; else {
-				buf_h[v] = true;
+			if(buf.exists(v)) return false; else {
+				buf.set(v,true);
 				return true;
 			}
 		};
@@ -8957,8 +9040,8 @@ thx.stream.Stream.prototype = {
 	,__class__: thx.stream.Stream
 };
 thx.stream.StreamValue = { __ename__ : ["thx","stream","StreamValue"], __constructs__ : ["Pulse","End"] };
-thx.stream.StreamValue.Pulse = function(value) { var $x = ["Pulse",0,value]; $x.__enum__ = thx.stream.StreamValue; $x.toString = $estr; return $x; };
-thx.stream.StreamValue.End = function(cancel) { var $x = ["End",1,cancel]; $x.__enum__ = thx.stream.StreamValue; $x.toString = $estr; return $x; };
+thx.stream.StreamValue.Pulse = function(value) { var $x = ["Pulse",0,value]; $x.__enum__ = thx.stream.StreamValue; return $x; };
+thx.stream.StreamValue.End = function(cancel) { var $x = ["End",1,cancel]; $x.__enum__ = thx.stream.StreamValue; return $x; };
 thx.stream.Value = function(value,equals) {
 	var _g = this;
 	if(null == equals) this.equals = thx.core.Functions.equality; else this.equals = equals;

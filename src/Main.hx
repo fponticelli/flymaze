@@ -24,7 +24,7 @@ class Main {
 
     fly = new Fly((startColumn + 0.5) * cellSize, (startRow + 0.5) * cellSize);
 
-    mini.onKeyRepeat(function(e) switch e.keyCode {
+    mini.onKeyRepeat(function(e) for(code in e.keyCodes) switch code {
       case 39, 68: // right
         fly.right();
       case 37, 65: // left
@@ -60,30 +60,31 @@ class Main {
 
   static function drawFly(mini : MiniCanvas) {
     var p = fly.trailPos,
-        w = 1.5;
+        radius = fly.radius,
+        w = radius / fly.trail.length,
+        scale = 2,
+        counter = 1;
     if(p == fly.trail.length)
       p = 0;
     //mini.ctx.lineWidth = w;
 
     for(i in p+1...fly.trail.length) {
-      w *= 1.05;
       mini.ctx.beginPath();
-      mini.ctx.lineWidth = w;
+      mini.ctx.lineWidth = w * scale * counter++;
       mini.ctx.moveTo(fly.trail[i-1].x, fly.trail[i-1].y);
       mini.ctx.lineTo(fly.trail[i].x, fly.trail[i].y);
       mini.ctx.stroke();
     }
 
     for(i in 0...p) {
-      w *= 1.05;
       mini.ctx.beginPath();
-      mini.ctx.lineWidth = w;
+      mini.ctx.lineWidth = w * scale * counter++;
       var ip = (i == 0 ? fly.trail.length : i) - 1;
       mini.ctx.moveTo(fly.trail[ip].x, fly.trail[ip].y);
       mini.ctx.lineTo(fly.trail[i].x, fly.trail[i].y);
       mini.ctx.stroke();
     }
-    mini.dot(fly.x, fly.y, 4, 0x000000FF);
+    mini.dot(fly.x, fly.y, radius, 0x000000FF);
   }
 
   static function drawMaze(maze : Maze) {
