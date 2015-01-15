@@ -26,7 +26,7 @@ class Fly {
     this.size = size;
     this.row = Std.int(y / size);
     this.col = Std.int(x / size);
-    v = 5;
+    v = 4;
     d = -Math.PI / 2;
     trail = [for(i in 0...35) { x : x, y : y }];
     trailPos = 0;
@@ -38,28 +38,33 @@ class Fly {
         dy = Math.sin(d) * v;
     trail[trailPos].x = x;
     trail[trailPos].y = y;
-    if(++trailPos == trail.length)
-      trailPos = 0;
     // check is crossing
     var cell = maze.cells[row][col];
     if(x + dx <= col * size && !cell.left) {
       // crossing left
       dx = col * size - (x + dx);
       d = -d + Math.PI + error(0.2);
+      //trail.pop();
     } else if(x + dx >= (col + 1) * size && !cell.right) {
       // crossing right
       dx = (col + 1) * size - (x + dx);
       d = -d + Math.PI + error(0.2);
+      //trail.pop();
     }
     if(y + dy <= row * size && !cell.top) {
       // crossing top
       dy = row * size - (y + dy);
       d = -d + error(0.2);
+      //trail.pop();
     } else if(y + dy >= (row + 1) * size && !cell.bottom) {
       // crossing bottom
       dy = (row + 1) * size - (y + dy);
       d = -d + error(0.2);
+      //trail.pop();
     }
+
+    if(++trailPos >= trail.length)
+      trailPos = 0;
 
     // if there is a wall, bounce
     x += dx;

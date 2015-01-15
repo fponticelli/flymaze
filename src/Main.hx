@@ -19,10 +19,10 @@ class Main {
   static var delta = 50;
 
   public static function main() {
-    var f = drawMaze(maze);
+    fly = new Fly((startColumn + 0.5) * cellSize, (startRow + 0.5) * cellSize, maze, cellSize);
+    var f = drawMaze(maze, fly);
     var remainder = 0.0;
 
-    fly = new Fly((startColumn + 0.5) * cellSize, (startRow + 0.5) * cellSize, maze, cellSize);
 
     mini.onKeyRepeat(function(e) for(code in e.keyCodes) switch code {
       case 39, 68: // right
@@ -36,6 +36,10 @@ class Main {
       case c: trace(c);
     });
 
+//    Timer.repeat(function() {
+//      maze.generate(fly.row, fly.col);
+//    }, 10000);
+
     Timer.frame(function(t) {
       t += remainder;
       while(t > delta) {
@@ -44,12 +48,13 @@ class Main {
       }
       remainder = t;
       mini
-        .checkboard(40, 0xFFFFFFFF, 0xEEEEEEFF)
+        .clear()
+        //.dotGrid(10)
+        //.checkboard(20, 0xFFFFFFFF, 0xEEEEEEFF)
         //.fill(0xFFFFFF66)
-        //.with(drawBackground)
         .with(drawFly)
         .with(f)
-        .border(6)
+        .border(5, 0xAAAAAAFF)
       ;
     });
 
@@ -99,22 +104,22 @@ class Main {
     mini.dot(fly.x, fly.y, radius, 0x000000FF);
   }
 
-  static function drawMaze(maze : Maze) {
+  static function drawMaze(maze : Maze, fly : Fly) {
     maze.generate(startRow, startColumn);
     return function(mini : MiniCanvas) {
       //mini.ctx.fillStyle = "rgba(255,255,255,0.5)";
       //mini.ctx.fillRect(0, 0, cols * cellSize, rows * cellSize);
       mini.ctx.lineWidth = 5;
-      mini.ctx.strokeStyle = "rgba(0,0,0,0.8)";
-      mini.ctx.beginPath();
       for(row in 0...maze.cells.length) {
         var cells = maze.cells[row];
         for(col in 0...cells.length) {
           var cell = cells[col];
+          mini.ctx.strokeStyle = "#CCCCCC";
+          mini.ctx.beginPath();
           drawCell(mini.ctx, cell, row, col, cellSize);
+          mini.ctx.stroke();
         }
       }
-      mini.ctx.stroke();
       mini.ctx.strokeRect(0.5, 0.5, cols * cellSize, rows * cellSize);
     };
   }

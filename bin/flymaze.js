@@ -80,7 +80,7 @@ var Fly = function(x,y,maze,size) {
 	this.size = size;
 	this.row = y / size | 0;
 	this.col = x / size | 0;
-	this.v = 5;
+	this.v = 4;
 	this.d = -Math.PI / 2;
 	var _g = [];
 	var _g1 = 0;
@@ -112,7 +112,6 @@ Fly.prototype = {
 		var dy = Math.sin(this.d) * this.v;
 		this.trail[this.trailPos].x = this.x;
 		this.trail[this.trailPos].y = this.y;
-		if(++this.trailPos == this.trail.length) this.trailPos = 0;
 		var cell = this.maze.cells[this.row][this.col];
 		if(this.x + dx <= this.col * this.size && !(0 != (cell & 8))) {
 			dx = this.col * this.size - (this.x + dx);
@@ -128,6 +127,7 @@ Fly.prototype = {
 			dy = (this.row + 1) * this.size - (this.y + dy);
 			this.d = -this.d + this.error(0.2);
 		}
+		if(++this.trailPos >= this.trail.length) this.trailPos = 0;
 		this.x += dx;
 		this.y += dy;
 		this.row = this.y / this.size | 0;
@@ -508,7 +508,7 @@ minicanvas.MiniCanvas.prototype = {
 		var py = oy % dy;
 		while(py - radius <= this.height) {
 			var px = ox % dx;
-			while(px - radius <= this.height) {
+			while(px - radius <= this.width) {
 				this.dot(px + 0.5,py + 0.5,radius,color);
 				px += dx;
 			}
@@ -1100,9 +1100,9 @@ minicanvas.BrowserCanvas.prototype = $extend(minicanvas.MiniCanvas.prototype,{
 var Main = function() { };
 Main.__name__ = ["Main"];
 Main.main = function() {
-	var f = Main.drawMaze(Main.maze);
-	var remainder = 0.0;
 	Main.fly = new Fly((Main.startColumn + 0.5) * Main.cellSize,(Main.startRow + 0.5) * Main.cellSize,Main.maze,Main.cellSize);
+	var f = Main.drawMaze(Main.maze,Main.fly);
+	var remainder = 0.0;
 	Main.mini.onKeyRepeat(function(e) {
 		var _g = 0;
 		var _g1 = e.keyCodes;
@@ -1135,7 +1135,7 @@ Main.main = function() {
 			Main.update();
 		}
 		remainder = t;
-		Main.mini.checkboard(40,-1,-286331137)["with"](Main.drawFly)["with"](f).border(6);
+		Main.mini.clear()["with"](Main.drawFly)["with"](f).border(5,-1431655681);
 	});
 };
 Main.update = function() {
@@ -1174,12 +1174,10 @@ Main.drawFly = function(mini) {
 	}
 	mini.dot(Main.fly.x,Main.fly.y,radius,255);
 };
-Main.drawMaze = function(maze) {
+Main.drawMaze = function(maze,fly) {
 	maze.generate(Main.startRow,Main.startColumn);
 	return function(mini) {
 		mini.ctx.lineWidth = 5;
-		mini.ctx.strokeStyle = "rgba(0,0,0,0.8)";
-		mini.ctx.beginPath();
 		var _g1 = 0;
 		var _g = maze.cells.length;
 		while(_g1 < _g) {
@@ -1190,10 +1188,12 @@ Main.drawMaze = function(maze) {
 			while(_g3 < _g2) {
 				var col = _g3++;
 				var cell = cells[col];
+				mini.ctx.strokeStyle = "#CCCCCC";
+				mini.ctx.beginPath();
 				Main.drawCell(mini.ctx,cell,row,col,Main.cellSize);
+				mini.ctx.stroke();
 			}
 		}
-		mini.ctx.stroke();
 		mini.ctx.strokeRect(0.5,0.5,Main.cols * Main.cellSize,Main.rows * Main.cellSize);
 	};
 };
