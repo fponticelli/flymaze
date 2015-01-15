@@ -6,8 +6,8 @@ import thx.math.random.PseudoRandom;
 import sui.Sui;
 
 class Main {
-  static var width = 641;
-  static var height = 520;
+  static var width = 640;
+  static var height = 480;
   static var cols = 16;
   static var rows = 12;
   static var startColumn = 8;
@@ -22,7 +22,7 @@ class Main {
     var f = drawMaze(maze);
     var remainder = 0.0;
 
-    fly = new Fly((startColumn + 0.5) * cellSize, (startRow + 0.5) * cellSize);
+    fly = new Fly((startColumn + 0.5) * cellSize, (startRow + 0.5) * cellSize, maze, cellSize);
 
     mini.onKeyRepeat(function(e) for(code in e.keyCodes) switch code {
       case 39, 68: // right
@@ -43,9 +43,14 @@ class Main {
         update();
       }
       remainder = t;
-      mini.checkboard()
+      mini
+        .checkboard(40, 0xFFFFFFFF, 0xEEEEEEFF)
+        //.fill(0xFFFFFF66)
+        //.with(drawBackground)
+        .with(drawFly)
         .with(f)
-        .with(drawFly);
+        .border(6)
+      ;
     });
 
 /*
@@ -97,9 +102,9 @@ class Main {
   static function drawMaze(maze : Maze) {
     maze.generate(startRow, startColumn);
     return function(mini : MiniCanvas) {
-      mini.ctx.fillStyle = "rgba(255,255,255,0.5)";
-      mini.ctx.fillRect(0, 0, cols * cellSize, rows * cellSize);
-      mini.ctx.lineWidth = 1;
+      //mini.ctx.fillStyle = "rgba(255,255,255,0.5)";
+      //mini.ctx.fillRect(0, 0, cols * cellSize, rows * cellSize);
+      mini.ctx.lineWidth = 5;
       mini.ctx.strokeStyle = "rgba(0,0,0,0.8)";
       mini.ctx.beginPath();
       for(row in 0...maze.cells.length) {

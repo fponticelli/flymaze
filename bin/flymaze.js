@@ -71,12 +71,16 @@ EReg.prototype = {
 	}
 	,__class__: EReg
 };
-var Fly = function(x,y) {
+var Fly = function(x,y,maze,size) {
 	this.maxSteering = 10;
 	this.radius = 4;
 	this.x = x;
 	this.y = y;
-	this.v = 3;
+	this.maze = maze;
+	this.size = size;
+	this.row = y / size | 0;
+	this.col = x / size | 0;
+	this.v = 5;
 	this.d = -Math.PI / 2;
 	var _g = [];
 	var _g1 = 0;
@@ -97,17 +101,41 @@ Fly.prototype = {
 	,maxSteering: null
 	,trail: null
 	,trailPos: null
+	,row: null
+	,col: null
 	,_steer: null
+	,maze: null
+	,size: null
 	,update: function() {
-		this.d += this.maxSteering * this._steer / 180 * Math.PI;
+		this.d = thx.core.Floats.wrapCircular(this.d + this.maxSteering * this._steer / 180 * Math.PI,Math.PI * 2);
 		var dx = Math.cos(this.d) * this.v;
 		var dy = Math.sin(this.d) * this.v;
 		this.trail[this.trailPos].x = this.x;
 		this.trail[this.trailPos].y = this.y;
 		if(++this.trailPos == this.trail.length) this.trailPos = 0;
+		var cell = this.maze.cells[this.row][this.col];
+		if(this.x + dx <= this.col * this.size && !(0 != (cell & 8))) {
+			dx = this.col * this.size - (this.x + dx);
+			this.d = -this.d + Math.PI + this.error(0.2);
+		} else if(this.x + dx >= (this.col + 1) * this.size && !(0 != (cell & 2))) {
+			dx = (this.col + 1) * this.size - (this.x + dx);
+			this.d = -this.d + Math.PI + this.error(0.2);
+		}
+		if(this.y + dy <= this.row * this.size && !(0 != (cell & 1))) {
+			dy = this.row * this.size - (this.y + dy);
+			this.d = -this.d + this.error(0.2);
+		} else if(this.y + dy >= (this.row + 1) * this.size && !(0 != (cell & 4))) {
+			dy = (this.row + 1) * this.size - (this.y + dy);
+			this.d = -this.d + this.error(0.2);
+		}
 		this.x += dx;
 		this.y += dy;
+		this.row = this.y / this.size | 0;
+		this.col = this.x / this.size | 0;
 		this._steer = 0;
+	}
+	,error: function(max) {
+		return Math.random() * max * 2 - max;
 	}
 	,left: function() {
 		this._steer--;
@@ -1074,7 +1102,7 @@ Main.__name__ = ["Main"];
 Main.main = function() {
 	var f = Main.drawMaze(Main.maze);
 	var remainder = 0.0;
-	Main.fly = new Fly((Main.startColumn + 0.5) * Main.cellSize,(Main.startRow + 0.5) * Main.cellSize);
+	Main.fly = new Fly((Main.startColumn + 0.5) * Main.cellSize,(Main.startRow + 0.5) * Main.cellSize,Main.maze,Main.cellSize);
 	Main.mini.onKeyRepeat(function(e) {
 		var _g = 0;
 		var _g1 = e.keyCodes;
@@ -1107,7 +1135,7 @@ Main.main = function() {
 			Main.update();
 		}
 		remainder = t;
-		Main.mini.checkboard()["with"](f)["with"](Main.drawFly);
+		Main.mini.checkboard(40,-1,-286331137)["with"](Main.drawFly)["with"](f).border(6);
 	});
 };
 Main.update = function() {
@@ -1149,9 +1177,7 @@ Main.drawFly = function(mini) {
 Main.drawMaze = function(maze) {
 	maze.generate(Main.startRow,Main.startColumn);
 	return function(mini) {
-		mini.ctx.fillStyle = "rgba(255,255,255,0.5)";
-		mini.ctx.fillRect(0,0,Main.cols * Main.cellSize,Main.rows * Main.cellSize);
-		mini.ctx.lineWidth = 1;
+		mini.ctx.lineWidth = 5;
 		mini.ctx.strokeStyle = "rgba(0,0,0,0.8)";
 		mini.ctx.beginPath();
 		var _g1 = 0;
@@ -9365,8 +9391,8 @@ minicanvas.BrowserCanvas._backingStoreRatio = 0;
 minicanvas.BrowserCanvas.attachKeyEventsToCanvas = false;
 minicanvas.BrowserCanvas.defaultScaleMode = minicanvas.ScaleMode.Auto;
 minicanvas.BrowserCanvas.parentNode = typeof document != 'undefined' && document.body;
-Main.width = 641;
-Main.height = 520;
+Main.width = 640;
+Main.height = 480;
 Main.cols = 16;
 Main.rows = 12;
 Main.startColumn = 8;
