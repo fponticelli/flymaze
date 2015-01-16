@@ -1,6 +1,7 @@
 import amaze.Cell;
 import amaze.Maze;
 import js.html.CanvasRenderingContext2D;
+using thx.core.Floats;
 import thx.core.Timer;
 import thx.math.random.PseudoRandom;
 import sui.Sui;
@@ -13,7 +14,7 @@ class Main {
   static var startColumn = 8;
   static var startRow = 8;
   static var cellSize = 40;
-  static var maze = new Maze(cols, rows, new PseudoRandom(11));
+  static var maze = new Maze(cols, rows, new PseudoRandom(Std.int(Math.random() * 10000)));
   static var mini = MiniCanvas.create(width, height).display("flymaze");
   static var fly : Fly;
   static var delta = 50;
@@ -77,16 +78,16 @@ class Main {
         radius = fly.radius,
         w = radius / fly.trail.length,
         scale = 2,
-        counter = 1;
-    if(p == fly.trail.length)
-      p = 0;
+        counter = 1,
+        colora = "rgba(0,0,0,0.5)", // "#000000",
+        colorb = "rgba(255,255,255,0.8)"; // "#ffffff";
     //mini.ctx.lineWidth = w;
 
     mini.ctx.lineCap = "round";
     for(i in p+1...fly.trail.length) {
       mini.ctx.beginPath();
-      mini.ctx.strokeStyle = counter % 2 != 0 ? "#000000" : "#ff9966";
-      mini.ctx.lineWidth = w * scale * counter++;
+      mini.ctx.strokeStyle = counter % 2 != 0 ? colora : colorb;
+      mini.ctx.lineWidth = (w * scale * counter++).max(1);
       mini.ctx.moveTo(fly.trail[i-1].x, fly.trail[i-1].y);
       mini.ctx.lineTo(fly.trail[i].x, fly.trail[i].y);
       mini.ctx.stroke();
@@ -94,8 +95,8 @@ class Main {
 
     for(i in 0...p) {
       mini.ctx.beginPath();
-      mini.ctx.strokeStyle = counter % 2 != 0 ? "#000000" : "#ff9966";
-      mini.ctx.lineWidth = w * scale * counter++;
+      mini.ctx.strokeStyle = counter % 2 != 0 ? colora : colorb;
+      mini.ctx.lineWidth = (w * scale * counter++).max(1);
       var ip = (i == 0 ? fly.trail.length : i) - 1;
       mini.ctx.moveTo(fly.trail[ip].x, fly.trail[ip].y);
       mini.ctx.lineTo(fly.trail[i].x, fly.trail[i].y);
@@ -106,14 +107,24 @@ class Main {
 
   static function drawMaze(maze : Maze, fly : Fly) {
     maze.generate(startRow, startColumn);
+    maze.cells[startRow][startColumn].top = true;
+    maze.cells[startRow-1][startColumn].bottom = true;
     return function(mini : MiniCanvas) {
       //mini.ctx.fillStyle = "rgba(255,255,255,0.5)";
       //mini.ctx.fillRect(0, 0, cols * cellSize, rows * cellSize);
+      mini.ctx.save();
       mini.ctx.lineWidth = 5;
       for(row in 0...maze.cells.length) {
         var cells = maze.cells[row];
         for(col in 0...cells.length) {
           var cell = cells[col];
+/*
+          mini.ctx.shadowColor = "rgba(0,0,0,0.4)";
+          mini.ctx.shadowOffsetX = 6;
+          mini.ctx.shadowOffsetY = 6;
+          mini.ctx.shadowBlur = 4;
+*/
+          mini.ctx.lineCap = "square";
           mini.ctx.strokeStyle = "#CCCCCC";
           mini.ctx.beginPath();
           drawCell(mini.ctx, cell, row, col, cellSize);
@@ -121,6 +132,7 @@ class Main {
         }
       }
       mini.ctx.strokeRect(0.5, 0.5, cols * cellSize, rows * cellSize);
+      mini.ctx.restore();
     };
   }
 

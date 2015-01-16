@@ -210,6 +210,24 @@ Lambda.has = function(it,elt) {
 	}
 	return false;
 };
+var Std = function() { };
+Std.__name__ = ["Std"];
+Std.string = function(s) {
+	return js.Boot.__string_rec(s,"");
+};
+Std["int"] = function(x) {
+	return x | 0;
+};
+Std.parseInt = function(x) {
+	var v = parseInt(x,10);
+	if(v == 0 && (HxOverrides.cca(x,1) == 120 || HxOverrides.cca(x,1) == 88)) v = parseInt(x);
+	if(isNaN(v)) return null;
+	return v;
+};
+Std.random = function(x) {
+	if(x <= 0) return 0; else return Math.floor(Math.random() * x);
+};
+Math.__name__ = ["Math"];
 var thx = {};
 thx.math = {};
 thx.math.random = {};
@@ -1124,7 +1142,7 @@ Main.main = function() {
 				Main.fly.decellerate();
 				break;
 			default:
-				haxe.Log.trace(c,{ fileName : "Main.hx", lineNumber : 36, className : "Main", methodName : "main"});
+				haxe.Log.trace(c,{ fileName : "Main.hx", lineNumber : 37, className : "Main", methodName : "main"});
 			}
 		}
 	});
@@ -1147,15 +1165,16 @@ Main.drawFly = function(mini) {
 	var w = radius / Main.fly.trail.length;
 	var scale = 2;
 	var counter = 1;
-	if(p == Main.fly.trail.length) p = 0;
+	var colora = "rgba(0,0,0,0.5)";
+	var colorb = "rgba(255,255,255,0.8)";
 	mini.ctx.lineCap = "round";
 	var _g1 = p + 1;
 	var _g = Main.fly.trail.length;
 	while(_g1 < _g) {
 		var i = _g1++;
 		mini.ctx.beginPath();
-		if(counter % 2 != 0) mini.ctx.strokeStyle = "#000000"; else mini.ctx.strokeStyle = "#ff9966";
-		mini.ctx.lineWidth = w * scale * counter++;
+		if(counter % 2 != 0) mini.ctx.strokeStyle = colora; else mini.ctx.strokeStyle = colorb;
+		mini.ctx.lineWidth = Math.max(w * scale * counter++,1);
 		mini.ctx.moveTo(Main.fly.trail[i - 1].x,Main.fly.trail[i - 1].y);
 		mini.ctx.lineTo(Main.fly.trail[i].x,Main.fly.trail[i].y);
 		mini.ctx.stroke();
@@ -1164,8 +1183,8 @@ Main.drawFly = function(mini) {
 	while(_g2 < p) {
 		var i1 = _g2++;
 		mini.ctx.beginPath();
-		if(counter % 2 != 0) mini.ctx.strokeStyle = "#000000"; else mini.ctx.strokeStyle = "#ff9966";
-		mini.ctx.lineWidth = w * scale * counter++;
+		if(counter % 2 != 0) mini.ctx.strokeStyle = colora; else mini.ctx.strokeStyle = colorb;
+		mini.ctx.lineWidth = Math.max(w * scale * counter++,1);
 		var ip;
 		ip = (i1 == 0?Main.fly.trail.length:i1) - 1;
 		mini.ctx.moveTo(Main.fly.trail[ip].x,Main.fly.trail[ip].y);
@@ -1176,7 +1195,12 @@ Main.drawFly = function(mini) {
 };
 Main.drawMaze = function(maze,fly) {
 	maze.generate(Main.startRow,Main.startColumn);
+	maze.cells[Main.startRow][Main.startColumn] = maze.cells[Main.startRow][Main.startColumn] | 1;
+	true;
+	maze.cells[Main.startRow - 1][Main.startColumn] = maze.cells[Main.startRow - 1][Main.startColumn] | 4;
+	true;
 	return function(mini) {
+		mini.ctx.save();
 		mini.ctx.lineWidth = 5;
 		var _g1 = 0;
 		var _g = maze.cells.length;
@@ -1188,6 +1212,7 @@ Main.drawMaze = function(maze,fly) {
 			while(_g3 < _g2) {
 				var col = _g3++;
 				var cell = cells[col];
+				mini.ctx.lineCap = "square";
 				mini.ctx.strokeStyle = "#CCCCCC";
 				mini.ctx.beginPath();
 				Main.drawCell(mini.ctx,cell,row,col,Main.cellSize);
@@ -1195,6 +1220,7 @@ Main.drawMaze = function(maze,fly) {
 			}
 		}
 		mini.ctx.strokeRect(0.5,0.5,Main.cols * Main.cellSize,Main.rows * Main.cellSize);
+		mini.ctx.restore();
 	};
 };
 Main.drawCell = function(ctx,cell,row,col,size) {
@@ -1207,7 +1233,6 @@ Main.drawCell = function(ctx,cell,row,col,size) {
 		ctx.lineTo(0.5 + (col + 1) * size,0.5 + (1 + row) * size);
 	}
 };
-Math.__name__ = ["Math"];
 var Reflect = function() { };
 Reflect.__name__ = ["Reflect"];
 Reflect.hasField = function(o,field) {
@@ -1237,20 +1262,6 @@ Reflect.isObject = function(v) {
 	if(v == null) return false;
 	var t = typeof(v);
 	return t == "string" || t == "object" && v.__enum__ == null || t == "function" && (v.__name__ || v.__ename__) != null;
-};
-var Std = function() { };
-Std.__name__ = ["Std"];
-Std.string = function(s) {
-	return js.Boot.__string_rec(s,"");
-};
-Std.parseInt = function(x) {
-	var v = parseInt(x,10);
-	if(v == 0 && (HxOverrides.cca(x,1) == 120 || HxOverrides.cca(x,1) == 88)) v = parseInt(x);
-	if(isNaN(v)) return null;
-	return v;
-};
-Std.random = function(x) {
-	if(x <= 0) return 0; else return Math.floor(Math.random() * x);
 };
 var StringBuf = function() {
 	this.b = "";
@@ -9398,7 +9409,7 @@ Main.rows = 12;
 Main.startColumn = 8;
 Main.startRow = 8;
 Main.cellSize = 40;
-Main.maze = new amaze.Maze(Main.cols,Main.rows,new thx.math.random.PseudoRandom(11));
+Main.maze = new amaze.Maze(Main.cols,Main.rows,new thx.math.random.PseudoRandom(Std["int"](Math.random() * 10000)));
 Main.mini = minicanvas.MiniCanvas.create(Main.width,Main.height).display("flymaze");
 Main.delta = 50;
 dots.Html.pattern = new EReg("[<]([^> ]+)","");
