@@ -231,48 +231,12 @@ Math.__name__ = ["Math"];
 var thx = {};
 thx.math = {};
 thx.math.random = {};
-thx.math.random.IRandom = function() { };
-thx.math.random.IRandom.__name__ = ["thx","math","random","IRandom"];
-thx.math.random.IRandom.prototype = {
-	'int': null
-	,'float': null
-	,random: null
-	,shuffle: null
-	,__class__: thx.math.random.IRandom
-};
-thx.math.random.BaseRandom = function() { };
-thx.math.random.BaseRandom.__name__ = ["thx","math","random","BaseRandom"];
-thx.math.random.BaseRandom.__interfaces__ = [thx.math.random.IRandom];
-thx.math.random.BaseRandom.prototype = {
-	'int': function() {
-		throw "not implemented: BaseRandom.int()";
-	}
-	,'float': function() {
-		throw "not implemented: BaseRandom.float()";
-	}
-	,random: function(min,max) {
-		return Math.round(this["float"]() * (1 + max - min)) + min;
-	}
-	,shuffle: function(arr) {
-		var t = thx.core.Ints.range(arr.length);
-		var array = [];
-		while(t.length > 0) {
-			var pos = this.random(0,t.length - 2);
-			var index = t[pos];
-			t.splice(pos,1);
-			array.push(arr[index]);
-		}
-		return array;
-	}
-	,__class__: thx.math.random.BaseRandom
-};
 thx.math.random.PseudoRandom = function(seed) {
 	if(seed == null) seed = 1;
 	this.seed = seed;
 };
 thx.math.random.PseudoRandom.__name__ = ["thx","math","random","PseudoRandom"];
-thx.math.random.PseudoRandom.__super__ = thx.math.random.BaseRandom;
-thx.math.random.PseudoRandom.prototype = $extend(thx.math.random.BaseRandom.prototype,{
+thx.math.random.PseudoRandom.prototype = {
 	seed: null
 	,'int': function() {
 		return (this.seed = this.seed * 48271.0 % 2147483647.0 | 0) & 1073741823;
@@ -281,7 +245,7 @@ thx.math.random.PseudoRandom.prototype = $extend(thx.math.random.BaseRandom.prot
 		return this["int"]() / 1073741823.0;
 	}
 	,__class__: thx.math.random.PseudoRandom
-});
+};
 var amaze = {};
 amaze.Maze = function(width,height,rgen) {
 	this.width = width;
@@ -358,7 +322,7 @@ amaze.Maze.prototype = {
 		var carve;
 		var carve1 = null;
 		carve1 = function(cx1,cy1) {
-			var directions = _g1.rgen.shuffle([1,4,2,8]);
+			var directions = thx.math.random._Random.Random_Impl_.shuffle(_g1.rgen,[1,4,2,8]);
 			var _g21 = 0;
 			while(_g21 < directions.length) {
 				var side = directions[_g21];
@@ -1191,7 +1155,7 @@ Main.drawFly = function(mini) {
 		mini.ctx.lineTo(Main.fly.trail[i1].x,Main.fly.trail[i1].y);
 		mini.ctx.stroke();
 	}
-	mini.dot(Main.fly.x,Main.fly.y,radius,255);
+	mini.dot(Main.fly.x,Main.fly.y,radius,136);
 };
 Main.drawMaze = function(maze,fly) {
 	maze.generate(Main.startRow,Main.startColumn);
@@ -7257,6 +7221,26 @@ thx.core.error.NullArgument.__super__ = thx.core.Error;
 thx.core.error.NullArgument.prototype = $extend(thx.core.Error.prototype,{
 	__class__: thx.core.error.NullArgument
 });
+thx.math.random._Random = {};
+thx.math.random._Random.Random_Impl_ = {};
+thx.math.random._Random.Random_Impl_.__name__ = ["thx","math","random","_Random","Random_Impl_"];
+thx.math.random._Random.Random_Impl_.lessThan = function(this1,max) {
+	return Std["int"](max * this1["float"]());
+};
+thx.math.random._Random.Random_Impl_.between = function(this1,min,max) {
+	return Math.floor(this1["float"]() * (1 + max - min)) + min;
+};
+thx.math.random._Random.Random_Impl_.shuffle = function(this1,arr) {
+	var t = thx.core.Ints.range(arr.length);
+	var array = [];
+	while(t.length > 0) {
+		var pos = thx.math.random._Random.Random_Impl_.lessThan(this1,t.length);
+		var index = t[pos];
+		t.splice(pos,1);
+		array.push(arr[index]);
+	}
+	return array;
+};
 thx.promise = {};
 thx.promise.Future = function() {
 	this.handlers = [];

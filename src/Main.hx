@@ -84,6 +84,7 @@ class Main {
     //mini.ctx.lineWidth = w;
 
     mini.ctx.lineCap = "round";
+
     for(i in p+1...fly.trail.length) {
       mini.ctx.beginPath();
       mini.ctx.strokeStyle = counter % 2 != 0 ? colora : colorb;
@@ -102,7 +103,18 @@ class Main {
       mini.ctx.lineTo(fly.trail[i].x, fly.trail[i].y);
       mini.ctx.stroke();
     }
-    mini.dot(fly.x, fly.y, radius, 0x000000FF);
+/*
+    mini.ctx.beginPath();
+    mini.ctx.strokeStyle = counter % 2 != 0 ? colora : colorb;
+    mini.ctx.lineWidth = (w * scale * counter++).max(1);
+    var l = p - 1;
+    if(p < 0)
+      l = fly.trail.length - 1;
+    mini.ctx.moveTo(fly.trail[l].x, fly.trail[l].y);
+    mini.ctx.lineTo(fly.x, fly.y);
+    mini.ctx.stroke();
+*/
+    mini.dot(fly.x, fly.y, radius, 0x00000088);
   }
 
   static function drawMaze(maze : Maze, fly : Fly) {
