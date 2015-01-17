@@ -6,6 +6,8 @@ import thx.core.Timer;
 import thx.math.random.PseudoRandom;
 import sui.Sui;
 
+import fly.Game;
+
 class Main {
   static var width = 640;
   static var height = 480;
@@ -20,6 +22,9 @@ class Main {
   static var delta = 50;
 
   public static function main() {
+    var game = new fly.Game();
+    game.run();
+
     fly = new Fly((startColumn + 0.5) * cellSize, (startRow + 0.5) * cellSize, maze, cellSize);
     var f = drawMaze(maze, fly);
     var remainder = 0.0;
