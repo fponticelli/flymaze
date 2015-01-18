@@ -659,7 +659,7 @@ edge.Entity.prototype = {
 				}
 			}
 		}
-		if(comps.length == requirements.length) return comps; else return [];
+		if(comps.length == requirements.length) return comps; else return null;
 	}
 	,__class__: edge.Entity
 };
@@ -667,6 +667,7 @@ edge.ISystem = function() { };
 edge.ISystem.__name__ = ["edge","ISystem"];
 edge.ISystem.prototype = {
 	getUpdateRequirements: null
+	,getEntitiesRequirements: null
 	,__class__: edge.ISystem
 };
 edge.World = function() {
@@ -678,7 +679,8 @@ edge.World = function() {
 		_g.emptySystems.set(s,[]);
 		_g.mapCycles.set(s,[]);
 	});
-	this.matches = new haxe.ds.ObjectMap();
+	this.systemToComponents = new haxe.ds.ObjectMap();
+	this.systemToEntities = new haxe.ds.ObjectMap();
 	this.entities = new haxe.ds.ObjectMap();
 };
 edge.World.__name__ = ["edge","World"];
@@ -687,48 +689,69 @@ edge.World.prototype = {
 	,systemToCycle: null
 	,mapCycles: null
 	,emptySystems: null
+	,systemToComponents: null
+	,systemToEntities: null
 	,addEntity: function(entity) {
 		entity.world = this;
 		this.entities.set(entity,true);
 		this.matchSystems(entity);
+		this.matchEntities(entity);
 	}
 	,removeEntity: function(entity) {
-		var $it0 = this.matches.keys();
+		var $it0 = this.systemToComponents.keys();
 		while( $it0.hasNext() ) {
 			var system = $it0.next();
-			var this1 = this.matches.get(system);
+			var this1 = this.systemToComponents.get(system);
 			this1.remove(entity);
+		}
+		var $it1 = this.systemToEntities.keys();
+		while( $it1.hasNext() ) {
+			var system1 = $it1.next();
+			var this11 = this.systemToEntities.get(system1);
+			this11.remove(entity);
 		}
 		this.entities.remove(entity);
 	}
 	,addSystem: function(system,cycle) {
 		this.removeSystem(system);
 		this.systemToCycle.set(system,cycle);
-		var requirements = system.getUpdateRequirements();
-		if(requirements.length > 0) {
+		var updateRequirements = system.getUpdateRequirements();
+		if(null != updateRequirements) {
 			this.mapCycles.get(cycle).push(system);
 			var value = new haxe.ds.ObjectMap();
-			this.matches.set(system,value);
+			this.systemToComponents.set(system,value);
 			var $it0 = this.entities.keys();
 			while( $it0.hasNext() ) {
 				var entity = $it0.next();
 				this.matchSystem(entity,system);
 			}
 		} else this.emptySystems.get(cycle).push(system);
+		var entitiesRequirements = system.getEntitiesRequirements();
+		if(null != entitiesRequirements) {
+			var value1 = new haxe.ds.ObjectMap();
+			this.systemToEntities.set(system,value1);
+			var $it1 = this.entities.keys();
+			while( $it1.hasNext() ) {
+				var entity1 = $it1.next();
+				this.matchEntity(entity1,system);
+			}
+		}
 	}
 	,removeSystem: function(system) {
 		if(!this.systemToCycle.exists(system)) return;
 		var cycle = this.systemToCycle.get(system);
-		var requirements = system.getUpdateRequirements();
+		var updateRequirements = system.getUpdateRequirements();
+		var entitiesRequirements = system.getEntitiesRequirements();
 		this.systemToCycle.remove(system);
-		if(requirements.length > 0) {
+		if(null != updateRequirements) {
 			var _this = this.mapCycles.get(cycle);
 			HxOverrides.remove(_this,system);
-			this.matches.remove(system);
+			this.systemToComponents.remove(system);
 		} else {
 			var _this1 = this.emptySystems.get(cycle);
 			HxOverrides.remove(_this1,system);
 		}
+		if(null != entitiesRequirements) this.systemToEntities.remove(system);
 	}
 	,preFrame: function() {
 		this.updateCycle("preFrame");
@@ -768,49 +791,71 @@ edge.World.prototype = {
 		while(_g2 < _g11.length) {
 			var system1 = _g11[_g2];
 			++_g2;
-			var match = this.matches.get(system1);
+			var systemComponents = this.systemToComponents.get(system1);
+			var systemEntities = this.systemToEntities.get(system1);
 			f = Reflect.field(system1,"update");
 			if(null != f) {
-				var $it0 = match.iterator();
+				var $it0 = systemComponents.keys();
 				while( $it0.hasNext() ) {
-					var components = $it0.next();
+					var entity = $it0.next();
+					var components = systemComponents.get(entity);
+					if(Object.prototype.hasOwnProperty.call(system1,"entity")) system1.entity = entity;
+					if(null != systemEntities) {
+						var arr = thx.core.Iterators.toArray(systemEntities.iterator());
+						system1.entities = arr;
+					}
 					f.apply(system1,components);
 				}
 				continue;
 			}
-			f = Reflect.field(system1,"updateAll");
-			if(null != f) {
-				var list = [];
-				var $it1 = match.iterator();
-				while( $it1.hasNext() ) {
-					var components1 = $it1.next();
-					list.push(components1);
-				}
-				f.apply(system1,[list]);
-			}
 		}
 	}
-	,matches: null
 	,matchSystems: function(entity) {
-		var $it0 = this.matches.keys();
+		var $it0 = this.systemToComponents.keys();
 		while( $it0.hasNext() ) {
 			var system = $it0.next();
 			this.matchSystem(entity,system);
 		}
 	}
+	,matchEntities: function(entity) {
+		var $it0 = this.systemToEntities.keys();
+		while( $it0.hasNext() ) {
+			var system = $it0.next();
+			this.matchEntity(entity,system);
+		}
+	}
 	,matchSystem: function(entity,system) {
-		var match = this.matches.get(system);
+		var match = this.systemToComponents.get(system);
 		match.remove(entity);
 		var components = entity.matchRequirements(system.getUpdateRequirements());
-		if(components.length > 0) match.set(entity,components);
+		if(null != components) match.set(entity,components);
+	}
+	,matchEntity: function(entity,system) {
+		var match = this.systemToEntities.get(system);
+		var requirements = system.getEntitiesRequirements();
+		match.remove(entity);
+		var components = entity.matchRequirements(requirements.map(function(o) {
+			return o.cls;
+		}));
+		if(null != components) {
+			var o1 = { };
+			var _g1 = 0;
+			var _g = components.length;
+			while(_g1 < _g) {
+				var i = _g1++;
+				o1[requirements[i].name] = components[i];
+			}
+			o1.entity = entity;
+			match.set(entity,o1);
+		}
 	}
 	,__class__: edge.World
 };
 var fly = {};
 fly.Config = function() {
-	this.width = 640;
-	this.height = 480;
-	this.cols = 12;
+	this.width = 642;
+	this.height = 514;
+	this.cols = 10;
 	this.cellSize = this.width / this.cols | 0;
 	this.rows = this.height / this.cellSize | 0;
 	this.startCol = this.cols / 2 | 0;
@@ -848,15 +893,16 @@ fly.Game = function(mini,config) {
 	var snakeEntity = new edge.Entity([p,direction,velocity,snake,this.maze,new fly.components.PreviousPosition(p.x,p.y)]);
 	this.world.addEntity(snakeEntity);
 	var _g = 0;
-	while(_g < 300) {
+	while(_g < 200) {
 		var i = _g++;
 		this.createFly(this.world,config.width,config.height);
 	}
 	this.world.addSystem(new fly.systems.UpdatePosition(),"preUpdate");
-	this.world.addSystem(new fly.systems.UpdateFly(),"update");
+	this.world.addSystem(new fly.systems.UpdateFly(config.width,config.height),"update");
 	this.world.addSystem(new fly.systems.MazeCollision(config.cellSize),"update");
 	this.world.addSystem(new fly.systems.UpdatePreviousPosition(),"postUpdate");
 	this.world.addSystem(new fly.systems.UpdateSnake(this.world),"postUpdate");
+	this.world.addSystem(new fly.systems.SnakeEatsFly(this.world,8),"postUpdate");
 	this.world.addSystem(new fly.systems.RenderDroplet(mini),"preRender");
 	this.world.addSystem(new fly.systems.RenderSnake(mini),"render");
 	this.world.addSystem(new fly.systems.RenderMaze(mini.ctx,config.cellSize),"postRender");
@@ -881,12 +927,8 @@ fly.Game = function(mini,config) {
 			case 40:case 83:
 				velocity.value = Math.max(velocity.value - 0.01,0);
 				break;
-			case 32:
-				e.remove(key);
-				snake.jumping.push(0);
-				break;
 			default:
-				haxe.Log.trace("key: " + key,{ fileName : "Game.hx", lineNumber : 82, className : "fly.Game", methodName : "new"});
+				haxe.Log.trace("key: " + key,{ fileName : "Game.hx", lineNumber : 83, className : "fly.Game", methodName : "new"});
 			}
 		}
 	}),"preFrame");
@@ -1076,7 +1118,10 @@ fly.systems.KeyboardInput.prototype = {
 		}
 	}
 	,getUpdateRequirements: function() {
-		return [];
+		return null;
+	}
+	,getEntitiesRequirements: function() {
+		return null;
 	}
 	,toString: function() {
 		return "KeyboardInput";
@@ -1127,6 +1172,9 @@ fly.systems.MazeCollision.prototype = {
 	,getUpdateRequirements: function() {
 		return [fly.components.PreviousPosition,fly.components.Position,fly.components.Direction,amaze.Maze];
 	}
+	,getEntitiesRequirements: function() {
+		return null;
+	}
 	,__class__: fly.systems.MazeCollision
 };
 fly.systems.RenderBackground = function(mini,color) {
@@ -1142,7 +1190,10 @@ fly.systems.RenderBackground.prototype = {
 		this.mini.fill(thx.color._RGBA.RGBA_Impl_.fromString(this.color));
 	}
 	,getUpdateRequirements: function() {
-		return [];
+		return null;
+	}
+	,getEntitiesRequirements: function() {
+		return null;
 	}
 	,toString: function() {
 		return "RenderBackground";
@@ -1162,6 +1213,9 @@ fly.systems.RenderDroplet.prototype = {
 	}
 	,getUpdateRequirements: function() {
 		return [fly.components.Position,fly.components.Droplet];
+	}
+	,getEntitiesRequirements: function() {
+		return null;
 	}
 	,toString: function() {
 		return "RenderDroplet";
@@ -1184,6 +1238,9 @@ fly.systems.RenderFly.prototype = {
 	}
 	,getUpdateRequirements: function() {
 		return [fly.components.Position,fly.components.Fly];
+	}
+	,getEntitiesRequirements: function() {
+		return null;
 	}
 	,toString: function() {
 		return "RenderFly";
@@ -1213,7 +1270,7 @@ fly.systems.RenderMaze.prototype = {
 				var col = _g3++;
 				var cell = cells[col];
 				this.ctx.lineCap = "square";
-				this.ctx.strokeStyle = "#996633";
+				this.ctx.strokeStyle = "#669933";
 				this.ctx.beginPath();
 				this.drawCell(cell,row,col,this.cellSize);
 				this.ctx.stroke();
@@ -1234,6 +1291,9 @@ fly.systems.RenderMaze.prototype = {
 	}
 	,getUpdateRequirements: function() {
 		return [amaze.Maze];
+	}
+	,getEntitiesRequirements: function() {
+		return null;
 	}
 	,__class__: fly.systems.RenderMaze
 };
@@ -1269,22 +1329,70 @@ fly.systems.RenderSnake.prototype = {
 	,getUpdateRequirements: function() {
 		return [fly.components.Position,fly.components.Snake];
 	}
+	,getEntitiesRequirements: function() {
+		return null;
+	}
 	,toString: function() {
 		return "RenderSnake";
 	}
 	,__class__: fly.systems.RenderSnake
 };
-fly.systems.UpdateFly = function() {
+fly.systems.SnakeEatsFly = function(world,distance) {
+	this.world = world;
+	this.entities = [];
+	this.sqdistance = distance * distance;
+};
+fly.systems.SnakeEatsFly.__name__ = ["fly","systems","SnakeEatsFly"];
+fly.systems.SnakeEatsFly.__interfaces__ = [edge.ISystem];
+fly.systems.SnakeEatsFly.prototype = {
+	world: null
+	,sqdistance: null
+	,entities: null
+	,update: function(position,snake) {
+		var dx;
+		var dy;
+		var _g = 0;
+		var _g1 = this.entities;
+		while(_g < _g1.length) {
+			var o = _g1[_g];
+			++_g;
+			dx = position.x - o.position.x;
+			dy = position.y - o.position.y;
+			if(dx * dx + dy * dy <= this.sqdistance) {
+				this.world.removeEntity(o.entity);
+				snake.jumping.push(0);
+			}
+		}
+	}
+	,getUpdateRequirements: function() {
+		return [fly.components.Position,fly.components.Snake];
+	}
+	,getEntitiesRequirements: function() {
+		return [{ name : "position", cls : fly.components.Position},{ name : "fly", cls : fly.components.Fly}];
+	}
+	,toString: function() {
+		return "SnakeEatsFly";
+	}
+	,__class__: fly.systems.SnakeEatsFly
+};
+fly.systems.UpdateFly = function(width,height) {
+	this.width = width;
+	this.height = height;
 };
 fly.systems.UpdateFly.__name__ = ["fly","systems","UpdateFly"];
 fly.systems.UpdateFly.__interfaces__ = [edge.ISystem];
 fly.systems.UpdateFly.prototype = {
-	update: function(position,_) {
-		position.x += 2 - Math.random() * 4;
-		position.y += 2 - Math.random() * 4;
+	width: null
+	,height: null
+	,update: function(position,_) {
+		position.x = Math.min(Math.max(0,position.x + 2 - Math.random() * 4),this.width);
+		position.y = Math.min(Math.max(0,position.y + 2 - Math.random() * 4),this.height);
 	}
 	,getUpdateRequirements: function() {
 		return [fly.components.Position,fly.components.Fly];
+	}
+	,getEntitiesRequirements: function() {
+		return null;
 	}
 	,toString: function() {
 		return "UpdateFly";
@@ -1303,6 +1411,9 @@ fly.systems.UpdatePosition.prototype = {
 	,getUpdateRequirements: function() {
 		return [fly.components.Position,fly.components.Direction,fly.components.Velocity];
 	}
+	,getEntitiesRequirements: function() {
+		return null;
+	}
 	,toString: function() {
 		return "UpdatePosition";
 	}
@@ -1319,6 +1430,9 @@ fly.systems.UpdatePreviousPosition.prototype = {
 	}
 	,getUpdateRequirements: function() {
 		return [fly.components.PreviousPosition,fly.components.Position];
+	}
+	,getEntitiesRequirements: function() {
+		return null;
 	}
 	,toString: function() {
 		return "UpdatePreviousPosition";
@@ -1353,6 +1467,9 @@ fly.systems.UpdateSnake.prototype = {
 	}
 	,getUpdateRequirements: function() {
 		return [fly.components.Position,fly.components.Snake];
+	}
+	,getEntitiesRequirements: function() {
+		return null;
 	}
 	,toString: function() {
 		return "UpdateSnake";

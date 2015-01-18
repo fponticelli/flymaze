@@ -59,6 +59,7 @@ class Game {
     world.addSystem(new MazeCollision(config.cellSize), Cycle.update);
     world.addSystem(new UpdatePreviousPosition(), Cycle.postUpdate);
     world.addSystem(new UpdateSnake(world), Cycle.postUpdate);
+    world.addSystem(new SnakeEatsFly(world, 8), Cycle.postUpdate);
 
     world.addSystem(new RenderDroplet(mini), Cycle.preRender);
     world.addSystem(new RenderSnake(mini), Cycle.render);
@@ -76,9 +77,9 @@ class Game {
         velocity.value = (velocity.value + 0.01).min(4);
       case 40, 83: // decellerate
         velocity.value = (velocity.value - 0.01).max(0);
-      case 32: // spacebar
-        e.remove(key);
-        snake.jumping.push(0);
+//      case 32: // spacebar
+//        e.remove(key);
+//        snake.jumping.push(0);
       case _: trace('key: $key');
     }), Cycle.preFrame);
 
