@@ -2,7 +2,6 @@ package fly.systems;
 
 import edge.*;
 
-import fly.components.StageBackground;
 import minicanvas.MiniCanvas;
 import thx.color.RGB;
 

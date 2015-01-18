@@ -44,14 +44,19 @@ class Game {
 
   public function run() {
     cancel = Timer.frame(function(t) {
+      world.preFrame();
       t += remainder;
       while(t > delta) {
         t -= delta;
+        world.preUpdate();
         world.update();
+        world.postUpdate();
       }
       remainder = t;
       world.preRender();
       world.render();
+      world.postRender();
+      world.postFrame();
     });
   }
 
