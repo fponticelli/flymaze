@@ -15,11 +15,11 @@ class RenderSnake implements ISystem {
   public function update(position : Position, trail : Trail) {
     var pos = 0;
     trail.map(function(a, b) {
-      var s = (pos / trail.trail.length).interpolate(trail.widtha, trail.widthb);
+      var s = (pos / trail.trail.length).interpolate(trail.trailWidth, trail.headWidth);
       mini.line(a.x, a.y, b.x, b.y, s, trail.colors[pos % trail.colors.length]);
       pos++;
     });
-    mini.dot(position.x, position.y, trail.widthb, trail.colors[pos % trail.colors.length]);
+    mini.dot(position.x, position.y, trail.headWidth, trail.colors[pos % trail.colors.length]);
   }
 
   public function getRequirements() : Array<Class<Dynamic>>
