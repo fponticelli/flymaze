@@ -28,7 +28,8 @@ class Main {
           0xDADA99
         ));
     game.run();
-
+    Timer.delay(game.stop, 40000);
+/*
     fly = new Fly((startColumn + 0.5) * cellSize, (startRow + 0.5) * cellSize, maze, cellSize);
     var f = drawMaze(maze, fly);
     var remainder = 0.0;
@@ -67,7 +68,7 @@ class Main {
         .border(5, 0xAAAAAAFF)
       ;
     });
-
+*/
 /*
     var sui = new Sui();
     sui.bind(maze.width);
