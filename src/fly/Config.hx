@@ -24,7 +24,7 @@ class Config {
     rows = Std.int(height / cellSize);
     startCol = Std.int(cols / 2);
     startRow = Std.int(rows / 4 * 3);
-    backgroundColor = 0xDADA99;
+    backgroundColor = 0xBADA88;
     gen = new NativeRandom();
   }
 }
