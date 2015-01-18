@@ -14,7 +14,7 @@ class RenderMaze implements ISystem {
 
   public function update(maze : Maze) {
     ctx.save();
-    ctx.lineWidth = 5;
+    ctx.lineWidth = 4;
     for(row in 0...maze.cells.length) {
       var cells = maze.cells[row];
       for(col in 0...cells.length) {
