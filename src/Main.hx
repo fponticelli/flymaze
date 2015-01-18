@@ -22,7 +22,11 @@ class Main {
   static var delta = 50;
 
   public static function main() {
-    var game = new fly.Game();
+    var game = new fly.Game(mini, new fly.Config(
+          640,
+          480,
+          0xDADA99
+        ));
     game.run();
 
     fly = new Fly((startColumn + 0.5) * cellSize, (startRow + 0.5) * cellSize, maze, cellSize);
