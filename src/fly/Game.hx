@@ -39,7 +39,7 @@ class Game {
       p,
       direction,
       velocity,
-      new Trail(40, p),
+      new Snake(40, p),
       maze,
       new PreviousPosition(p.x, p.y)
     ]);
@@ -54,7 +54,7 @@ class Game {
     world.addSystem(new UpdatePosition(), Cycle.preUpdate);
     world.addSystem(new MazeCollision(config.cellSize), Cycle.update);
     world.addSystem(new UpdatePreviousPosition(), Cycle.postUpdate);
-    world.addSystem(new UpdateTrail(), Cycle.postUpdate);
+    world.addSystem(new UpdateSnake(), Cycle.postUpdate);
 
     world.addSystem(new RenderSnake(mini), Cycle.render);
     world.addSystem(new RenderMaze(mini.ctx, config.cellSize), Cycle.postRender);
@@ -82,7 +82,7 @@ class Game {
       p,
       new Direction(Math.random() * 2 * Math.PI),
       new Velocity(2),
-      new Trail(40, p),
+      new Snake(40, p),
       maze,
       new PreviousPosition(p.x, p.y)
     ]);

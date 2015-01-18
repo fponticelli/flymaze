@@ -2,7 +2,7 @@ package fly.systems;
 
 import edge.*;
 import fly.components.Position;
-import fly.components.Trail;
+import fly.components.Snake;
 import minicanvas.MiniCanvas;
 using thx.core.Floats;
 
@@ -11,18 +11,18 @@ class RenderSnake implements ISystem {
   public function new(mini : MiniCanvas)
     this.mini = mini;
 
-  public function update(position : Position, trail : Trail) {
+  public function update(position : Position, snake : Snake) {
     var pos = 0;
-    trail.map(function(a, b) {
-      var s = (pos / trail.trail.length).interpolate(trail.trailWidth, trail.headWidth);
-      mini.line(a.x, a.y, b.x, b.y, s, trail.colors[pos % trail.colors.length]);
+    snake.map(function(a, b) {
+      var s = (pos / snake.trail.length).interpolate(snake.trailWidth, snake.headWidth);
+      mini.line(a.x, a.y, b.x, b.y, s, snake.colors[pos % snake.colors.length]);
       pos++;
     });
-    mini.dot(position.x, position.y, trail.headWidth, trail.colors[pos % trail.colors.length]);
+    mini.dot(position.x, position.y, snake.headWidth, snake.colors[pos % snake.colors.length]);
   }
 
   public function getRequirements() : Array<Class<Dynamic>>
-    return [Position, Trail];
+    return [Position, Snake];
 
   public function toString() return "RenderSnake";
 }

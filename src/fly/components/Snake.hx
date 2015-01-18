@@ -2,7 +2,7 @@ package fly.components;
 
 import fly.components.Position;
 
-class Trail {
+class Snake {
   public var pos : Int;
   public var trail : Array<Position>;
   public var trailWidth : Float;
