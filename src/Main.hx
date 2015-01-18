@@ -9,10 +9,6 @@ import sui.Sui;
 import fly.Game;
 
 class Main {
-  static var width = 640;
-  static var height = 480;
-  static var cols = 16;
-  static var rows = 12;
   static var startColumn = 8;
   static var startRow = 8;
   static var cellSize = 40;
@@ -22,11 +18,9 @@ class Main {
   static var delta = 50;
 
   public static function main() {
-    var game = new fly.Game(mini, new fly.Config(
-          640,
-          480,
-          0xDADA99
-        ));
+    var config = new Config(),
+        mini = MiniCanvas.create(config.width, config.height).display("flymaze"),
+        game = new fly.Game(mini, config);
     game.run();
     Timer.delay(game.stop, 40000);
 /*
