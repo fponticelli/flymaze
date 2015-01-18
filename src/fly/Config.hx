@@ -10,17 +10,21 @@ class Config {
   public var height : Int;
   public var cols : Int;
   public var rows : Int;
+  public var startCol : Int;
+  public var startRow : Int;
   public var backgroundColor : RGB;
   public var gen : Random;
   public var cellSize : Float;
 
   public function new() {
-    this.width  = 640;
-    this.height = 480;
-    this.cols = 16;
-    this.rows = 12;
-    this.backgroundColor = 0xDADA99;
-    this.gen = new NativeRandom();
-    this.cellSize = 40;
+    width  = 640;
+    height = 480;
+    cols = 16;
+    rows = 12;
+    startCol = Std.int(cols / 2);
+    startRow = Std.int(rows / 4 * 3);
+    backgroundColor = 0xDADA99;
+    gen = new NativeRandom();
+    cellSize = 40;
   }
 }
