@@ -71,86 +71,6 @@ EReg.prototype = {
 	}
 	,__class__: EReg
 };
-var Fly = function(x,y,maze,size) {
-	this.maxSteering = 10;
-	this.radius = 4;
-	this.x = x;
-	this.y = y;
-	this.maze = maze;
-	this.size = size;
-	this.row = y / size | 0;
-	this.col = x / size | 0;
-	this.v = 4;
-	this.d = -Math.PI / 2;
-	var _g = [];
-	var _g1 = 0;
-	while(_g1 < 35) {
-		var i = _g1++;
-		_g.push({ x : x, y : y});
-	}
-	this.trail = _g;
-	this.trailPos = 0;
-};
-Fly.__name__ = ["Fly"];
-Fly.prototype = {
-	x: null
-	,y: null
-	,v: null
-	,d: null
-	,radius: null
-	,maxSteering: null
-	,trail: null
-	,trailPos: null
-	,row: null
-	,col: null
-	,_steer: null
-	,maze: null
-	,size: null
-	,update: function() {
-		this.d = thx.core.Floats.wrapCircular(this.d + this.maxSteering * this._steer / 180 * Math.PI,Math.PI * 2);
-		var dx = Math.cos(this.d) * this.v;
-		var dy = Math.sin(this.d) * this.v;
-		this.trail[this.trailPos].x = this.x;
-		this.trail[this.trailPos].y = this.y;
-		var cell = this.maze.cells[this.row][this.col];
-		if(this.x + dx <= this.col * this.size && !(0 != (cell & 8))) {
-			dx = this.col * this.size - (this.x + dx);
-			this.d = -this.d + Math.PI + this.error(0.2);
-		} else if(this.x + dx >= (this.col + 1) * this.size && !(0 != (cell & 2))) {
-			dx = (this.col + 1) * this.size - (this.x + dx);
-			this.d = -this.d + Math.PI + this.error(0.2);
-		}
-		if(this.y + dy <= this.row * this.size && !(0 != (cell & 1))) {
-			dy = this.row * this.size - (this.y + dy);
-			this.d = -this.d + this.error(0.2);
-		} else if(this.y + dy >= (this.row + 1) * this.size && !(0 != (cell & 4))) {
-			dy = (this.row + 1) * this.size - (this.y + dy);
-			this.d = -this.d + this.error(0.2);
-		}
-		if(++this.trailPos >= this.trail.length) this.trailPos = 0;
-		this.x += dx;
-		this.y += dy;
-		this.row = this.y / this.size | 0;
-		this.col = this.x / this.size | 0;
-		this._steer = 0;
-	}
-	,error: function(max) {
-		return Math.random() * max * 2 - max;
-	}
-	,left: function() {
-		this._steer--;
-	}
-	,right: function() {
-		this._steer++;
-	}
-	,accellerate: function() {
-		this.v += 0.2;
-	}
-	,decellerate: function() {
-		this.v -= 0.2;
-	}
-	,__class__: Fly
-};
 var HxOverrides = function() { };
 HxOverrides.__name__ = ["HxOverrides"];
 HxOverrides.dateStr = function(date) {
@@ -210,6 +130,48 @@ Lambda.has = function(it,elt) {
 	}
 	return false;
 };
+var Main = function() { };
+Main.__name__ = ["Main"];
+Main.main = function() {
+	var config = new fly.Config();
+	var mini = minicanvas.MiniCanvas.create(config.width,config.height).display("flymaze");
+	var game = new fly.Game(mini,config);
+	game.run();
+};
+Math.__name__ = ["Math"];
+var Reflect = function() { };
+Reflect.__name__ = ["Reflect"];
+Reflect.hasField = function(o,field) {
+	return Object.prototype.hasOwnProperty.call(o,field);
+};
+Reflect.field = function(o,field) {
+	try {
+		return o[field];
+	} catch( e ) {
+		return null;
+	}
+};
+Reflect.callMethod = function(o,func,args) {
+	return func.apply(o,args);
+};
+Reflect.fields = function(o) {
+	var a = [];
+	if(o != null) {
+		var hasOwnProperty = Object.prototype.hasOwnProperty;
+		for( var f in o ) {
+		if(f != "__id__" && f != "hx__closures__" && hasOwnProperty.call(o,f)) a.push(f);
+		}
+	}
+	return a;
+};
+Reflect.isFunction = function(f) {
+	return typeof(f) == "function" && !(f.__name__ || f.__ename__);
+};
+Reflect.isObject = function(v) {
+	if(v == null) return false;
+	var t = typeof(v);
+	return t == "string" || t == "object" && v.__enum__ == null || t == "function" && (v.__name__ || v.__ename__) != null;
+};
 var Std = function() { };
 Std.__name__ = ["Std"];
 Std.string = function(s) {
@@ -227,26 +189,174 @@ Std.parseInt = function(x) {
 Std.random = function(x) {
 	if(x <= 0) return 0; else return Math.floor(Math.random() * x);
 };
-Math.__name__ = ["Math"];
-var thx = {};
-thx.math = {};
-thx.math.random = {};
-thx.math.random.PseudoRandom = function(seed) {
-	if(seed == null) seed = 1;
-	this.seed = seed;
+var StringBuf = function() {
+	this.b = "";
 };
-thx.math.random.PseudoRandom.__name__ = ["thx","math","random","PseudoRandom"];
-thx.math.random.PseudoRandom.prototype = {
-	seed: null
-	,'int': function() {
-		return (this.seed = this.seed * 48271.0 % 2147483647.0 | 0) & 1073741823;
+StringBuf.__name__ = ["StringBuf"];
+StringBuf.prototype = {
+	b: null
+	,add: function(x) {
+		this.b += Std.string(x);
 	}
-	,'float': function() {
-		return this["int"]() / 1073741823.0;
+	,__class__: StringBuf
+};
+var StringTools = function() { };
+StringTools.__name__ = ["StringTools"];
+StringTools.htmlEscape = function(s,quotes) {
+	s = s.split("&").join("&amp;").split("<").join("&lt;").split(">").join("&gt;");
+	if(quotes) return s.split("\"").join("&quot;").split("'").join("&#039;"); else return s;
+};
+StringTools.startsWith = function(s,start) {
+	return s.length >= start.length && HxOverrides.substr(s,0,start.length) == start;
+};
+StringTools.endsWith = function(s,end) {
+	var elen = end.length;
+	var slen = s.length;
+	return slen >= elen && HxOverrides.substr(s,slen - elen,elen) == end;
+};
+StringTools.isSpace = function(s,pos) {
+	var c = HxOverrides.cca(s,pos);
+	return c > 8 && c < 14 || c == 32;
+};
+StringTools.ltrim = function(s) {
+	var l = s.length;
+	var r = 0;
+	while(r < l && StringTools.isSpace(s,r)) r++;
+	if(r > 0) return HxOverrides.substr(s,r,l - r); else return s;
+};
+StringTools.rtrim = function(s) {
+	var l = s.length;
+	var r = 0;
+	while(r < l && StringTools.isSpace(s,l - r - 1)) r++;
+	if(r > 0) return HxOverrides.substr(s,0,l - r); else return s;
+};
+StringTools.trim = function(s) {
+	return StringTools.ltrim(StringTools.rtrim(s));
+};
+StringTools.lpad = function(s,c,l) {
+	if(c.length <= 0) return s;
+	while(s.length < l) s = c + s;
+	return s;
+};
+StringTools.replace = function(s,sub,by) {
+	return s.split(sub).join(by);
+};
+StringTools.hex = function(n,digits) {
+	var s = "";
+	var hexChars = "0123456789ABCDEF";
+	do {
+		s = hexChars.charAt(n & 15) + s;
+		n >>>= 4;
+	} while(n > 0);
+	if(digits != null) while(s.length < digits) s = "0" + s;
+	return s;
+};
+var ValueType = { __ename__ : ["ValueType"], __constructs__ : ["TNull","TInt","TFloat","TBool","TObject","TFunction","TClass","TEnum","TUnknown"] };
+ValueType.TNull = ["TNull",0];
+ValueType.TNull.__enum__ = ValueType;
+ValueType.TInt = ["TInt",1];
+ValueType.TInt.__enum__ = ValueType;
+ValueType.TFloat = ["TFloat",2];
+ValueType.TFloat.__enum__ = ValueType;
+ValueType.TBool = ["TBool",3];
+ValueType.TBool.__enum__ = ValueType;
+ValueType.TObject = ["TObject",4];
+ValueType.TObject.__enum__ = ValueType;
+ValueType.TFunction = ["TFunction",5];
+ValueType.TFunction.__enum__ = ValueType;
+ValueType.TClass = function(c) { var $x = ["TClass",6,c]; $x.__enum__ = ValueType; return $x; };
+ValueType.TEnum = function(e) { var $x = ["TEnum",7,e]; $x.__enum__ = ValueType; return $x; };
+ValueType.TUnknown = ["TUnknown",8];
+ValueType.TUnknown.__enum__ = ValueType;
+var Type = function() { };
+Type.__name__ = ["Type"];
+Type.getClass = function(o) {
+	if(o == null) return null;
+	return js.Boot.getClass(o);
+};
+Type.getSuperClass = function(c) {
+	return c.__super__;
+};
+Type.getClassName = function(c) {
+	var a = c.__name__;
+	if(a == null) return null;
+	return a.join(".");
+};
+Type.getEnumName = function(e) {
+	var a = e.__ename__;
+	return a.join(".");
+};
+Type.getInstanceFields = function(c) {
+	var a = [];
+	for(var i in c.prototype) a.push(i);
+	HxOverrides.remove(a,"__class__");
+	HxOverrides.remove(a,"__properties__");
+	return a;
+};
+Type["typeof"] = function(v) {
+	var _g = typeof(v);
+	switch(_g) {
+	case "boolean":
+		return ValueType.TBool;
+	case "string":
+		return ValueType.TClass(String);
+	case "number":
+		if(Math.ceil(v) == v % 2147483648.0) return ValueType.TInt;
+		return ValueType.TFloat;
+	case "object":
+		if(v == null) return ValueType.TNull;
+		var e = v.__enum__;
+		if(e != null) return ValueType.TEnum(e);
+		var c = js.Boot.getClass(v);
+		if(c != null) return ValueType.TClass(c);
+		return ValueType.TObject;
+	case "function":
+		if(v.__name__ || v.__ename__) return ValueType.TObject;
+		return ValueType.TFunction;
+	case "undefined":
+		return ValueType.TNull;
+	default:
+		return ValueType.TUnknown;
 	}
-	,__class__: thx.math.random.PseudoRandom
 };
 var amaze = {};
+amaze._Cell = {};
+amaze._Cell.Cell_Impl_ = {};
+amaze._Cell.Cell_Impl_.__name__ = ["amaze","_Cell","Cell_Impl_"];
+amaze._Cell.Cell_Impl_._new = function(value) {
+	return value;
+};
+amaze._Cell.Cell_Impl_.get_right = function(this1) {
+	return 0 != (this1 & 2);
+};
+amaze._Cell.Cell_Impl_.get_top = function(this1) {
+	return 0 != (this1 & 1);
+};
+amaze._Cell.Cell_Impl_.get_bottom = function(this1) {
+	return 0 != (this1 & 4);
+};
+amaze._Cell.Cell_Impl_.get_left = function(this1) {
+	return 0 != (this1 & 8);
+};
+amaze._Cell.Cell_Impl_.set_right = function(this1,v) {
+	if(v) this1 = this1 | 2; else this1 = this1 ^ 2;
+	return v;
+};
+amaze._Cell.Cell_Impl_.set_top = function(this1,v) {
+	if(v) this1 = this1 | 1; else this1 = this1 ^ 1;
+	return v;
+};
+amaze._Cell.Cell_Impl_.set_bottom = function(this1,v) {
+	if(v) this1 = this1 | 4; else this1 = this1 ^ 4;
+	return v;
+};
+amaze._Cell.Cell_Impl_.set_left = function(this1,v) {
+	if(v) this1 = this1 | 8; else this1 = this1 ^ 8;
+	return v;
+};
+amaze._Cell.Cell_Impl_.bitwiseOrAssign = function(this1,other) {
+	return this1 |= other;
+};
 amaze.Maze = function(width,height,rgen) {
 	this.width = width;
 	this.height = height;
@@ -362,6 +472,1181 @@ amaze.Maze.prototype = {
 		}
 	}
 	,__class__: amaze.Maze
+};
+var dots = {};
+dots.Detect = function() { };
+dots.Detect.__name__ = ["dots","Detect"];
+dots.Detect.supportsInput = function(type) {
+	var i;
+	var _this = window.document;
+	i = _this.createElement("input");
+	i.setAttribute("type",type);
+	return i.type == type;
+};
+dots.Detect.supportsInputPlaceholder = function() {
+	var i;
+	var _this = window.document;
+	i = _this.createElement("input");
+	return Object.prototype.hasOwnProperty.call(i,"placeholder");
+};
+dots.Detect.supportsInputAutofocus = function() {
+	var i;
+	var _this = window.document;
+	i = _this.createElement("input");
+	return Object.prototype.hasOwnProperty.call(i,"autofocus");
+};
+dots.Detect.supportsCanvas = function() {
+	return null != ($_=((function($this) {
+		var $r;
+		var _this = window.document;
+		$r = _this.createElement("canvas");
+		return $r;
+	}(this))),$bind($_,$_.getContext));
+};
+dots.Detect.supportsVideo = function() {
+	return null != ($_=((function($this) {
+		var $r;
+		var _this = window.document;
+		$r = _this.createElement("video");
+		return $r;
+	}(this))),$bind($_,$_.canPlayType));
+};
+dots.Detect.supportsLocalStorage = function() {
+	try {
+		return 'localStorage' in window && window['localStorage'] !== null;
+	} catch( e ) {
+		return false;
+	}
+};
+dots.Detect.supportsWebWorkers = function() {
+	return !(!window.Worker);
+};
+dots.Detect.supportsOffline = function() {
+	return null != window.applicationCache;
+};
+dots.Detect.supportsGeolocation = function() {
+	return Reflect.hasField(window.navigator,"geolocation");
+};
+dots.Detect.supportsMicrodata = function() {
+	return Reflect.hasField(window.document,"getItems");
+};
+dots.Detect.supportsHistory = function() {
+	return !!(window.history && history.pushState);
+};
+dots.Dom = function() { };
+dots.Dom.__name__ = ["dots","Dom"];
+dots.Dom.addCss = function(css,container) {
+	if(null == container) container = window.document.head;
+	var style;
+	var _this = window.document;
+	style = _this.createElement("style");
+	style.type = "text/css";
+	style.appendChild(window.document.createTextNode(css));
+	container.appendChild(style);
+};
+dots.Html = function() { };
+dots.Html.__name__ = ["dots","Html"];
+dots.Html.parseNodes = function(html) {
+	if(!dots.Html.pattern.match(html)) throw "Invalid pattern \"" + html + "\"";
+	var el;
+	var _g = dots.Html.pattern.matched(1).toLowerCase();
+	switch(_g) {
+	case "tbody":case "thead":
+		el = window.document.createElement("table");
+		break;
+	case "td":case "th":
+		el = window.document.createElement("tr");
+		break;
+	case "tr":
+		el = window.document.createElement("tbody");
+		break;
+	default:
+		el = window.document.createElement("div");
+	}
+	el.innerHTML = html;
+	return el.childNodes;
+};
+dots.Html.parseArray = function(html) {
+	return dots.Html.nodeListToArray(dots.Html.parseNodes(html));
+};
+dots.Html.parse = function(html) {
+	return dots.Html.parseNodes(html)[0];
+};
+dots.Html.nodeListToArray = function(list) {
+	return Array.prototype.slice.call(list,0);
+};
+dots.Query = function() { };
+dots.Query.__name__ = ["dots","Query"];
+dots.Query.first = function(selector,ctx) {
+	return (ctx != null?ctx:dots.Query.doc).querySelector(selector);
+};
+dots.Query.list = function(selector,ctx) {
+	return (ctx != null?ctx:dots.Query.doc).querySelectorAll(selector);
+};
+dots.Query.all = function(selector,ctx) {
+	return dots.Html.nodeListToArray(dots.Query.list(selector,ctx));
+};
+dots.Query.getElementIndex = function(el) {
+	var index = 0;
+	while(null != (el = el.previousElementSibling)) index++;
+	return index;
+};
+dots.Query.childrenOf = function(children,parent) {
+	return children.filter(function(child) {
+		return child.parentElement == parent;
+	});
+};
+var edge = {};
+edge.Entity = function(components) {
+	this.components = new haxe.ds.StringMap();
+	if(null != components) this.addComponents(components);
+};
+edge.Entity.__name__ = ["edge","Entity"];
+edge.Entity.prototype = {
+	components: null
+	,world: null
+	,addComponent: function(component) {
+		this._addComponent(component);
+		if(null != this.world) this.world.matchSystems(this);
+	}
+	,_addComponent: function(component) {
+		var type = Type.getClassName(Type.getClass(component));
+		if(this.components.exists(type)) this.removeComponent(this.components.get(type));
+		var value = component;
+		this.components.set(type,value);
+	}
+	,addComponents: function(components) {
+		var _g = this;
+		components.map(function(_) {
+			_g._addComponent(_);
+			return;
+		});
+		if(null != this.world) this.world.matchSystems(this);
+	}
+	,_removeComponent: function(component) {
+		var type = Type.getClassName(Type.getClass(component));
+		var key = component;
+		this.components.remove(key);
+		if(null != this.world) this.world.matchSystems(this);
+	}
+	,removeComponent: function(component) {
+		this._removeComponent(component);
+		if(null != this.world) this.world.matchSystems(this);
+	}
+	,removeComponents: function(components) {
+		var _g = this;
+		components.map(function(_) {
+			_g._removeComponent(_);
+			return;
+		});
+		if(null != this.world) this.world.matchSystems(this);
+	}
+	,key: function(component) {
+		return Type.getClassName(Type.getClass(component));
+	}
+	,matchRequirements: function(requirements) {
+		var comps = [];
+		var _g = 0;
+		while(_g < requirements.length) {
+			var req = requirements[_g];
+			++_g;
+			var $it0 = this.components.iterator();
+			while( $it0.hasNext() ) {
+				var component = $it0.next();
+				if(Type.getClass(component) == req) {
+					comps.push(component);
+					break;
+				}
+			}
+		}
+		if(comps.length == requirements.length) return comps; else return [];
+	}
+	,__class__: edge.Entity
+};
+edge.ISystem = function() { };
+edge.ISystem.__name__ = ["edge","ISystem"];
+edge.ISystem.prototype = {
+	getRequirements: null
+	,__class__: edge.ISystem
+};
+edge.World = function() {
+	var _g = this;
+	this.systemToCycle = new haxe.ds.ObjectMap();
+	this.mapCycles = new haxe.ds.StringMap();
+	this.emptySystems = new haxe.ds.StringMap();
+	["preFrame","postFrame","preUpdate","update","postUpdate","preRender","render","postRender"].map(function(s) {
+		_g.emptySystems.set(s,[]);
+		_g.mapCycles.set(s,[]);
+	});
+	this.matches = new haxe.ds.ObjectMap();
+	this.entities = new haxe.ds.ObjectMap();
+};
+edge.World.__name__ = ["edge","World"];
+edge.World.prototype = {
+	entities: null
+	,systemToCycle: null
+	,mapCycles: null
+	,emptySystems: null
+	,addEntity: function(entity) {
+		entity.world = this;
+		this.entities.set(entity,true);
+		this.matchSystems(entity);
+	}
+	,removeEntity: function(entity) {
+		var $it0 = this.matches.keys();
+		while( $it0.hasNext() ) {
+			var system = $it0.next();
+			var this1 = this.matches.get(system);
+			this1.remove(entity);
+		}
+		this.entities.remove(entity);
+	}
+	,addSystem: function(system,cycle) {
+		this.removeSystem(system);
+		this.systemToCycle.set(system,cycle);
+		var requirements = system.getRequirements();
+		if(requirements.length > 0) {
+			this.mapCycles.get(cycle).push(system);
+			var value = new haxe.ds.ObjectMap();
+			this.matches.set(system,value);
+			var $it0 = this.entities.keys();
+			while( $it0.hasNext() ) {
+				var entity = $it0.next();
+				this.matchSystem(entity,system);
+			}
+		} else this.emptySystems.get(cycle).push(system);
+	}
+	,removeSystem: function(system) {
+		if(!this.systemToCycle.exists(system)) return;
+		var cycle = this.systemToCycle.get(system);
+		var requirements = system.getRequirements();
+		this.systemToCycle.remove(system);
+		if(requirements.length > 0) {
+			var _this = this.mapCycles.get(cycle);
+			HxOverrides.remove(_this,system);
+			this.matches.remove(system);
+		} else {
+			var _this1 = this.emptySystems.get(cycle);
+			HxOverrides.remove(_this1,system);
+		}
+	}
+	,preFrame: function() {
+		this.updateCycle("preFrame");
+	}
+	,postFrame: function() {
+		this.updateCycle("preFrame");
+	}
+	,preUpdate: function() {
+		this.updateCycle("preUpdate");
+	}
+	,update: function() {
+		this.updateCycle("update");
+	}
+	,postUpdate: function() {
+		this.updateCycle("postUpdate");
+	}
+	,preRender: function() {
+		this.updateCycle("preRender");
+	}
+	,render: function() {
+		this.updateCycle("render");
+	}
+	,postRender: function() {
+		this.updateCycle("postRender");
+	}
+	,updateCycle: function(cycle) {
+		var _g = 0;
+		var _g1 = this.emptySystems.get(cycle);
+		while(_g < _g1.length) {
+			var system = _g1[_g];
+			++_g;
+			Reflect.callMethod(system,Reflect.field(system,"update"),[]);
+		}
+		var f;
+		var _g2 = 0;
+		var _g11 = this.mapCycles.get(cycle);
+		while(_g2 < _g11.length) {
+			var system1 = _g11[_g2];
+			++_g2;
+			var match = this.matches.get(system1);
+			f = Reflect.field(system1,"update");
+			if(null != f) {
+				var $it0 = match.iterator();
+				while( $it0.hasNext() ) {
+					var components = $it0.next();
+					f.apply(system1,components);
+				}
+				continue;
+			}
+			f = Reflect.field(system1,"updateAll");
+			if(null != f) {
+				var list = [];
+				var $it1 = match.iterator();
+				while( $it1.hasNext() ) {
+					var components1 = $it1.next();
+					list.push(components1);
+				}
+				f.apply(system1,[list]);
+			}
+		}
+	}
+	,matches: null
+	,matchSystems: function(entity) {
+		var $it0 = this.matches.keys();
+		while( $it0.hasNext() ) {
+			var system = $it0.next();
+			this.matchSystem(entity,system);
+		}
+	}
+	,matchSystem: function(entity,system) {
+		var match = this.matches.get(system);
+		match.remove(entity);
+		var components = entity.matchRequirements(system.getRequirements());
+		if(components.length > 0) match.set(entity,components);
+	}
+	,__class__: edge.World
+};
+var fly = {};
+fly.Config = function() {
+	this.width = 640;
+	this.height = 480;
+	this.cols = 16;
+	this.rows = 12;
+	this.startCol = this.cols / 2 | 0;
+	this.startRow = this.rows / 4 * 3 | 0;
+	this.backgroundColor = 14342809;
+	this.gen = new thx.math.random.NativeRandom();
+	this.cellSize = 40;
+};
+fly.Config.__name__ = ["fly","Config"];
+fly.Config.prototype = {
+	width: null
+	,height: null
+	,cols: null
+	,rows: null
+	,startCol: null
+	,startRow: null
+	,backgroundColor: null
+	,gen: null
+	,cellSize: null
+	,__class__: fly.Config
+};
+fly.Game = function(mini,config) {
+	this.delta = 20.0;
+	this.remainder = 0.0;
+	var p = new fly.components.Position((config.startCol + 0.5) * config.cellSize,(config.startRow + 1) * config.cellSize);
+	var direction = new fly.components.Direction(-Math.PI / 2);
+	var velocity = new fly.components.Velocity(2);
+	this.maze = new amaze.Maze(config.cols,config.rows,config.gen);
+	this.maze.generate(config.startRow,config.startCol);
+	this.maze.cells[config.startRow][config.startCol] = this.maze.cells[config.startRow][config.startCol] | 1;
+	true;
+	this.maze.cells[config.startRow - 1][config.startCol] = this.maze.cells[config.startRow - 1][config.startCol] | 4;
+	true;
+	this.world = new edge.World();
+	this.snake = new edge.Entity([p,direction,velocity,new fly.components.Trail(40,p),this.maze,new fly.components.PreviousPosition(p.x,p.y)]);
+	this.world.addEntity(this.snake);
+	this.world.addSystem(new fly.systems.UpdatePosition(),"preUpdate");
+	this.world.addSystem(new fly.systems.MazeCollision(config.cellSize),"update");
+	this.world.addSystem(new fly.systems.UpdatePreviousPosition(),"postUpdate");
+	this.world.addSystem(new fly.systems.UpdateTrail(),"postUpdate");
+	this.world.addSystem(new fly.systems.RenderSnake(mini),"render");
+	this.world.addSystem(new fly.systems.RenderMaze(mini.ctx,config.cellSize),"postRender");
+	this.world.addSystem(new fly.systems.RenderBackground(mini,config.backgroundColor),"preRender");
+	this.world.addSystem(new fly.systems.KeyboardInput(function(keys) {
+		var _g = 0;
+		while(_g < keys.length) {
+			var key = keys[_g];
+			++_g;
+			switch(key) {
+			case 37:case 65:
+				direction.angle -= fly.Game.ONE_DEGREE * 3;
+				break;
+			case 39:case 68:
+				direction.angle += fly.Game.ONE_DEGREE * 3;
+				break;
+			case 38:case 87:
+				velocity.value = Math.min(velocity.value + 0.01,4);
+				break;
+			case 40:case 83:
+				velocity.value = Math.max(velocity.value - 0.01,0);
+				break;
+			default:
+				haxe.Log.trace("key: " + key,{ fileName : "Game.hx", lineNumber : 71, className : "fly.Game", methodName : "new"});
+			}
+		}
+	}),"preFrame");
+};
+fly.Game.__name__ = ["fly","Game"];
+fly.Game.prototype = {
+	snake: null
+	,world: null
+	,remainder: null
+	,delta: null
+	,cancel: null
+	,config: null
+	,maze: null
+	,run: function() {
+		this.cancel = thx.core.Timer.frame($bind(this,this.frame));
+	}
+	,frame: function(t) {
+		this.world.updateCycle("preFrame");
+		t += this.remainder;
+		while(t > this.delta) {
+			t -= this.delta;
+			this.world.updateCycle("preUpdate");
+			this.world.updateCycle("update");
+			this.world.updateCycle("postUpdate");
+		}
+		this.remainder = t;
+		this.world.updateCycle("preRender");
+		this.world.updateCycle("render");
+		this.world.updateCycle("postRender");
+		this.world.updateCycle("preFrame");
+	}
+	,stop: function() {
+		this.cancel();
+		this.cancel = thx.core.Functions.noop;
+	}
+	,__class__: fly.Game
+};
+fly.components = {};
+fly.components.Direction = function(angle) {
+	this.angle = angle;
+};
+fly.components.Direction.__name__ = ["fly","components","Direction"];
+fly.components.Direction.prototype = {
+	angle: null
+	,dx: null
+	,dy: null
+	,get_dx: function() {
+		return Math.cos(this.angle);
+	}
+	,get_dy: function() {
+		return Math.sin(this.angle);
+	}
+	,__class__: fly.components.Direction
+};
+fly.components.Position = function(x,y) {
+	this.x = x;
+	this.y = y;
+};
+fly.components.Position.__name__ = ["fly","components","Position"];
+fly.components.Position.prototype = {
+	x: null
+	,y: null
+	,toString: function() {
+		return "Position(" + this.x + ", " + this.y + ")";
+	}
+	,__class__: fly.components.Position
+};
+fly.components.PreviousPosition = function(x,y) {
+	this.x = x;
+	this.y = y;
+};
+fly.components.PreviousPosition.__name__ = ["fly","components","PreviousPosition"];
+fly.components.PreviousPosition.prototype = {
+	x: null
+	,y: null
+	,toString: function() {
+		return "PreviousPosition(" + this.x + ", " + this.y + ")";
+	}
+	,__class__: fly.components.PreviousPosition
+};
+fly.components.Trail = function(length,start,trailWidth,headWidth) {
+	if(headWidth == null) headWidth = 4;
+	if(trailWidth == null) trailWidth = 1;
+	this.pos = length - 1;
+	var _g = [];
+	var _g1 = 0;
+	while(_g1 < length) {
+		var i = _g1++;
+		_g.push(new fly.components.Position(start.x,start.y));
+	}
+	this.trail = _g;
+	this.trailWidth = trailWidth;
+	this.headWidth = headWidth;
+	this.colors = ["#ffffff","#dddddd","#bbbbbb","#000000","#000000"];
+};
+fly.components.Trail.__name__ = ["fly","components","Trail"];
+fly.components.Trail.prototype = {
+	pos: null
+	,trail: null
+	,trailWidth: null
+	,headWidth: null
+	,colors: null
+	,map: function(callback) {
+		var _g1 = this.pos + 1;
+		var _g = this.trail.length;
+		while(_g1 < _g) {
+			var i = _g1++;
+			callback(this.trail[i - 1],this.trail[i]);
+		}
+		var _g11 = 0;
+		var _g2 = this.pos;
+		while(_g11 < _g2) {
+			var i1 = _g11++;
+			var p = i1 - 1;
+			if(p < 0) p = this.trail.length - 1;
+			callback(this.trail[p],this.trail[i1]);
+		}
+	}
+	,__class__: fly.components.Trail
+};
+fly.components.Velocity = function(value) {
+	this.value = value;
+};
+fly.components.Velocity.__name__ = ["fly","components","Velocity"];
+fly.components.Velocity.prototype = {
+	value: null
+	,__class__: fly.components.Velocity
+};
+fly.systems = {};
+fly.systems.KeyboardInput = function(callback) {
+	var _g = this;
+	this.callback = callback;
+	this.keys = thx.core._Set.Set_Impl_.create([]);
+	window.addEventListener("keydown",function(e) {
+		thx.core._Set.Set_Impl_.add(_g.keys,e.keyCode);
+	});
+	window.addEventListener("keyup",function(e1) {
+		HxOverrides.remove(_g.keys,e1.keyCode);
+	});
+};
+fly.systems.KeyboardInput.__name__ = ["fly","systems","KeyboardInput"];
+fly.systems.KeyboardInput.__interfaces__ = [edge.ISystem];
+fly.systems.KeyboardInput.prototype = {
+	callback: null
+	,keys: null
+	,update: function() {
+		if(this.keys.length > 0) this.callback(thx.core._Set.Set_Impl_.setToArray(this.keys));
+	}
+	,getRequirements: function() {
+		return [];
+	}
+	,toString: function() {
+		return "KeyboardInput";
+	}
+	,__class__: fly.systems.KeyboardInput
+};
+fly.systems.MazeCollision = function(cellSize) {
+	this.cellSize = cellSize;
+};
+fly.systems.MazeCollision.__name__ = ["fly","systems","MazeCollision"];
+fly.systems.MazeCollision.__interfaces__ = [edge.ISystem];
+fly.systems.MazeCollision.prototype = {
+	cellSize: null
+	,update: function(a,b,d,maze) {
+		var bx = b.x / this.cellSize | 0;
+		var by = b.y / this.cellSize | 0;
+		var col = a.x / this.cellSize | 0;
+		var row = a.y / this.cellSize | 0;
+		if(bx == col && by == row) return;
+		var cell = maze.cells[row][col];
+		if(b.x <= col * this.cellSize && !(0 != (cell & 8))) {
+			b.x = 2 * col * this.cellSize - b.x;
+			d.angle = -d.angle + Math.PI;
+		} else if(b.x >= (col + 1) * this.cellSize && !(0 != (cell & 2))) {
+			b.x = 2 * (col + 1) * this.cellSize - b.x;
+			d.angle = -d.angle + Math.PI;
+		}
+		if(b.y <= row * this.cellSize && !(0 != (cell & 1))) {
+			b.y = 2 * row * this.cellSize - b.y;
+			d.angle = -d.angle;
+		} else if(b.y >= (row + 1) * this.cellSize && !(0 != (cell & 4))) {
+			b.y = 2 * (row + 1) * this.cellSize - b.y;
+			d.angle = -d.angle;
+		}
+	}
+	,getRequirements: function() {
+		return [fly.components.PreviousPosition,fly.components.Position,fly.components.Direction,amaze.Maze];
+	}
+	,__class__: fly.systems.MazeCollision
+};
+fly.systems.RenderBackground = function(mini,color) {
+	this.mini = mini;
+	this.color = thx.color._RGB.RGB_Impl_.toCSS3(color);
+};
+fly.systems.RenderBackground.__name__ = ["fly","systems","RenderBackground"];
+fly.systems.RenderBackground.__interfaces__ = [edge.ISystem];
+fly.systems.RenderBackground.prototype = {
+	mini: null
+	,color: null
+	,update: function() {
+		this.mini.fill(thx.color._RGBA.RGBA_Impl_.fromString(this.color));
+	}
+	,getRequirements: function() {
+		return [];
+	}
+	,toString: function() {
+		return "RenderBackground";
+	}
+	,__class__: fly.systems.RenderBackground
+};
+fly.systems.RenderMaze = function(ctx,cellSize) {
+	this.ctx = ctx;
+	this.cellSize = cellSize;
+};
+fly.systems.RenderMaze.__name__ = ["fly","systems","RenderMaze"];
+fly.systems.RenderMaze.__interfaces__ = [edge.ISystem];
+fly.systems.RenderMaze.prototype = {
+	ctx: null
+	,cellSize: null
+	,update: function(maze) {
+		this.ctx.save();
+		this.ctx.lineWidth = 4;
+		var _g1 = 0;
+		var _g = maze.cells.length;
+		while(_g1 < _g) {
+			var row = _g1++;
+			var cells = maze.cells[row];
+			var _g3 = 0;
+			var _g2 = cells.length;
+			while(_g3 < _g2) {
+				var col = _g3++;
+				var cell = cells[col];
+				this.ctx.lineCap = "square";
+				this.ctx.strokeStyle = "#996633";
+				this.ctx.beginPath();
+				this.drawCell(cell,row,col,this.cellSize);
+				this.ctx.stroke();
+			}
+		}
+		this.ctx.strokeRect(0.5,0.5,maze.width * this.cellSize,maze.height * this.cellSize);
+		this.ctx.restore();
+	}
+	,drawCell: function(cell,row,col,size) {
+		if(!(0 != (cell & 2))) {
+			this.ctx.moveTo(0.5 + (1 + col) * size,0.5 + row * size);
+			this.ctx.lineTo(0.5 + (1 + col) * size,0.5 + (row + 1) * size);
+		}
+		if(!(0 != (cell & 4))) {
+			this.ctx.moveTo(0.5 + col * size,0.5 + (1 + row) * size);
+			this.ctx.lineTo(0.5 + (col + 1) * size,0.5 + (1 + row) * size);
+		}
+	}
+	,getRequirements: function() {
+		return [amaze.Maze];
+	}
+	,__class__: fly.systems.RenderMaze
+};
+fly.systems.RenderSnake = function(mini) {
+	this.mini = mini;
+};
+fly.systems.RenderSnake.__name__ = ["fly","systems","RenderSnake"];
+fly.systems.RenderSnake.__interfaces__ = [edge.ISystem];
+fly.systems.RenderSnake.prototype = {
+	mini: null
+	,update: function(position,trail) {
+		var _g = this;
+		var pos = 0;
+		trail.map(function(a,b) {
+			var s = thx.core.Floats.interpolate(pos / trail.trail.length,trail.trailWidth,trail.headWidth);
+			_g.mini.line(a.x,a.y,b.x,b.y,s,thx.color._RGBA.RGBA_Impl_.fromString(trail.colors[pos % trail.colors.length]));
+			pos++;
+		});
+		this.mini.dot(position.x,position.y,trail.headWidth,thx.color._RGBA.RGBA_Impl_.fromString(trail.colors[pos % trail.colors.length]));
+	}
+	,getRequirements: function() {
+		return [fly.components.Position,fly.components.Trail];
+	}
+	,toString: function() {
+		return "RenderSnake";
+	}
+	,__class__: fly.systems.RenderSnake
+};
+fly.systems.UpdatePosition = function() {
+};
+fly.systems.UpdatePosition.__name__ = ["fly","systems","UpdatePosition"];
+fly.systems.UpdatePosition.__interfaces__ = [edge.ISystem];
+fly.systems.UpdatePosition.prototype = {
+	update: function(position,direction,velocity) {
+		position.x += direction.get_dx() * velocity.value;
+		position.y += direction.get_dy() * velocity.value;
+	}
+	,getRequirements: function() {
+		return [fly.components.Position,fly.components.Direction,fly.components.Velocity];
+	}
+	,toString: function() {
+		return "UpdatePosition";
+	}
+	,__class__: fly.systems.UpdatePosition
+};
+fly.systems.UpdatePreviousPosition = function() {
+};
+fly.systems.UpdatePreviousPosition.__name__ = ["fly","systems","UpdatePreviousPosition"];
+fly.systems.UpdatePreviousPosition.__interfaces__ = [edge.ISystem];
+fly.systems.UpdatePreviousPosition.prototype = {
+	update: function(previous,position) {
+		previous.x = position.x;
+		previous.y = position.y;
+	}
+	,getRequirements: function() {
+		return [fly.components.PreviousPosition,fly.components.Position];
+	}
+	,toString: function() {
+		return "UpdatePreviousPosition";
+	}
+	,__class__: fly.systems.UpdatePreviousPosition
+};
+fly.systems.UpdateTrail = function() {
+};
+fly.systems.UpdateTrail.__name__ = ["fly","systems","UpdateTrail"];
+fly.systems.UpdateTrail.__interfaces__ = [edge.ISystem];
+fly.systems.UpdateTrail.prototype = {
+	update: function(position,trail) {
+		trail.trail[trail.pos].x = position.x;
+		trail.trail[trail.pos].y = position.y;
+		trail.pos++;
+		if(trail.pos >= trail.trail.length) trail.pos = 0;
+	}
+	,getRequirements: function() {
+		return [fly.components.Position,fly.components.Trail];
+	}
+	,toString: function() {
+		return "UpdateTrail";
+	}
+	,__class__: fly.systems.UpdateTrail
+};
+var haxe = {};
+haxe.StackItem = { __ename__ : ["haxe","StackItem"], __constructs__ : ["CFunction","Module","FilePos","Method","LocalFunction"] };
+haxe.StackItem.CFunction = ["CFunction",0];
+haxe.StackItem.CFunction.__enum__ = haxe.StackItem;
+haxe.StackItem.Module = function(m) { var $x = ["Module",1,m]; $x.__enum__ = haxe.StackItem; return $x; };
+haxe.StackItem.FilePos = function(s,file,line) { var $x = ["FilePos",2,s,file,line]; $x.__enum__ = haxe.StackItem; return $x; };
+haxe.StackItem.Method = function(classname,method) { var $x = ["Method",3,classname,method]; $x.__enum__ = haxe.StackItem; return $x; };
+haxe.StackItem.LocalFunction = function(v) { var $x = ["LocalFunction",4,v]; $x.__enum__ = haxe.StackItem; return $x; };
+haxe.CallStack = function() { };
+haxe.CallStack.__name__ = ["haxe","CallStack"];
+haxe.CallStack.callStack = function() {
+	var oldValue = Error.prepareStackTrace;
+	Error.prepareStackTrace = function(error,callsites) {
+		var stack = [];
+		var _g = 0;
+		while(_g < callsites.length) {
+			var site = callsites[_g];
+			++_g;
+			var method = null;
+			var fullName = site.getFunctionName();
+			if(fullName != null) {
+				var idx = fullName.lastIndexOf(".");
+				if(idx >= 0) {
+					var className = HxOverrides.substr(fullName,0,idx);
+					var methodName = HxOverrides.substr(fullName,idx + 1,null);
+					method = haxe.StackItem.Method(className,methodName);
+				}
+			}
+			stack.push(haxe.StackItem.FilePos(method,site.getFileName(),site.getLineNumber()));
+		}
+		return stack;
+	};
+	var a = haxe.CallStack.makeStack(new Error().stack);
+	a.shift();
+	Error.prepareStackTrace = oldValue;
+	return a;
+};
+haxe.CallStack.exceptionStack = function() {
+	return [];
+};
+haxe.CallStack.toString = function(stack) {
+	var b = new StringBuf();
+	var _g = 0;
+	while(_g < stack.length) {
+		var s = stack[_g];
+		++_g;
+		b.b += "\nCalled from ";
+		haxe.CallStack.itemToString(b,s);
+	}
+	return b.b;
+};
+haxe.CallStack.itemToString = function(b,s) {
+	switch(s[1]) {
+	case 0:
+		b.b += "a C function";
+		break;
+	case 1:
+		var m = s[2];
+		b.b += "module ";
+		if(m == null) b.b += "null"; else b.b += "" + m;
+		break;
+	case 2:
+		var line = s[4];
+		var file = s[3];
+		var s1 = s[2];
+		if(s1 != null) {
+			haxe.CallStack.itemToString(b,s1);
+			b.b += " (";
+		}
+		if(file == null) b.b += "null"; else b.b += "" + file;
+		b.b += " line ";
+		if(line == null) b.b += "null"; else b.b += "" + line;
+		if(s1 != null) b.b += ")";
+		break;
+	case 3:
+		var meth = s[3];
+		var cname = s[2];
+		if(cname == null) b.b += "null"; else b.b += "" + cname;
+		b.b += ".";
+		if(meth == null) b.b += "null"; else b.b += "" + meth;
+		break;
+	case 4:
+		var n = s[2];
+		b.b += "local function #";
+		if(n == null) b.b += "null"; else b.b += "" + n;
+		break;
+	}
+};
+haxe.CallStack.makeStack = function(s) {
+	if(typeof(s) == "string") {
+		var stack = s.split("\n");
+		var m = [];
+		var _g = 0;
+		while(_g < stack.length) {
+			var line = stack[_g];
+			++_g;
+			m.push(haxe.StackItem.Module(line));
+		}
+		return m;
+	} else return s;
+};
+haxe.IMap = function() { };
+haxe.IMap.__name__ = ["haxe","IMap"];
+haxe.IMap.prototype = {
+	get: null
+	,set: null
+	,exists: null
+	,remove: null
+	,keys: null
+	,iterator: null
+	,__class__: haxe.IMap
+};
+haxe.Log = function() { };
+haxe.Log.__name__ = ["haxe","Log"];
+haxe.Log.trace = function(v,infos) {
+	js.Boot.__trace(v,infos);
+};
+haxe.ds = {};
+haxe.ds.IntMap = function() {
+	this.h = { };
+};
+haxe.ds.IntMap.__name__ = ["haxe","ds","IntMap"];
+haxe.ds.IntMap.__interfaces__ = [haxe.IMap];
+haxe.ds.IntMap.prototype = {
+	h: null
+	,set: function(key,value) {
+		this.h[key] = value;
+	}
+	,get: function(key) {
+		return this.h[key];
+	}
+	,exists: function(key) {
+		return this.h.hasOwnProperty(key);
+	}
+	,remove: function(key) {
+		if(!this.h.hasOwnProperty(key)) return false;
+		delete(this.h[key]);
+		return true;
+	}
+	,keys: function() {
+		var a = [];
+		for( var key in this.h ) {
+		if(this.h.hasOwnProperty(key)) a.push(key | 0);
+		}
+		return HxOverrides.iter(a);
+	}
+	,iterator: function() {
+		return { ref : this.h, it : this.keys(), hasNext : function() {
+			return this.it.hasNext();
+		}, next : function() {
+			var i = this.it.next();
+			return this.ref[i];
+		}};
+	}
+	,__class__: haxe.ds.IntMap
+};
+haxe.ds.ObjectMap = function() {
+	this.h = { };
+	this.h.__keys__ = { };
+};
+haxe.ds.ObjectMap.__name__ = ["haxe","ds","ObjectMap"];
+haxe.ds.ObjectMap.__interfaces__ = [haxe.IMap];
+haxe.ds.ObjectMap.prototype = {
+	h: null
+	,set: function(key,value) {
+		var id = key.__id__ || (key.__id__ = ++haxe.ds.ObjectMap.count);
+		this.h[id] = value;
+		this.h.__keys__[id] = key;
+	}
+	,get: function(key) {
+		return this.h[key.__id__];
+	}
+	,exists: function(key) {
+		return this.h.__keys__[key.__id__] != null;
+	}
+	,remove: function(key) {
+		var id = key.__id__;
+		if(this.h.__keys__[id] == null) return false;
+		delete(this.h[id]);
+		delete(this.h.__keys__[id]);
+		return true;
+	}
+	,keys: function() {
+		var a = [];
+		for( var key in this.h.__keys__ ) {
+		if(this.h.hasOwnProperty(key)) a.push(this.h.__keys__[key]);
+		}
+		return HxOverrides.iter(a);
+	}
+	,iterator: function() {
+		return { ref : this.h, it : this.keys(), hasNext : function() {
+			return this.it.hasNext();
+		}, next : function() {
+			var i = this.it.next();
+			return this.ref[i.__id__];
+		}};
+	}
+	,__class__: haxe.ds.ObjectMap
+};
+haxe.ds.Option = { __ename__ : ["haxe","ds","Option"], __constructs__ : ["Some","None"] };
+haxe.ds.Option.Some = function(v) { var $x = ["Some",0,v]; $x.__enum__ = haxe.ds.Option; return $x; };
+haxe.ds.Option.None = ["None",1];
+haxe.ds.Option.None.__enum__ = haxe.ds.Option;
+haxe.ds._StringMap = {};
+haxe.ds._StringMap.StringMapIterator = function(map,keys) {
+	this.map = map;
+	this.keys = keys;
+	this.index = 0;
+	this.count = keys.length;
+};
+haxe.ds._StringMap.StringMapIterator.__name__ = ["haxe","ds","_StringMap","StringMapIterator"];
+haxe.ds._StringMap.StringMapIterator.prototype = {
+	map: null
+	,keys: null
+	,index: null
+	,count: null
+	,hasNext: function() {
+		return this.index < this.count;
+	}
+	,next: function() {
+		return this.map.get(this.keys[this.index++]);
+	}
+	,__class__: haxe.ds._StringMap.StringMapIterator
+};
+haxe.ds.StringMap = function() {
+	this.h = { };
+};
+haxe.ds.StringMap.__name__ = ["haxe","ds","StringMap"];
+haxe.ds.StringMap.__interfaces__ = [haxe.IMap];
+haxe.ds.StringMap.prototype = {
+	h: null
+	,rh: null
+	,set: function(key,value) {
+		if(__map_reserved[key] != null) this.setReserved(key,value); else this.h[key] = value;
+	}
+	,get: function(key) {
+		if(__map_reserved[key] != null) return this.getReserved(key);
+		return this.h[key];
+	}
+	,exists: function(key) {
+		if(__map_reserved[key] != null) return this.existsReserved(key);
+		return this.h.hasOwnProperty(key);
+	}
+	,setReserved: function(key,value) {
+		if(this.rh == null) this.rh = { };
+		this.rh["$" + key] = value;
+	}
+	,getReserved: function(key) {
+		if(this.rh == null) return null; else return this.rh["$" + key];
+	}
+	,existsReserved: function(key) {
+		if(this.rh == null) return false;
+		return this.rh.hasOwnProperty("$" + key);
+	}
+	,remove: function(key) {
+		if(__map_reserved[key] != null) {
+			key = "$" + key;
+			if(this.rh == null || !this.rh.hasOwnProperty(key)) return false;
+			delete(this.rh[key]);
+			return true;
+		} else {
+			if(!this.h.hasOwnProperty(key)) return false;
+			delete(this.h[key]);
+			return true;
+		}
+	}
+	,keys: function() {
+		var _this = this.arrayKeys();
+		return HxOverrides.iter(_this);
+	}
+	,arrayKeys: function() {
+		var out = [];
+		for( var key in this.h ) {
+		if(this.h.hasOwnProperty(key)) out.push(key);
+		}
+		if(this.rh != null) {
+			for( var key in this.rh ) {
+			if(key.charCodeAt(0) == 36) out.push(key.substr(1));
+			}
+		}
+		return out;
+	}
+	,iterator: function() {
+		return new haxe.ds._StringMap.StringMapIterator(this,this.arrayKeys());
+	}
+	,__class__: haxe.ds.StringMap
+};
+var js = {};
+js.Boot = function() { };
+js.Boot.__name__ = ["js","Boot"];
+js.Boot.__unhtml = function(s) {
+	return s.split("&").join("&amp;").split("<").join("&lt;").split(">").join("&gt;");
+};
+js.Boot.__trace = function(v,i) {
+	var msg;
+	if(i != null) msg = i.fileName + ":" + i.lineNumber + ": "; else msg = "";
+	msg += js.Boot.__string_rec(v,"");
+	if(i != null && i.customParams != null) {
+		var _g = 0;
+		var _g1 = i.customParams;
+		while(_g < _g1.length) {
+			var v1 = _g1[_g];
+			++_g;
+			msg += "," + js.Boot.__string_rec(v1,"");
+		}
+	}
+	var d;
+	if(typeof(document) != "undefined" && (d = document.getElementById("haxe:trace")) != null) d.innerHTML += js.Boot.__unhtml(msg) + "<br/>"; else if(typeof console != "undefined" && console.log != null) console.log(msg);
+};
+js.Boot.getClass = function(o) {
+	if((o instanceof Array) && o.__enum__ == null) return Array; else {
+		var cl = o.__class__;
+		if(cl != null) return cl;
+		var name = js.Boot.__nativeClassName(o);
+		if(name != null) return js.Boot.__resolveNativeClass(name);
+		return null;
+	}
+};
+js.Boot.__string_rec = function(o,s) {
+	if(o == null) return "null";
+	if(s.length >= 5) return "<...>";
+	var t = typeof(o);
+	if(t == "function" && (o.__name__ || o.__ename__)) t = "object";
+	switch(t) {
+	case "object":
+		if(o instanceof Array) {
+			if(o.__enum__) {
+				if(o.length == 2) return o[0];
+				var str2 = o[0] + "(";
+				s += "\t";
+				var _g1 = 2;
+				var _g = o.length;
+				while(_g1 < _g) {
+					var i1 = _g1++;
+					if(i1 != 2) str2 += "," + js.Boot.__string_rec(o[i1],s); else str2 += js.Boot.__string_rec(o[i1],s);
+				}
+				return str2 + ")";
+			}
+			var l = o.length;
+			var i;
+			var str1 = "[";
+			s += "\t";
+			var _g2 = 0;
+			while(_g2 < l) {
+				var i2 = _g2++;
+				str1 += (i2 > 0?",":"") + js.Boot.__string_rec(o[i2],s);
+			}
+			str1 += "]";
+			return str1;
+		}
+		var tostr;
+		try {
+			tostr = o.toString;
+		} catch( e ) {
+			return "???";
+		}
+		if(tostr != null && tostr != Object.toString && typeof(tostr) == "function") {
+			var s2 = o.toString();
+			if(s2 != "[object Object]") return s2;
+		}
+		var k = null;
+		var str = "{\n";
+		s += "\t";
+		var hasp = o.hasOwnProperty != null;
+		for( var k in o ) {
+		if(hasp && !o.hasOwnProperty(k)) {
+			continue;
+		}
+		if(k == "prototype" || k == "__class__" || k == "__super__" || k == "__interfaces__" || k == "__properties__") {
+			continue;
+		}
+		if(str.length != 2) str += ", \n";
+		str += s + k + " : " + js.Boot.__string_rec(o[k],s);
+		}
+		s = s.substring(1);
+		str += "\n" + s + "}";
+		return str;
+	case "function":
+		return "<function>";
+	case "string":
+		return o;
+	default:
+		return String(o);
+	}
+};
+js.Boot.__interfLoop = function(cc,cl) {
+	if(cc == null) return false;
+	if(cc == cl) return true;
+	var intf = cc.__interfaces__;
+	if(intf != null) {
+		var _g1 = 0;
+		var _g = intf.length;
+		while(_g1 < _g) {
+			var i = _g1++;
+			var i1 = intf[i];
+			if(i1 == cl || js.Boot.__interfLoop(i1,cl)) return true;
+		}
+	}
+	return js.Boot.__interfLoop(cc.__super__,cl);
+};
+js.Boot.__instanceof = function(o,cl) {
+	if(cl == null) return false;
+	switch(cl) {
+	case Int:
+		return (o|0) === o;
+	case Float:
+		return typeof(o) == "number";
+	case Bool:
+		return typeof(o) == "boolean";
+	case String:
+		return typeof(o) == "string";
+	case Array:
+		return (o instanceof Array) && o.__enum__ == null;
+	case Dynamic:
+		return true;
+	default:
+		if(o != null) {
+			if(typeof(cl) == "function") {
+				if(o instanceof cl) return true;
+				if(js.Boot.__interfLoop(js.Boot.getClass(o),cl)) return true;
+			} else if(typeof(cl) == "object" && js.Boot.__isNativeObj(cl)) {
+				if(o instanceof cl) return true;
+			}
+		} else return false;
+		if(cl == Class && o.__name__ != null) return true;
+		if(cl == Enum && o.__ename__ != null) return true;
+		return o.__enum__ == cl;
+	}
+};
+js.Boot.__nativeClassName = function(o) {
+	var name = js.Boot.__toStr.call(o).slice(8,-1);
+	if(name == "Object" || name == "Function" || name == "Math" || name == "JSON") return null;
+	return name;
+};
+js.Boot.__isNativeObj = function(o) {
+	return js.Boot.__nativeClassName(o) != null;
+};
+js.Boot.__resolveNativeClass = function(name) {
+	if(typeof window != "undefined") return window[name]; else return global[name];
 };
 var minicanvas = {};
 minicanvas.MiniCanvas = function(width,height,scaleMode) {
@@ -884,143 +2169,6 @@ minicanvas.ScaleMode.NoScale.__enum__ = minicanvas.ScaleMode;
 minicanvas.ScaleMode.Auto = ["Auto",1];
 minicanvas.ScaleMode.Auto.__enum__ = minicanvas.ScaleMode;
 minicanvas.ScaleMode.Scaled = function(v) { var $x = ["Scaled",2,v]; $x.__enum__ = minicanvas.ScaleMode; return $x; };
-minicanvas.NodeCanvas = function(width,height,scaleMode) {
-	this.hasFrames = false;
-	this.isNode = true;
-	this.isBrowser = false;
-	if(null == scaleMode) scaleMode = minicanvas.NodeCanvas.defaultScaleMode;
-	minicanvas.MiniCanvas.call(this,width,height,scaleMode);
-};
-minicanvas.NodeCanvas.__name__ = ["minicanvas","NodeCanvas"];
-minicanvas.NodeCanvas.create = function(width,height,scaleMode) {
-	return new minicanvas.MiniCanvas(width,height,scaleMode);
-};
-minicanvas.NodeCanvas.__super__ = minicanvas.MiniCanvas;
-minicanvas.NodeCanvas.prototype = $extend(minicanvas.MiniCanvas.prototype,{
-	save: function(name) {
-		var encoder = this.ensureEncoder();
-		encoder.addFrame(this.ctx);
-		encoder.save(name,function(file) {
-			console.log("saved " + file);
-		});
-	}
-	,hasFrames: null
-	,storeFrame: function(times) {
-		if(times == null) times = 1;
-		this.hasFrames = true;
-		if(times <= 0) times = 1;
-		var _g = 0;
-		while(_g < times) {
-			var i = _g++;
-			this.ensureEncoder().addFrame(this.ctx);
-		}
-		return this;
-	}
-	,init: function() {
-		var Canvas = require("canvas");
-		{
-			var _g = this.scaleMode;
-			switch(_g[1]) {
-			case 2:
-				var v = _g[2];
-				this.canvas = new Canvas(this.width * v,this.height * v);
-				this.ctx = this.canvas.getContext("2d");
-				this.ctx.scale(v,v);
-				break;
-			default:
-				this.canvas = new Canvas(this.width,this.height);
-				this.ctx = this.canvas.getContext("2d");
-			}
-		}
-	}
-	,getDevicePixelRatio: function() {
-		return 1.0;
-	}
-	,getBackingStoreRatio: function() {
-		return 1.0;
-	}
-	,nativeDisplay: function(name) {
-		this.save(name);
-	}
-	,encoder: null
-	,ensureEncoder: function() {
-		if(null != this.encoder) return this.encoder;
-		if(this.hasFrames) return this.encoder = new minicanvas.node.GifEncoder(this.width,this.height); else return this.encoder = new minicanvas.node.PNGEncoder(this.canvas);
-	}
-	,__class__: minicanvas.NodeCanvas
-});
-var haxe = {};
-haxe.IMap = function() { };
-haxe.IMap.__name__ = ["haxe","IMap"];
-haxe.IMap.prototype = {
-	get: null
-	,set: null
-	,exists: null
-	,remove: null
-	,keys: null
-	,__class__: haxe.IMap
-};
-haxe.ds = {};
-haxe.ds.StringMap = function() {
-	this.h = { };
-};
-haxe.ds.StringMap.__name__ = ["haxe","ds","StringMap"];
-haxe.ds.StringMap.__interfaces__ = [haxe.IMap];
-haxe.ds.StringMap.prototype = {
-	h: null
-	,rh: null
-	,set: function(key,value) {
-		if(__map_reserved[key] != null) this.setReserved(key,value); else this.h[key] = value;
-	}
-	,get: function(key) {
-		if(__map_reserved[key] != null) return this.getReserved(key);
-		return this.h[key];
-	}
-	,exists: function(key) {
-		if(__map_reserved[key] != null) return this.existsReserved(key);
-		return this.h.hasOwnProperty(key);
-	}
-	,setReserved: function(key,value) {
-		if(this.rh == null) this.rh = { };
-		this.rh["$" + key] = value;
-	}
-	,getReserved: function(key) {
-		if(this.rh == null) return null; else return this.rh["$" + key];
-	}
-	,existsReserved: function(key) {
-		if(this.rh == null) return false;
-		return this.rh.hasOwnProperty("$" + key);
-	}
-	,remove: function(key) {
-		if(__map_reserved[key] != null) {
-			key = "$" + key;
-			if(this.rh == null || !this.rh.hasOwnProperty(key)) return false;
-			delete(this.rh[key]);
-			return true;
-		} else {
-			if(!this.h.hasOwnProperty(key)) return false;
-			delete(this.h[key]);
-			return true;
-		}
-	}
-	,keys: function() {
-		var _this = this.arrayKeys();
-		return HxOverrides.iter(_this);
-	}
-	,arrayKeys: function() {
-		var out = [];
-		for( var key in this.h ) {
-		if(this.h.hasOwnProperty(key)) out.push(key);
-		}
-		if(this.rh != null) {
-			for( var key in this.rh ) {
-			if(key.charCodeAt(0) == 36) out.push(key.substr(1));
-			}
-		}
-		return out;
-	}
-	,__class__: haxe.ds.StringMap
-};
 minicanvas.BrowserCanvas = function(width,height,scaleMode) {
 	this.isNode = false;
 	this.isBrowser = true;
@@ -1108,922 +2256,6 @@ minicanvas.BrowserCanvas.prototype = $extend(minicanvas.MiniCanvas.prototype,{
 	}
 	,__class__: minicanvas.BrowserCanvas
 });
-var Main = function() { };
-Main.__name__ = ["Main"];
-Main.main = function() {
-	var game = new fly.Game();
-	game.run();
-	Main.fly = new Fly((Main.startColumn + 0.5) * Main.cellSize,(Main.startRow + 0.5) * Main.cellSize,Main.maze,Main.cellSize);
-	var f = Main.drawMaze(Main.maze,Main.fly);
-	var remainder = 0.0;
-	Main.mini.onKeyRepeat(function(e) {
-		var _g = 0;
-		var _g1 = e.keyCodes;
-		while(_g < _g1.length) {
-			var code = _g1[_g];
-			++_g;
-			var c = code;
-			switch(code) {
-			case 39:case 68:
-				Main.fly.right();
-				break;
-			case 37:case 65:
-				Main.fly.left();
-				break;
-			case 38:case 87:
-				Main.fly.accellerate();
-				break;
-			case 40:case 83:
-				Main.fly.decellerate();
-				break;
-			default:
-				haxe.Log.trace(c,{ fileName : "Main.hx", lineNumber : 42, className : "Main", methodName : "main"});
-			}
-		}
-	});
-	thx.core.Timer.frame(function(t) {
-		t += remainder;
-		while(t > Main.delta) {
-			t -= Main.delta;
-			Main.update();
-		}
-		remainder = t;
-		Main.mini.clear()["with"](Main.drawFly)["with"](f).border(5,-1431655681);
-	});
-};
-Main.update = function() {
-	Main.fly.update();
-};
-Main.drawFly = function(mini) {
-	var p = Main.fly.trailPos;
-	var radius = Main.fly.radius;
-	var w = radius / Main.fly.trail.length;
-	var scale = 2;
-	var counter = 1;
-	var colora = "rgba(0,0,0,0.5)";
-	var colorb = "rgba(255,255,255,0.8)";
-	mini.ctx.lineCap = "round";
-	var _g1 = p + 1;
-	var _g = Main.fly.trail.length;
-	while(_g1 < _g) {
-		var i = _g1++;
-		mini.ctx.beginPath();
-		if(counter % 2 != 0) mini.ctx.strokeStyle = colora; else mini.ctx.strokeStyle = colorb;
-		mini.ctx.lineWidth = Math.max(w * scale * counter++,1);
-		mini.ctx.moveTo(Main.fly.trail[i - 1].x,Main.fly.trail[i - 1].y);
-		mini.ctx.lineTo(Main.fly.trail[i].x,Main.fly.trail[i].y);
-		mini.ctx.stroke();
-	}
-	var _g2 = 0;
-	while(_g2 < p) {
-		var i1 = _g2++;
-		mini.ctx.beginPath();
-		if(counter % 2 != 0) mini.ctx.strokeStyle = colora; else mini.ctx.strokeStyle = colorb;
-		mini.ctx.lineWidth = Math.max(w * scale * counter++,1);
-		var ip;
-		ip = (i1 == 0?Main.fly.trail.length:i1) - 1;
-		mini.ctx.moveTo(Main.fly.trail[ip].x,Main.fly.trail[ip].y);
-		mini.ctx.lineTo(Main.fly.trail[i1].x,Main.fly.trail[i1].y);
-		mini.ctx.stroke();
-	}
-	mini.dot(Main.fly.x,Main.fly.y,radius,136);
-};
-Main.drawMaze = function(maze,fly) {
-	maze.generate(Main.startRow,Main.startColumn);
-	maze.cells[Main.startRow][Main.startColumn] = maze.cells[Main.startRow][Main.startColumn] | 1;
-	true;
-	maze.cells[Main.startRow - 1][Main.startColumn] = maze.cells[Main.startRow - 1][Main.startColumn] | 4;
-	true;
-	return function(mini) {
-		mini.ctx.save();
-		mini.ctx.lineWidth = 5;
-		var _g1 = 0;
-		var _g = maze.cells.length;
-		while(_g1 < _g) {
-			var row = _g1++;
-			var cells = maze.cells[row];
-			var _g3 = 0;
-			var _g2 = cells.length;
-			while(_g3 < _g2) {
-				var col = _g3++;
-				var cell = cells[col];
-				mini.ctx.lineCap = "square";
-				mini.ctx.strokeStyle = "#CCCCCC";
-				mini.ctx.beginPath();
-				Main.drawCell(mini.ctx,cell,row,col,Main.cellSize);
-				mini.ctx.stroke();
-			}
-		}
-		mini.ctx.strokeRect(0.5,0.5,Main.cols * Main.cellSize,Main.rows * Main.cellSize);
-		mini.ctx.restore();
-	};
-};
-Main.drawCell = function(ctx,cell,row,col,size) {
-	if(!(0 != (cell & 2))) {
-		ctx.moveTo(0.5 + (1 + col) * size,0.5 + row * size);
-		ctx.lineTo(0.5 + (1 + col) * size,0.5 + (row + 1) * size);
-	}
-	if(!(0 != (cell & 4))) {
-		ctx.moveTo(0.5 + col * size,0.5 + (1 + row) * size);
-		ctx.lineTo(0.5 + (col + 1) * size,0.5 + (1 + row) * size);
-	}
-};
-var Reflect = function() { };
-Reflect.__name__ = ["Reflect"];
-Reflect.hasField = function(o,field) {
-	return Object.prototype.hasOwnProperty.call(o,field);
-};
-Reflect.field = function(o,field) {
-	try {
-		return o[field];
-	} catch( e ) {
-		return null;
-	}
-};
-Reflect.fields = function(o) {
-	var a = [];
-	if(o != null) {
-		var hasOwnProperty = Object.prototype.hasOwnProperty;
-		for( var f in o ) {
-		if(f != "__id__" && f != "hx__closures__" && hasOwnProperty.call(o,f)) a.push(f);
-		}
-	}
-	return a;
-};
-Reflect.isFunction = function(f) {
-	return typeof(f) == "function" && !(f.__name__ || f.__ename__);
-};
-Reflect.isObject = function(v) {
-	if(v == null) return false;
-	var t = typeof(v);
-	return t == "string" || t == "object" && v.__enum__ == null || t == "function" && (v.__name__ || v.__ename__) != null;
-};
-var StringBuf = function() {
-	this.b = "";
-};
-StringBuf.__name__ = ["StringBuf"];
-StringBuf.prototype = {
-	b: null
-	,add: function(x) {
-		this.b += Std.string(x);
-	}
-	,__class__: StringBuf
-};
-var StringTools = function() { };
-StringTools.__name__ = ["StringTools"];
-StringTools.htmlEscape = function(s,quotes) {
-	s = s.split("&").join("&amp;").split("<").join("&lt;").split(">").join("&gt;");
-	if(quotes) return s.split("\"").join("&quot;").split("'").join("&#039;"); else return s;
-};
-StringTools.startsWith = function(s,start) {
-	return s.length >= start.length && HxOverrides.substr(s,0,start.length) == start;
-};
-StringTools.endsWith = function(s,end) {
-	var elen = end.length;
-	var slen = s.length;
-	return slen >= elen && HxOverrides.substr(s,slen - elen,elen) == end;
-};
-StringTools.isSpace = function(s,pos) {
-	var c = HxOverrides.cca(s,pos);
-	return c > 8 && c < 14 || c == 32;
-};
-StringTools.ltrim = function(s) {
-	var l = s.length;
-	var r = 0;
-	while(r < l && StringTools.isSpace(s,r)) r++;
-	if(r > 0) return HxOverrides.substr(s,r,l - r); else return s;
-};
-StringTools.rtrim = function(s) {
-	var l = s.length;
-	var r = 0;
-	while(r < l && StringTools.isSpace(s,l - r - 1)) r++;
-	if(r > 0) return HxOverrides.substr(s,0,l - r); else return s;
-};
-StringTools.trim = function(s) {
-	return StringTools.ltrim(StringTools.rtrim(s));
-};
-StringTools.lpad = function(s,c,l) {
-	if(c.length <= 0) return s;
-	while(s.length < l) s = c + s;
-	return s;
-};
-StringTools.replace = function(s,sub,by) {
-	return s.split(sub).join(by);
-};
-StringTools.hex = function(n,digits) {
-	var s = "";
-	var hexChars = "0123456789ABCDEF";
-	do {
-		s = hexChars.charAt(n & 15) + s;
-		n >>>= 4;
-	} while(n > 0);
-	if(digits != null) while(s.length < digits) s = "0" + s;
-	return s;
-};
-var ValueType = { __ename__ : ["ValueType"], __constructs__ : ["TNull","TInt","TFloat","TBool","TObject","TFunction","TClass","TEnum","TUnknown"] };
-ValueType.TNull = ["TNull",0];
-ValueType.TNull.__enum__ = ValueType;
-ValueType.TInt = ["TInt",1];
-ValueType.TInt.__enum__ = ValueType;
-ValueType.TFloat = ["TFloat",2];
-ValueType.TFloat.__enum__ = ValueType;
-ValueType.TBool = ["TBool",3];
-ValueType.TBool.__enum__ = ValueType;
-ValueType.TObject = ["TObject",4];
-ValueType.TObject.__enum__ = ValueType;
-ValueType.TFunction = ["TFunction",5];
-ValueType.TFunction.__enum__ = ValueType;
-ValueType.TClass = function(c) { var $x = ["TClass",6,c]; $x.__enum__ = ValueType; return $x; };
-ValueType.TEnum = function(e) { var $x = ["TEnum",7,e]; $x.__enum__ = ValueType; return $x; };
-ValueType.TUnknown = ["TUnknown",8];
-ValueType.TUnknown.__enum__ = ValueType;
-var Type = function() { };
-Type.__name__ = ["Type"];
-Type.getClass = function(o) {
-	if(o == null) return null;
-	return js.Boot.getClass(o);
-};
-Type.getSuperClass = function(c) {
-	return c.__super__;
-};
-Type.getClassName = function(c) {
-	var a = c.__name__;
-	if(a == null) return null;
-	return a.join(".");
-};
-Type.getEnumName = function(e) {
-	var a = e.__ename__;
-	return a.join(".");
-};
-Type.getInstanceFields = function(c) {
-	var a = [];
-	for(var i in c.prototype) a.push(i);
-	HxOverrides.remove(a,"__class__");
-	HxOverrides.remove(a,"__properties__");
-	return a;
-};
-Type["typeof"] = function(v) {
-	var _g = typeof(v);
-	switch(_g) {
-	case "boolean":
-		return ValueType.TBool;
-	case "string":
-		return ValueType.TClass(String);
-	case "number":
-		if(Math.ceil(v) == v % 2147483648.0) return ValueType.TInt;
-		return ValueType.TFloat;
-	case "object":
-		if(v == null) return ValueType.TNull;
-		var e = v.__enum__;
-		if(e != null) return ValueType.TEnum(e);
-		var c = js.Boot.getClass(v);
-		if(c != null) return ValueType.TClass(c);
-		return ValueType.TObject;
-	case "function":
-		if(v.__name__ || v.__ename__) return ValueType.TObject;
-		return ValueType.TFunction;
-	case "undefined":
-		return ValueType.TNull;
-	default:
-		return ValueType.TUnknown;
-	}
-};
-amaze._Cell = {};
-amaze._Cell.Cell_Impl_ = {};
-amaze._Cell.Cell_Impl_.__name__ = ["amaze","_Cell","Cell_Impl_"];
-amaze._Cell.Cell_Impl_._new = function(value) {
-	return value;
-};
-amaze._Cell.Cell_Impl_.get_right = function(this1) {
-	return 0 != (this1 & 2);
-};
-amaze._Cell.Cell_Impl_.get_top = function(this1) {
-	return 0 != (this1 & 1);
-};
-amaze._Cell.Cell_Impl_.get_bottom = function(this1) {
-	return 0 != (this1 & 4);
-};
-amaze._Cell.Cell_Impl_.get_left = function(this1) {
-	return 0 != (this1 & 8);
-};
-amaze._Cell.Cell_Impl_.set_right = function(this1,v) {
-	if(v) this1 = this1 | 2; else this1 = this1 ^ 2;
-	return v;
-};
-amaze._Cell.Cell_Impl_.set_top = function(this1,v) {
-	if(v) this1 = this1 | 1; else this1 = this1 ^ 1;
-	return v;
-};
-amaze._Cell.Cell_Impl_.set_bottom = function(this1,v) {
-	if(v) this1 = this1 | 4; else this1 = this1 ^ 4;
-	return v;
-};
-amaze._Cell.Cell_Impl_.set_left = function(this1,v) {
-	if(v) this1 = this1 | 8; else this1 = this1 ^ 8;
-	return v;
-};
-amaze._Cell.Cell_Impl_.bitwiseOrAssign = function(this1,other) {
-	return this1 |= other;
-};
-var dots = {};
-dots.Detect = function() { };
-dots.Detect.__name__ = ["dots","Detect"];
-dots.Detect.supportsInput = function(type) {
-	var i;
-	var _this = window.document;
-	i = _this.createElement("input");
-	i.setAttribute("type",type);
-	return i.type == type;
-};
-dots.Detect.supportsInputPlaceholder = function() {
-	var i;
-	var _this = window.document;
-	i = _this.createElement("input");
-	return Object.prototype.hasOwnProperty.call(i,"placeholder");
-};
-dots.Detect.supportsInputAutofocus = function() {
-	var i;
-	var _this = window.document;
-	i = _this.createElement("input");
-	return Object.prototype.hasOwnProperty.call(i,"autofocus");
-};
-dots.Detect.supportsCanvas = function() {
-	return null != ($_=((function($this) {
-		var $r;
-		var _this = window.document;
-		$r = _this.createElement("canvas");
-		return $r;
-	}(this))),$bind($_,$_.getContext));
-};
-dots.Detect.supportsVideo = function() {
-	return null != ($_=((function($this) {
-		var $r;
-		var _this = window.document;
-		$r = _this.createElement("video");
-		return $r;
-	}(this))),$bind($_,$_.canPlayType));
-};
-dots.Detect.supportsLocalStorage = function() {
-	try {
-		return 'localStorage' in window && window['localStorage'] !== null;
-	} catch( e ) {
-		return false;
-	}
-};
-dots.Detect.supportsWebWorkers = function() {
-	return !(!window.Worker);
-};
-dots.Detect.supportsOffline = function() {
-	return null != window.applicationCache;
-};
-dots.Detect.supportsGeolocation = function() {
-	return Reflect.hasField(window.navigator,"geolocation");
-};
-dots.Detect.supportsMicrodata = function() {
-	return Reflect.hasField(window.document,"getItems");
-};
-dots.Detect.supportsHistory = function() {
-	return !!(window.history && history.pushState);
-};
-dots.Dom = function() { };
-dots.Dom.__name__ = ["dots","Dom"];
-dots.Dom.addCss = function(css,container) {
-	if(null == container) container = window.document.head;
-	var style;
-	var _this = window.document;
-	style = _this.createElement("style");
-	style.type = "text/css";
-	style.appendChild(window.document.createTextNode(css));
-	container.appendChild(style);
-};
-dots.Html = function() { };
-dots.Html.__name__ = ["dots","Html"];
-dots.Html.parseNodes = function(html) {
-	if(!dots.Html.pattern.match(html)) throw "Invalid pattern \"" + html + "\"";
-	var el;
-	var _g = dots.Html.pattern.matched(1).toLowerCase();
-	switch(_g) {
-	case "tbody":case "thead":
-		el = window.document.createElement("table");
-		break;
-	case "td":case "th":
-		el = window.document.createElement("tr");
-		break;
-	case "tr":
-		el = window.document.createElement("tbody");
-		break;
-	default:
-		el = window.document.createElement("div");
-	}
-	el.innerHTML = html;
-	return el.childNodes;
-};
-dots.Html.parseArray = function(html) {
-	return dots.Html.nodeListToArray(dots.Html.parseNodes(html));
-};
-dots.Html.parse = function(html) {
-	return dots.Html.parseNodes(html)[0];
-};
-dots.Html.nodeListToArray = function(list) {
-	return Array.prototype.slice.call(list,0);
-};
-dots.Query = function() { };
-dots.Query.__name__ = ["dots","Query"];
-dots.Query.first = function(selector,ctx) {
-	return (ctx != null?ctx:dots.Query.doc).querySelector(selector);
-};
-dots.Query.list = function(selector,ctx) {
-	return (ctx != null?ctx:dots.Query.doc).querySelectorAll(selector);
-};
-dots.Query.all = function(selector,ctx) {
-	return dots.Html.nodeListToArray(dots.Query.list(selector,ctx));
-};
-dots.Query.getElementIndex = function(el) {
-	var index = 0;
-	while(null != (el = el.previousElementSibling)) index++;
-	return index;
-};
-dots.Query.childrenOf = function(children,parent) {
-	return children.filter(function(child) {
-		return child.parentElement == parent;
-	});
-};
-var edge = {};
-edge.Entity = function() {
-	this.components = new haxe.ds.StringMap();
-};
-edge.Entity.__name__ = ["edge","Entity"];
-edge.Entity.prototype = {
-	components: null
-	,addComponent: function(component) {
-		var type = Type.getClassName(Type.getClass(component));
-		if(this.components.exists(type)) this.removeComponent(this.components.get(type));
-		var value = component;
-		this.components.set(type,value);
-	}
-	,addComponents: function(components) {
-		var _g = this;
-		components.map(function(_) {
-			_g.addComponent(_);
-			return;
-		});
-	}
-	,removeComponent: function(component) {
-		var type = Type.getClassName(Type.getClass(component));
-		var key = component;
-		this.components.remove(key);
-	}
-	,key: function(component) {
-		return Type.getClassName(Type.getClass(component));
-	}
-	,__class__: edge.Entity
-};
-edge.IMultiSystem = function() { };
-edge.IMultiSystem.__name__ = ["edge","IMultiSystem"];
-edge.IMultiSystem.prototype = {
-	process: null
-	,__class__: edge.IMultiSystem
-};
-edge.ISystem = function() { };
-edge.ISystem.__name__ = ["edge","ISystem"];
-edge.ISystem.prototype = {
-	process: null
-	,__class__: edge.ISystem
-};
-edge.World = function() {
-};
-edge.World.__name__ = ["edge","World"];
-edge.World.prototype = {
-	addEntity: function(entity) {
-	}
-	,removeEntity: function(entity) {
-	}
-	,addSystem: function(system,cycle) {
-	}
-	,removeSystem: function(system) {
-	}
-	,addMultiSystem: function(system,cycle) {
-	}
-	,removeMultiSystem: function(system) {
-	}
-	,update: function() {
-	}
-	,render: function() {
-	}
-	,__class__: edge.World
-};
-edge.Cycle = { __ename__ : ["edge","Cycle"], __constructs__ : ["render","update"] };
-edge.Cycle.render = ["render",0];
-edge.Cycle.render.__enum__ = edge.Cycle;
-edge.Cycle.update = ["update",1];
-edge.Cycle.update.__enum__ = edge.Cycle;
-var fly = {};
-fly.Game = function() {
-	this.delta = 20.0;
-	this.remainder = 0.0;
-	this.world = new edge.World();
-	this.fly = new edge.Entity();
-	this.fly.addComponents([new fly.components.Position(100,100),new fly.components.Direction(-Math.PI / 2),new fly.components.Velocity(4)]);
-	this.world.addEntity(this.fly);
-	this.world.addSystem(new fly.systems.UpdatePosition(),edge.Cycle.update);
-};
-fly.Game.__name__ = ["fly","Game"];
-fly.Game.prototype = {
-	fly: null
-	,world: null
-	,remainder: null
-	,delta: null
-	,cancel: null
-	,run: function() {
-		var _g = this;
-		this.cancel = thx.core.Timer.frame(function(t) {
-			t += _g.remainder;
-			while(t > _g.delta) {
-				t -= _g.delta;
-				_g.world.update();
-			}
-			_g.remainder = t;
-			_g.world.render();
-		});
-	}
-	,stop: function() {
-		this.cancel();
-		this.cancel = thx.core.Functions.noop;
-	}
-	,__class__: fly.Game
-};
-fly.components = {};
-fly.components.Direction = function(angle) {
-	this.angle = angle;
-};
-fly.components.Direction.__name__ = ["fly","components","Direction"];
-fly.components.Direction.prototype = {
-	angle: null
-	,dx: null
-	,dy: null
-	,get_dx: function() {
-		return Math.cos(this.angle);
-	}
-	,get_dy: function() {
-		return Math.sin(this.angle);
-	}
-	,__class__: fly.components.Direction
-};
-fly.components.Position = function(x,y) {
-	this.x = x;
-	this.y = y;
-};
-fly.components.Position.__name__ = ["fly","components","Position"];
-fly.components.Position.prototype = {
-	x: null
-	,y: null
-	,__class__: fly.components.Position
-};
-fly.components.Velocity = function(value) {
-	this.value = value;
-};
-fly.components.Velocity.__name__ = ["fly","components","Velocity"];
-fly.components.Velocity.prototype = {
-	value: null
-	,__class__: fly.components.Velocity
-};
-fly.systems = {};
-fly.systems.UpdatePosition = function() {
-};
-fly.systems.UpdatePosition.__name__ = ["fly","systems","UpdatePosition"];
-fly.systems.UpdatePosition.__interfaces__ = [edge.ISystem];
-fly.systems.UpdatePosition.prototype = {
-	process: function(t) {
-	}
-	,__class__: fly.systems.UpdatePosition
-};
-haxe.StackItem = { __ename__ : ["haxe","StackItem"], __constructs__ : ["CFunction","Module","FilePos","Method","LocalFunction"] };
-haxe.StackItem.CFunction = ["CFunction",0];
-haxe.StackItem.CFunction.__enum__ = haxe.StackItem;
-haxe.StackItem.Module = function(m) { var $x = ["Module",1,m]; $x.__enum__ = haxe.StackItem; return $x; };
-haxe.StackItem.FilePos = function(s,file,line) { var $x = ["FilePos",2,s,file,line]; $x.__enum__ = haxe.StackItem; return $x; };
-haxe.StackItem.Method = function(classname,method) { var $x = ["Method",3,classname,method]; $x.__enum__ = haxe.StackItem; return $x; };
-haxe.StackItem.LocalFunction = function(v) { var $x = ["LocalFunction",4,v]; $x.__enum__ = haxe.StackItem; return $x; };
-haxe.CallStack = function() { };
-haxe.CallStack.__name__ = ["haxe","CallStack"];
-haxe.CallStack.callStack = function() {
-	var oldValue = Error.prepareStackTrace;
-	Error.prepareStackTrace = function(error,callsites) {
-		var stack = [];
-		var _g = 0;
-		while(_g < callsites.length) {
-			var site = callsites[_g];
-			++_g;
-			var method = null;
-			var fullName = site.getFunctionName();
-			if(fullName != null) {
-				var idx = fullName.lastIndexOf(".");
-				if(idx >= 0) {
-					var className = HxOverrides.substr(fullName,0,idx);
-					var methodName = HxOverrides.substr(fullName,idx + 1,null);
-					method = haxe.StackItem.Method(className,methodName);
-				}
-			}
-			stack.push(haxe.StackItem.FilePos(method,site.getFileName(),site.getLineNumber()));
-		}
-		return stack;
-	};
-	var a = haxe.CallStack.makeStack(new Error().stack);
-	a.shift();
-	Error.prepareStackTrace = oldValue;
-	return a;
-};
-haxe.CallStack.exceptionStack = function() {
-	return [];
-};
-haxe.CallStack.toString = function(stack) {
-	var b = new StringBuf();
-	var _g = 0;
-	while(_g < stack.length) {
-		var s = stack[_g];
-		++_g;
-		b.b += "\nCalled from ";
-		haxe.CallStack.itemToString(b,s);
-	}
-	return b.b;
-};
-haxe.CallStack.itemToString = function(b,s) {
-	switch(s[1]) {
-	case 0:
-		b.b += "a C function";
-		break;
-	case 1:
-		var m = s[2];
-		b.b += "module ";
-		if(m == null) b.b += "null"; else b.b += "" + m;
-		break;
-	case 2:
-		var line = s[4];
-		var file = s[3];
-		var s1 = s[2];
-		if(s1 != null) {
-			haxe.CallStack.itemToString(b,s1);
-			b.b += " (";
-		}
-		if(file == null) b.b += "null"; else b.b += "" + file;
-		b.b += " line ";
-		if(line == null) b.b += "null"; else b.b += "" + line;
-		if(s1 != null) b.b += ")";
-		break;
-	case 3:
-		var meth = s[3];
-		var cname = s[2];
-		if(cname == null) b.b += "null"; else b.b += "" + cname;
-		b.b += ".";
-		if(meth == null) b.b += "null"; else b.b += "" + meth;
-		break;
-	case 4:
-		var n = s[2];
-		b.b += "local function #";
-		if(n == null) b.b += "null"; else b.b += "" + n;
-		break;
-	}
-};
-haxe.CallStack.makeStack = function(s) {
-	if(typeof(s) == "string") {
-		var stack = s.split("\n");
-		var m = [];
-		var _g = 0;
-		while(_g < stack.length) {
-			var line = stack[_g];
-			++_g;
-			m.push(haxe.StackItem.Module(line));
-		}
-		return m;
-	} else return s;
-};
-haxe.Log = function() { };
-haxe.Log.__name__ = ["haxe","Log"];
-haxe.Log.trace = function(v,infos) {
-	js.Boot.__trace(v,infos);
-};
-haxe.ds.IntMap = function() {
-	this.h = { };
-};
-haxe.ds.IntMap.__name__ = ["haxe","ds","IntMap"];
-haxe.ds.IntMap.__interfaces__ = [haxe.IMap];
-haxe.ds.IntMap.prototype = {
-	h: null
-	,set: function(key,value) {
-		this.h[key] = value;
-	}
-	,get: function(key) {
-		return this.h[key];
-	}
-	,exists: function(key) {
-		return this.h.hasOwnProperty(key);
-	}
-	,remove: function(key) {
-		if(!this.h.hasOwnProperty(key)) return false;
-		delete(this.h[key]);
-		return true;
-	}
-	,keys: function() {
-		var a = [];
-		for( var key in this.h ) {
-		if(this.h.hasOwnProperty(key)) a.push(key | 0);
-		}
-		return HxOverrides.iter(a);
-	}
-	,__class__: haxe.ds.IntMap
-};
-haxe.ds.ObjectMap = function() {
-	this.h = { };
-	this.h.__keys__ = { };
-};
-haxe.ds.ObjectMap.__name__ = ["haxe","ds","ObjectMap"];
-haxe.ds.ObjectMap.__interfaces__ = [haxe.IMap];
-haxe.ds.ObjectMap.prototype = {
-	h: null
-	,set: function(key,value) {
-		var id = key.__id__ || (key.__id__ = ++haxe.ds.ObjectMap.count);
-		this.h[id] = value;
-		this.h.__keys__[id] = key;
-	}
-	,get: function(key) {
-		return this.h[key.__id__];
-	}
-	,exists: function(key) {
-		return this.h.__keys__[key.__id__] != null;
-	}
-	,remove: function(key) {
-		var id = key.__id__;
-		if(this.h.__keys__[id] == null) return false;
-		delete(this.h[id]);
-		delete(this.h.__keys__[id]);
-		return true;
-	}
-	,keys: function() {
-		var a = [];
-		for( var key in this.h.__keys__ ) {
-		if(this.h.hasOwnProperty(key)) a.push(this.h.__keys__[key]);
-		}
-		return HxOverrides.iter(a);
-	}
-	,__class__: haxe.ds.ObjectMap
-};
-haxe.ds.Option = { __ename__ : ["haxe","ds","Option"], __constructs__ : ["Some","None"] };
-haxe.ds.Option.Some = function(v) { var $x = ["Some",0,v]; $x.__enum__ = haxe.ds.Option; return $x; };
-haxe.ds.Option.None = ["None",1];
-haxe.ds.Option.None.__enum__ = haxe.ds.Option;
-var js = {};
-js.Boot = function() { };
-js.Boot.__name__ = ["js","Boot"];
-js.Boot.__unhtml = function(s) {
-	return s.split("&").join("&amp;").split("<").join("&lt;").split(">").join("&gt;");
-};
-js.Boot.__trace = function(v,i) {
-	var msg;
-	if(i != null) msg = i.fileName + ":" + i.lineNumber + ": "; else msg = "";
-	msg += js.Boot.__string_rec(v,"");
-	if(i != null && i.customParams != null) {
-		var _g = 0;
-		var _g1 = i.customParams;
-		while(_g < _g1.length) {
-			var v1 = _g1[_g];
-			++_g;
-			msg += "," + js.Boot.__string_rec(v1,"");
-		}
-	}
-	var d;
-	if(typeof(document) != "undefined" && (d = document.getElementById("haxe:trace")) != null) d.innerHTML += js.Boot.__unhtml(msg) + "<br/>"; else if(typeof console != "undefined" && console.log != null) console.log(msg);
-};
-js.Boot.getClass = function(o) {
-	if((o instanceof Array) && o.__enum__ == null) return Array; else {
-		var cl = o.__class__;
-		if(cl != null) return cl;
-		var name = js.Boot.__nativeClassName(o);
-		if(name != null) return js.Boot.__resolveNativeClass(name);
-		return null;
-	}
-};
-js.Boot.__string_rec = function(o,s) {
-	if(o == null) return "null";
-	if(s.length >= 5) return "<...>";
-	var t = typeof(o);
-	if(t == "function" && (o.__name__ || o.__ename__)) t = "object";
-	switch(t) {
-	case "object":
-		if(o instanceof Array) {
-			if(o.__enum__) {
-				if(o.length == 2) return o[0];
-				var str2 = o[0] + "(";
-				s += "\t";
-				var _g1 = 2;
-				var _g = o.length;
-				while(_g1 < _g) {
-					var i1 = _g1++;
-					if(i1 != 2) str2 += "," + js.Boot.__string_rec(o[i1],s); else str2 += js.Boot.__string_rec(o[i1],s);
-				}
-				return str2 + ")";
-			}
-			var l = o.length;
-			var i;
-			var str1 = "[";
-			s += "\t";
-			var _g2 = 0;
-			while(_g2 < l) {
-				var i2 = _g2++;
-				str1 += (i2 > 0?",":"") + js.Boot.__string_rec(o[i2],s);
-			}
-			str1 += "]";
-			return str1;
-		}
-		var tostr;
-		try {
-			tostr = o.toString;
-		} catch( e ) {
-			return "???";
-		}
-		if(tostr != null && tostr != Object.toString && typeof(tostr) == "function") {
-			var s2 = o.toString();
-			if(s2 != "[object Object]") return s2;
-		}
-		var k = null;
-		var str = "{\n";
-		s += "\t";
-		var hasp = o.hasOwnProperty != null;
-		for( var k in o ) {
-		if(hasp && !o.hasOwnProperty(k)) {
-			continue;
-		}
-		if(k == "prototype" || k == "__class__" || k == "__super__" || k == "__interfaces__" || k == "__properties__") {
-			continue;
-		}
-		if(str.length != 2) str += ", \n";
-		str += s + k + " : " + js.Boot.__string_rec(o[k],s);
-		}
-		s = s.substring(1);
-		str += "\n" + s + "}";
-		return str;
-	case "function":
-		return "<function>";
-	case "string":
-		return o;
-	default:
-		return String(o);
-	}
-};
-js.Boot.__interfLoop = function(cc,cl) {
-	if(cc == null) return false;
-	if(cc == cl) return true;
-	var intf = cc.__interfaces__;
-	if(intf != null) {
-		var _g1 = 0;
-		var _g = intf.length;
-		while(_g1 < _g) {
-			var i = _g1++;
-			var i1 = intf[i];
-			if(i1 == cl || js.Boot.__interfLoop(i1,cl)) return true;
-		}
-	}
-	return js.Boot.__interfLoop(cc.__super__,cl);
-};
-js.Boot.__instanceof = function(o,cl) {
-	if(cl == null) return false;
-	switch(cl) {
-	case Int:
-		return (o|0) === o;
-	case Float:
-		return typeof(o) == "number";
-	case Bool:
-		return typeof(o) == "boolean";
-	case String:
-		return typeof(o) == "string";
-	case Array:
-		return (o instanceof Array) && o.__enum__ == null;
-	case Dynamic:
-		return true;
-	default:
-		if(o != null) {
-			if(typeof(cl) == "function") {
-				if(o instanceof cl) return true;
-				if(js.Boot.__interfLoop(js.Boot.getClass(o),cl)) return true;
-			} else if(typeof(cl) == "object" && js.Boot.__isNativeObj(cl)) {
-				if(o instanceof cl) return true;
-			}
-		} else return false;
-		if(cl == Class && o.__name__ != null) return true;
-		if(cl == Enum && o.__ename__ != null) return true;
-		return o.__enum__ == cl;
-	}
-};
-js.Boot.__nativeClassName = function(o) {
-	var name = js.Boot.__toStr.call(o).slice(8,-1);
-	if(name == "Object" || name == "Function" || name == "Math" || name == "JSON") return null;
-	return name;
-};
-js.Boot.__isNativeObj = function(o) {
-	return js.Boot.__nativeClassName(o) != null;
-};
-js.Boot.__resolveNativeClass = function(name) {
-	if(typeof window != "undefined") return window[name]; else return global[name];
-};
 minicanvas.Interaction = function(mini) {
 	this.mini = mini;
 };
@@ -2163,6 +2395,71 @@ minicanvas.CanvasInteraction.prototype = $extend(minicanvas.Interaction.prototyp
 		return this.mini;
 	}
 	,__class__: minicanvas.CanvasInteraction
+});
+minicanvas.NodeCanvas = function(width,height,scaleMode) {
+	this.hasFrames = false;
+	this.isNode = true;
+	this.isBrowser = false;
+	if(null == scaleMode) scaleMode = minicanvas.NodeCanvas.defaultScaleMode;
+	minicanvas.MiniCanvas.call(this,width,height,scaleMode);
+};
+minicanvas.NodeCanvas.__name__ = ["minicanvas","NodeCanvas"];
+minicanvas.NodeCanvas.create = function(width,height,scaleMode) {
+	return new minicanvas.MiniCanvas(width,height,scaleMode);
+};
+minicanvas.NodeCanvas.__super__ = minicanvas.MiniCanvas;
+minicanvas.NodeCanvas.prototype = $extend(minicanvas.MiniCanvas.prototype,{
+	save: function(name) {
+		var encoder = this.ensureEncoder();
+		encoder.addFrame(this.ctx);
+		encoder.save(name,function(file) {
+			console.log("saved " + file);
+		});
+	}
+	,hasFrames: null
+	,storeFrame: function(times) {
+		if(times == null) times = 1;
+		this.hasFrames = true;
+		if(times <= 0) times = 1;
+		var _g = 0;
+		while(_g < times) {
+			var i = _g++;
+			this.ensureEncoder().addFrame(this.ctx);
+		}
+		return this;
+	}
+	,init: function() {
+		var Canvas = require("canvas");
+		{
+			var _g = this.scaleMode;
+			switch(_g[1]) {
+			case 2:
+				var v = _g[2];
+				this.canvas = new Canvas(this.width * v,this.height * v);
+				this.ctx = this.canvas.getContext("2d");
+				this.ctx.scale(v,v);
+				break;
+			default:
+				this.canvas = new Canvas(this.width,this.height);
+				this.ctx = this.canvas.getContext("2d");
+			}
+		}
+	}
+	,getDevicePixelRatio: function() {
+		return 1.0;
+	}
+	,getBackingStoreRatio: function() {
+		return 1.0;
+	}
+	,nativeDisplay: function(name) {
+		this.save(name);
+	}
+	,encoder: null
+	,ensureEncoder: function() {
+		if(null != this.encoder) return this.encoder;
+		if(this.hasFrames) return this.encoder = new minicanvas.node.GifEncoder(this.width,this.height); else return this.encoder = new minicanvas.node.PNGEncoder(this.canvas);
+	}
+	,__class__: minicanvas.NodeCanvas
 });
 minicanvas.node = {};
 minicanvas.node.IEncoder = function() { };
@@ -3750,6 +4047,7 @@ sui.controls.UrlControl.prototype = $extend(sui.controls.BaseTextControl.prototy
 sui.macro = {};
 sui.macro.Embed = function() { };
 sui.macro.Embed.__name__ = ["sui","macro","Embed"];
+var thx = {};
 thx.color = {};
 thx.color._CIELCh = {};
 thx.color._CIELCh.CIELCh_Impl_ = {};
@@ -7140,7 +7438,7 @@ thx.core.Timer.frame = function(callback) {
 	};
 	requestAnimationFrame(f);
 	return function() {
-		cancelled = false;
+		cancelled = true;
 	};
 };
 thx.core.Timer.nextFrame = function(callback) {
@@ -7401,6 +7699,35 @@ thx.core.error.NullArgument.__super__ = thx.core.Error;
 thx.core.error.NullArgument.prototype = $extend(thx.core.Error.prototype,{
 	__class__: thx.core.error.NullArgument
 });
+thx.math = {};
+thx.math.random = {};
+thx.math.random.NativeRandom = function() {
+};
+thx.math.random.NativeRandom.__name__ = ["thx","math","random","NativeRandom"];
+thx.math.random.NativeRandom.prototype = {
+	'int': function() {
+		return Std.random(2147483647);
+	}
+	,'float': function() {
+		return Math.random();
+	}
+	,__class__: thx.math.random.NativeRandom
+};
+thx.math.random.PseudoRandom = function(seed) {
+	if(seed == null) seed = 1;
+	this.seed = seed;
+};
+thx.math.random.PseudoRandom.__name__ = ["thx","math","random","PseudoRandom"];
+thx.math.random.PseudoRandom.prototype = {
+	seed: null
+	,'int': function() {
+		return (this.seed = this.seed * 48271.0 % 2147483647.0 | 0) & 1073741823;
+	}
+	,'float': function() {
+		return this["int"]() / 1073741823.0;
+	}
+	,__class__: thx.math.random.PseudoRandom
+};
 thx.math.random._Random = {};
 thx.math.random._Random.Random_Impl_ = {};
 thx.math.random._Random.Random_Impl_.__name__ = ["thx","math","random","_Random","Random_Impl_"];
@@ -9560,27 +9887,19 @@ if(typeof(scope.performance.now) == "undefined") {
 	};
 	scope.performance.now = now;
 }
+dots.Html.pattern = new EReg("[<]([^> ]+)","");
+dots.Query.doc = document;
+fly.Game.ONE_DEGREE = Math.PI / 180;
+fly.systems.MazeCollision.E = 0.00001;
+haxe.ds.ObjectMap.count = 0;
+js.Boot.__toStr = {}.toString;
 minicanvas.MiniCanvas.displayGenerationTime = false;
-minicanvas.NodeCanvas.defaultScaleMode = minicanvas.ScaleMode.NoScale;
-minicanvas.NodeCanvas.imagePath = "images";
 minicanvas.BrowserCanvas._backingStoreRatio = 0;
 minicanvas.BrowserCanvas.attachKeyEventsToCanvas = false;
 minicanvas.BrowserCanvas.defaultScaleMode = minicanvas.ScaleMode.Auto;
 minicanvas.BrowserCanvas.parentNode = typeof document != 'undefined' && document.body;
-Main.width = 640;
-Main.height = 480;
-Main.cols = 16;
-Main.rows = 12;
-Main.startColumn = 8;
-Main.startRow = 8;
-Main.cellSize = 40;
-Main.maze = new amaze.Maze(Main.cols,Main.rows,new thx.math.random.PseudoRandom(Std["int"](Math.random() * 10000)));
-Main.mini = minicanvas.MiniCanvas.create(Main.width,Main.height).display("flymaze");
-Main.delta = 50;
-dots.Html.pattern = new EReg("[<]([^> ]+)","");
-dots.Query.doc = document;
-haxe.ds.ObjectMap.count = 0;
-js.Boot.__toStr = {}.toString;
+minicanvas.NodeCanvas.defaultScaleMode = minicanvas.ScaleMode.NoScale;
+minicanvas.NodeCanvas.imagePath = "images";
 sui.controls.ColorControl.PATTERN = new EReg("^[#][0-9a-f]{6}$","i");
 sui.controls.DataList.nid = 0;
 thx.color._Grey.Grey_Impl_.black = 0;

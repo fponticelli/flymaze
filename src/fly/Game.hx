@@ -40,15 +40,19 @@ class Game {
       direction,
       velocity,
       new Trail(40, p),
-      maze
+      maze,
+      new PreviousPosition(p.x, p.y)
     ]);
 
     //Timer.repeat(function() direction.angle += Math.PI / 180, 10);
 
     world.addEntity(snake);
 
-    world.addSystem(new UpdatePosition(), Cycle.update);
-    world.addSystem(new UpdateTrail(), Cycle.update);
+    world.addSystem(new UpdatePosition(), Cycle.preUpdate);
+    world.addSystem(new MazeCollision(config.cellSize), Cycle.update);
+    world.addSystem(new UpdatePreviousPosition(), Cycle.postUpdate);
+    world.addSystem(new UpdateTrail(), Cycle.postUpdate);
+
     world.addSystem(new RenderSnake(mini), Cycle.render);
     world.addSystem(new RenderMaze(mini.ctx, config.cellSize), Cycle.postRender);
 
@@ -70,21 +74,23 @@ class Game {
   }
 
   public function run() {
-    cancel = Timer.frame(function(t) {
-      world.preFrame();
-      t += remainder;
-      while(t > delta) {
-        t -= delta;
-        world.preUpdate();
-        world.update();
-        world.postUpdate();
-      }
-      remainder = t;
-      world.preRender();
-      world.render();
-      world.postRender();
-      world.postFrame();
-    });
+    cancel = Timer.frame(frame);
+  }
+
+  function frame(t : Float) {
+    world.preFrame();
+    t += remainder;
+    while(t > delta) {
+      t -= delta;
+      world.preUpdate();
+      world.update();
+      world.postUpdate();
+    }
+    remainder = t;
+    world.preRender();
+    world.render();
+    world.postRender();
+    world.postFrame();
   }
 
   public function stop() {
