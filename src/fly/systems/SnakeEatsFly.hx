@@ -13,7 +13,7 @@ class SnakeEatsFly implements ISystem {
     this.sqdistance = distance * distance;
   }
 
-  public function update(position : Position, snake : Snake) {
+  public function update(position : Position, snake : Snake, score : Score) {
     //trace(entities.length);
     var dx, dy;
     for(o in entities) {
@@ -22,12 +22,13 @@ class SnakeEatsFly implements ISystem {
       if(dx * dx + dy * dy <= sqdistance) {
         world.removeEntity(o.entity);
         snake.jumping.push(0);
+        score.value++;
       }
     }
   }
 
   public function getUpdateRequirements() : Array<Class<Dynamic>>
-    return [Position, Snake];
+    return [Position, Snake, Score];
 
   public function getEntitiesRequirements() : Array<{ name : String , cls : Class<Dynamic> }>
     return [

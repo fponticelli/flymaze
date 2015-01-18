@@ -858,8 +858,8 @@ fly.Config = function() {
 	this.cols = 10;
 	this.cellSize = this.width / this.cols | 0;
 	this.rows = this.height / this.cellSize | 0;
-	this.startCol = this.cols / 2 | 0;
-	this.startRow = this.rows / 4 * 3 | 0;
+	this.startCol = 0;
+	this.startRow = this.rows - 1;
 	this.backgroundColor = 12245640;
 	this.flyCircleRadius = 60;
 	this.gen = new thx.math.random.PseudoRandom(5);
@@ -892,7 +892,7 @@ fly.Game = function(mini,config) {
 	true;
 	this.world = new edge.World();
 	var snake = new fly.components.Snake(60,p);
-	var snakeEntity = new edge.Entity([p,direction,velocity,snake,this.maze,new fly.components.PreviousPosition(p.x,p.y)]);
+	var snakeEntity = new edge.Entity([p,direction,velocity,snake,this.maze,new fly.components.PreviousPosition(p.x,p.y),new fly.components.Score()]);
 	this.world.addEntity(snakeEntity);
 	var _g = 0;
 	while(_g < 200) {
@@ -909,6 +909,7 @@ fly.Game = function(mini,config) {
 	this.world.addSystem(new fly.systems.RenderSnake(mini),"render");
 	this.world.addSystem(new fly.systems.RenderMaze(mini.ctx,config.cellSize),"postRender");
 	this.world.addSystem(new fly.systems.RenderFly(mini),"postRender");
+	this.world.addSystem(new fly.systems.RenderScore(mini),"postRender");
 	this.world.addSystem(new fly.systems.RenderBackground(mini,config.backgroundColor),"preRender");
 	this.world.addSystem(new fly.systems.KeyboardInput(function(e) {
 		var _g1 = 0;
@@ -930,7 +931,7 @@ fly.Game = function(mini,config) {
 				velocity.value = Math.max(velocity.value - 0.01,0);
 				break;
 			default:
-				haxe.Log.trace("key: " + key,{ fileName : "Game.hx", lineNumber : 83, className : "fly.Game", methodName : "new"});
+				haxe.Log.trace("key: " + key,{ fileName : "Game.hx", lineNumber : 85, className : "fly.Game", methodName : "new"});
 			}
 		}
 	}),"preFrame");
@@ -1044,6 +1045,17 @@ fly.components.PreviousPosition.prototype = {
 		return "PreviousPosition(" + this.x + ", " + this.y + ")";
 	}
 	,__class__: fly.components.PreviousPosition
+};
+fly.components.Score = function() {
+	this.value = 0;
+};
+fly.components.Score.__name__ = ["fly","components","Score"];
+fly.components.Score.prototype = {
+	value: null
+	,toString: function() {
+		return "Score(" + this.value + ")";
+	}
+	,__class__: fly.components.Score
 };
 fly.components.Snake = function(length,start,trailWidth,headWidth) {
 	if(headWidth == null) headWidth = 4;
@@ -1300,6 +1312,29 @@ fly.systems.RenderMaze.prototype = {
 	}
 	,__class__: fly.systems.RenderMaze
 };
+fly.systems.RenderScore = function(mini) {
+	this.mini = mini;
+};
+fly.systems.RenderScore.__name__ = ["fly","systems","RenderScore"];
+fly.systems.RenderScore.__interfaces__ = [edge.ISystem];
+fly.systems.RenderScore.prototype = {
+	mini: null
+	,update: function(score) {
+		this.mini.ctx.font = "12px menlo";
+		this.mini.ctx.fillStyle = "#000000";
+		this.mini.ctx.fillText("" + score.value,10,20);
+	}
+	,getUpdateRequirements: function() {
+		return [fly.components.Score];
+	}
+	,getEntitiesRequirements: function() {
+		return null;
+	}
+	,toString: function() {
+		return "RenderScore";
+	}
+	,__class__: fly.systems.RenderScore
+};
 fly.systems.RenderSnake = function(mini) {
 	this.mini = mini;
 };
@@ -1351,7 +1386,7 @@ fly.systems.SnakeEatsFly.prototype = {
 	world: null
 	,sqdistance: null
 	,entities: null
-	,update: function(position,snake) {
+	,update: function(position,snake,score) {
 		var dx;
 		var dy;
 		var _g = 0;
@@ -1364,11 +1399,12 @@ fly.systems.SnakeEatsFly.prototype = {
 			if(dx * dx + dy * dy <= this.sqdistance) {
 				this.world.removeEntity(o.entity);
 				snake.jumping.push(0);
+				score.value++;
 			}
 		}
 	}
 	,getUpdateRequirements: function() {
-		return [fly.components.Position,fly.components.Snake];
+		return [fly.components.Position,fly.components.Snake,fly.components.Score];
 	}
 	,getEntitiesRequirements: function() {
 		return [{ name : "position", cls : fly.components.Position},{ name : "fly", cls : fly.components.Fly}];

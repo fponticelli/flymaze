@@ -23,8 +23,8 @@ class Config {
     cols = 10;
     cellSize = Std.int(width / cols);
     rows = Std.int(height / cellSize);
-    startCol = Std.int(cols / 2);
-    startRow = Std.int(rows / 4 * 3);
+    startCol = 0; //Std.int(cols / 2);
+    startRow = rows - 1; // Std.int(rows / 4 * 3);
     backgroundColor = 0xBADA88;
     flyCircleRadius = 60;
     gen = new PseudoRandom(5);

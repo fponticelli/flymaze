@@ -41,7 +41,8 @@ class Game {
           velocity,
           snake,
           maze,
-          new PreviousPosition(p.x, p.y)
+          new PreviousPosition(p.x, p.y),
+          new Score()
         ]);
 
     //Timer.repeat(function() direction.angle += Math.PI / 180, 10);
@@ -65,6 +66,7 @@ class Game {
     world.addSystem(new RenderSnake(mini), Cycle.render);
     world.addSystem(new RenderMaze(mini.ctx, config.cellSize), Cycle.postRender);
     world.addSystem(new RenderFly(mini), Cycle.postRender);
+    world.addSystem(new RenderScore(mini), Cycle.postRender);
 
     // general systems
     world.addSystem(new RenderBackground(mini, config.backgroundColor), Cycle.preRender);
