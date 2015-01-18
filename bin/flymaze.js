@@ -889,7 +889,7 @@ fly.Game = function(mini,config) {
 	this.maze.cells[config.startRow - 1][config.startCol] = this.maze.cells[config.startRow - 1][config.startCol] | 4;
 	true;
 	this.world = new edge.World();
-	var snake = new fly.components.Snake(80,p);
+	var snake = new fly.components.Snake(60,p);
 	var snakeEntity = new edge.Entity([p,direction,velocity,snake,this.maze,new fly.components.PreviousPosition(p.x,p.y)]);
 	this.world.addEntity(snakeEntity);
 	var _g = 0;
@@ -1384,9 +1384,10 @@ fly.systems.UpdateFly.__interfaces__ = [edge.ISystem];
 fly.systems.UpdateFly.prototype = {
 	width: null
 	,height: null
-	,update: function(position,_) {
+	,update: function(position,fly1) {
 		position.x = Math.min(Math.max(0,position.x + 2 - Math.random() * 4),this.width);
 		position.y = Math.min(Math.max(0,position.y + 2 - Math.random() * 4),this.height);
+		fly1.height = Math.min(Math.max(0,fly1.height + Math.random() - 0.5),6);
 	}
 	,getUpdateRequirements: function() {
 		return [fly.components.Position,fly.components.Fly];

@@ -34,7 +34,7 @@ class Game {
     maze.cells[config.startRow-1][config.startCol].bottom = true;
 
     world = new World();
-    var snake = new Snake(80, p),
+    var snake = new Snake(60, p),
         snakeEntity = new Entity([
           p,
           direction,
