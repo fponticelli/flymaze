@@ -16,5 +16,8 @@ class RenderPosition implements ISystem {
   public function getUpdateRequirements() : Array<Class<Dynamic>>
     return [Position];
 
+  public function getEntitiesRequirements() : Array<{ name : String , cls : Class<Dynamic> }>
+    return null;
+
   public function toString() return "RenderPosition";
 }
