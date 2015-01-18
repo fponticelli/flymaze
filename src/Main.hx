@@ -1,5 +1,6 @@
 import amaze.Cell;
 import amaze.Maze;
+import fly.Config;
 import js.html.CanvasRenderingContext2D;
 using thx.core.Floats;
 import thx.core.Timer;
@@ -12,8 +13,8 @@ class Main {
   static var startColumn = 8;
   static var startRow = 8;
   static var cellSize = 40;
-  static var maze = new Maze(cols, rows, new PseudoRandom(Std.int(Math.random() * 10000)));
-  static var mini = MiniCanvas.create(width, height).display("flymaze");
+//  static var maze = new Maze(cols, rows, new PseudoRandom(Std.int(Math.random() * 10000)));
+//  static var mini = MiniCanvas.create(width, height).display("flymaze");
   static var fly : Fly;
   static var delta = 50;
 
@@ -72,7 +73,7 @@ class Main {
     //sui.bind(function() maze.generate.bind(rows - 1, Math.floor(cols / 2)));
 */
   }
-
+/*
   static function update() {
     fly.update();
   }
@@ -107,17 +108,17 @@ class Main {
       mini.ctx.lineTo(fly.trail[i].x, fly.trail[i].y);
       mini.ctx.stroke();
     }
-/*
-    mini.ctx.beginPath();
-    mini.ctx.strokeStyle = counter % 2 != 0 ? colora : colorb;
-    mini.ctx.lineWidth = (w * scale * counter++).max(1);
-    var l = p - 1;
-    if(p < 0)
-      l = fly.trail.length - 1;
-    mini.ctx.moveTo(fly.trail[l].x, fly.trail[l].y);
-    mini.ctx.lineTo(fly.x, fly.y);
-    mini.ctx.stroke();
-*/
+
+//    mini.ctx.beginPath();
+//    mini.ctx.strokeStyle = counter % 2 != 0 ? colora : colorb;
+//    mini.ctx.lineWidth = (w * scale * counter++).max(1);
+//    var l = p - 1;
+//    if(p < 0)
+//      l = fly.trail.length - 1;
+//    mini.ctx.moveTo(fly.trail[l].x, fly.trail[l].y);
+//    mini.ctx.lineTo(fly.x, fly.y);
+//    mini.ctx.stroke();
+
     mini.dot(fly.x, fly.y, radius, 0x00000088);
   }
 
@@ -134,12 +135,12 @@ class Main {
         var cells = maze.cells[row];
         for(col in 0...cells.length) {
           var cell = cells[col];
-/*
-          mini.ctx.shadowColor = "rgba(0,0,0,0.4)";
-          mini.ctx.shadowOffsetX = 6;
-          mini.ctx.shadowOffsetY = 6;
-          mini.ctx.shadowBlur = 4;
-*/
+
+//          mini.ctx.shadowColor = "rgba(0,0,0,0.4)";
+//          mini.ctx.shadowOffsetX = 6;
+//          mini.ctx.shadowOffsetY = 6;
+//          mini.ctx.shadowBlur = 4;
+
           mini.ctx.lineCap = "square";
           mini.ctx.strokeStyle = "#CCCCCC";
           mini.ctx.beginPath();
@@ -162,4 +163,5 @@ class Main {
       ctx.lineTo(0.5 + (col + 1) * size, 0.5 + (1 + row) * size);
     }
   }
+*/
 }

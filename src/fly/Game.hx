@@ -1,6 +1,7 @@
 package fly;
 
 import fly.systems.*;
+import amaze.Maze;
 import minicanvas.MiniCanvas;
 import thx.core.Functions;
 import thx.core.Timer;
@@ -17,20 +18,23 @@ class Game {
   var delta = 20.0;
   var cancel : Void -> Void;
   var config : Config;
+  var maze : Maze;
 
   static var ONE_DEGREE = Math.PI / 180;
 
   public function new(mini : MiniCanvas, config : Config) {
-    world = new World();
-
-    snake = new Entity();
     var p = new Position(config.width / 2, config.height / 2),
         direction = new Direction(-Math.PI / 2);
-    snake.addComponents([
+
+    maze = new Maze(config.cols, config.rows, config.gen);
+    maze.generate(0, 0);
+    world = new World();
+    snake = new Entity([
       p,
       direction,
-      new Velocity(3),
-      new Trail(30, p)
+      new Velocity(2),
+      new Trail(40, p),
+      maze
     ]);
 
     //Timer.repeat(function() direction.angle += Math.PI / 180, 10);
@@ -40,6 +44,7 @@ class Game {
     world.addSystem(new UpdatePosition(), Cycle.update);
     world.addSystem(new UpdateTrail(), Cycle.update);
     world.addSystem(new RenderSnake(mini), Cycle.render);
+    world.addSystem(new RenderMaze(mini.ctx, config.cellSize), Cycle.postRender);
 
     // general systems
     world.addSystem(new RenderBackground(mini, config.backgroundColor), Cycle.preRender);
