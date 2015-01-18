@@ -51,15 +51,16 @@ class Game {
 //    for(i in 0...2)
 //      createSnake(world, maze, config.width, config.height);
 
-    for(i in 0...100)
+    for(i in 0...300)
       createFly(world, config.width, config.height);
 
     world.addSystem(new UpdatePosition(), Cycle.preUpdate);
     world.addSystem(new UpdateFly(), Cycle.update);
     world.addSystem(new MazeCollision(config.cellSize), Cycle.update);
     world.addSystem(new UpdatePreviousPosition(), Cycle.postUpdate);
-    world.addSystem(new UpdateSnake(), Cycle.postUpdate);
+    world.addSystem(new UpdateSnake(world), Cycle.postUpdate);
 
+    world.addSystem(new RenderDroplet(mini), Cycle.preRender);
     world.addSystem(new RenderSnake(mini), Cycle.render);
     world.addSystem(new RenderMaze(mini.ctx, config.cellSize), Cycle.postRender);
     world.addSystem(new RenderFly(mini), Cycle.postRender);

@@ -844,10 +844,11 @@ fly.Game = function(mini,config) {
 	this.maze.cells[config.startRow - 1][config.startCol] = this.maze.cells[config.startRow - 1][config.startCol] | 4;
 	true;
 	this.world = new edge.World();
-	this.snake = new edge.Entity([p,direction,velocity,new fly.components.Snake(40,p),this.maze,new fly.components.PreviousPosition(p.x,p.y)]);
-	this.world.addEntity(this.snake);
+	var snake = new fly.components.Snake(80,p);
+	var snakeEntity = new edge.Entity([p,direction,velocity,snake,this.maze,new fly.components.PreviousPosition(p.x,p.y)]);
+	this.world.addEntity(snakeEntity);
 	var _g = 0;
-	while(_g < 100) {
+	while(_g < 300) {
 		var i = _g++;
 		this.createFly(this.world,config.width,config.height);
 	}
@@ -855,15 +856,17 @@ fly.Game = function(mini,config) {
 	this.world.addSystem(new fly.systems.UpdateFly(),"update");
 	this.world.addSystem(new fly.systems.MazeCollision(config.cellSize),"update");
 	this.world.addSystem(new fly.systems.UpdatePreviousPosition(),"postUpdate");
-	this.world.addSystem(new fly.systems.UpdateSnake(),"postUpdate");
+	this.world.addSystem(new fly.systems.UpdateSnake(this.world),"postUpdate");
+	this.world.addSystem(new fly.systems.RenderDroplet(mini),"preRender");
 	this.world.addSystem(new fly.systems.RenderSnake(mini),"render");
 	this.world.addSystem(new fly.systems.RenderMaze(mini.ctx,config.cellSize),"postRender");
 	this.world.addSystem(new fly.systems.RenderFly(mini),"postRender");
 	this.world.addSystem(new fly.systems.RenderBackground(mini,config.backgroundColor),"preRender");
-	this.world.addSystem(new fly.systems.KeyboardInput(function(keys) {
+	this.world.addSystem(new fly.systems.KeyboardInput(function(e) {
 		var _g1 = 0;
-		while(_g1 < keys.length) {
-			var key = keys[_g1];
+		var _g11 = e.keys;
+		while(_g1 < _g11.length) {
+			var key = _g11[_g1];
 			++_g1;
 			switch(key) {
 			case 37:case 65:
@@ -878,16 +881,19 @@ fly.Game = function(mini,config) {
 			case 40:case 83:
 				velocity.value = Math.max(velocity.value - 0.01,0);
 				break;
+			case 32:
+				e.remove(key);
+				snake.jumping.push(0);
+				break;
 			default:
-				haxe.Log.trace("key: " + key,{ fileName : "Game.hx", lineNumber : 78, className : "fly.Game", methodName : "new"});
+				haxe.Log.trace("key: " + key,{ fileName : "Game.hx", lineNumber : 82, className : "fly.Game", methodName : "new"});
 			}
 		}
 	}),"preFrame");
 };
 fly.Game.__name__ = ["fly","Game"];
 fly.Game.prototype = {
-	snake: null
-	,world: null
+	world: null
 	,remainder: null
 	,delta: null
 	,cancel: null
@@ -944,11 +950,26 @@ fly.components.Direction.prototype = {
 	}
 	,__class__: fly.components.Direction
 };
+fly.components.Droplet = function() {
+	this.radius = Math.random() * 0.5 + 1.2;
+	this.color = thx.color._HSL.HSL_Impl_.toRGB(thx.color._HSL.HSL_Impl_.create(20 + 30 * Math.random(),Math.random() * 0.4 + 0.6,0.3));
+};
+fly.components.Droplet.__name__ = ["fly","components","Droplet"];
+fly.components.Droplet.prototype = {
+	radius: null
+	,color: null
+	,toString: function() {
+		return "Droplet";
+	}
+	,__class__: fly.components.Droplet
+};
 fly.components.Fly = function() {
+	this.height = Math.random() * 5;
 };
 fly.components.Fly.__name__ = ["fly","components","Fly"];
 fly.components.Fly.prototype = {
-	toString: function() {
+	height: null
+	,toString: function() {
 		return "Fly";
 	}
 	,__class__: fly.components.Fly
@@ -993,6 +1014,7 @@ fly.components.Snake = function(length,start,trailWidth,headWidth) {
 	this.trailWidth = trailWidth;
 	this.headWidth = headWidth;
 	this.colors = ["#ffffff","#dddddd","#bbbbbb","#000000","#000000"];
+	this.jumping = [];
 };
 fly.components.Snake.__name__ = ["fly","components","Snake"];
 fly.components.Snake.prototype = {
@@ -1001,6 +1023,7 @@ fly.components.Snake.prototype = {
 	,trailWidth: null
 	,headWidth: null
 	,colors: null
+	,jumping: null
 	,map: function(callback) {
 		var _g1 = this.pos + 1;
 		var _g = this.trail.length;
@@ -1032,6 +1055,7 @@ fly.systems.KeyboardInput = function(callback) {
 	var _g = this;
 	this.callback = callback;
 	this.keys = thx.core._Set.Set_Impl_.create([]);
+	this.event = new fly.systems.KeyboardEvent(this);
 	window.addEventListener("keydown",function(e) {
 		thx.core._Set.Set_Impl_.add(_g.keys,e.keyCode);
 	});
@@ -1044,8 +1068,12 @@ fly.systems.KeyboardInput.__interfaces__ = [edge.ISystem];
 fly.systems.KeyboardInput.prototype = {
 	callback: null
 	,keys: null
+	,event: null
 	,update: function() {
-		if(this.keys.length > 0) this.callback(thx.core._Set.Set_Impl_.setToArray(this.keys));
+		if(this.keys.length > 0) {
+			this.event.keys = thx.core._Set.Set_Impl_.setToArray(this.keys);
+			this.callback(this.event);
+		}
 	}
 	,getRequirements: function() {
 		return [];
@@ -1054,6 +1082,18 @@ fly.systems.KeyboardInput.prototype = {
 		return "KeyboardInput";
 	}
 	,__class__: fly.systems.KeyboardInput
+};
+fly.systems.KeyboardEvent = function(input) {
+	this.input = input;
+};
+fly.systems.KeyboardEvent.__name__ = ["fly","systems","KeyboardEvent"];
+fly.systems.KeyboardEvent.prototype = {
+	keys: null
+	,input: null
+	,remove: function(code) {
+		HxOverrides.remove(this.input.keys,code);
+	}
+	,__class__: fly.systems.KeyboardEvent
 };
 fly.systems.MazeCollision = function(cellSize) {
 	this.cellSize = cellSize;
@@ -1109,6 +1149,25 @@ fly.systems.RenderBackground.prototype = {
 	}
 	,__class__: fly.systems.RenderBackground
 };
+fly.systems.RenderDroplet = function(mini) {
+	this.mini = mini;
+};
+fly.systems.RenderDroplet.__name__ = ["fly","systems","RenderDroplet"];
+fly.systems.RenderDroplet.__interfaces__ = [edge.ISystem];
+fly.systems.RenderDroplet.prototype = {
+	mini: null
+	,update: function(position,droplet) {
+		this.mini.dot(position.x + 1,position.y + 1,droplet.radius + 0.5,thx.color._RGB.RGB_Impl_.toRGBA(thx.color._RGB.RGB_Impl_.darker(droplet.color,0.5)));
+		this.mini.dot(position.x,position.y,droplet.radius,thx.color._RGB.RGB_Impl_.toRGBA(droplet.color));
+	}
+	,getRequirements: function() {
+		return [fly.components.Position,fly.components.Droplet];
+	}
+	,toString: function() {
+		return "RenderDroplet";
+	}
+	,__class__: fly.systems.RenderDroplet
+};
 fly.systems.RenderFly = function(mini) {
 	this.mini = mini;
 };
@@ -1116,8 +1175,9 @@ fly.systems.RenderFly.__name__ = ["fly","systems","RenderFly"];
 fly.systems.RenderFly.__interfaces__ = [edge.ISystem];
 fly.systems.RenderFly.prototype = {
 	mini: null
-	,update: function(position,_) {
+	,update: function(position,f) {
 		var p = Math.random() * 6 - 3;
+		this.mini.dot(position.x + f.height,position.y + f.height * 2,2.5,68);
 		this.mini.dot(position.x - 4.5 - p / 3,position.y + p,2,-855642386);
 		this.mini.dot(position.x + 4.5 + p / 3,position.y + p,2,-855642386);
 		this.mini.dot(position.x,position.y,1.5,255);
@@ -1187,12 +1247,24 @@ fly.systems.RenderSnake.prototype = {
 	,update: function(position,snake) {
 		var _g = this;
 		var pos = 0;
+		var len = snake.trail.length;
 		snake.map(function(a,b) {
-			var s = thx.core.Floats.interpolate(pos / snake.trail.length,snake.trailWidth,snake.headWidth);
-			_g.mini.line(a.x,a.y,b.x,b.y,s,thx.color._RGBA.RGBA_Impl_.fromString(snake.colors[pos % snake.colors.length]));
+			var s = thx.core.Floats.interpolate(pos / len,snake.trailWidth,snake.headWidth);
+			_g.mini.ctx.lineCap = "round";
+			_g.mini.line(a.x,a.y,b.x,b.y,s * _g.sizeMult(len - pos,snake.jumping),thx.color._RGBA.RGBA_Impl_.fromString(snake.colors[pos % snake.colors.length]));
 			pos++;
 		});
-		this.mini.dot(position.x,position.y,snake.headWidth,thx.color._RGBA.RGBA_Impl_.fromString(snake.colors[pos % snake.colors.length]));
+		this.mini.dot(position.x,position.y,snake.headWidth * this.sizeMult(0,snake.jumping) / 1.5,thx.color._RGBA.RGBA_Impl_.fromString(snake.colors[pos % snake.colors.length]));
+	}
+	,sizeMult: function(p,jumpings) {
+		var m = 1.0;
+		var _g = 0;
+		while(_g < jumpings.length) {
+			var j = jumpings[_g];
+			++_g;
+			if(j == p) m = Math.max(m,4); else if(j + 1 == p || j - 1 == p) m = Math.max(m,3.75); else if(j + 2 == p || j - 2 == p) m = Math.max(m,3.5); else if(j + 3 == p || j - 3 == p) m = Math.max(m,2.5); else if(j + 4 == p || j - 4 == p) m = Math.max(m,1.5); else if(j + 5 == p || j - 5 == p) m = Math.max(m,1.25);
+		}
+		return m;
 	}
 	,getRequirements: function() {
 		return [fly.components.Position,fly.components.Snake];
@@ -1253,16 +1325,31 @@ fly.systems.UpdatePreviousPosition.prototype = {
 	}
 	,__class__: fly.systems.UpdatePreviousPosition
 };
-fly.systems.UpdateSnake = function() {
+fly.systems.UpdateSnake = function(world) {
+	this.world = world;
 };
 fly.systems.UpdateSnake.__name__ = ["fly","systems","UpdateSnake"];
 fly.systems.UpdateSnake.__interfaces__ = [edge.ISystem];
 fly.systems.UpdateSnake.prototype = {
-	update: function(position,snake) {
+	world: null
+	,update: function(position,snake) {
+		var last = snake.pos + 1;
+		if(last >= snake.trail.length) last = 0;
+		var tx = snake.trail[last].x;
+		var ty = snake.trail[last].y;
 		snake.trail[snake.pos].x = position.x;
 		snake.trail[snake.pos].y = position.y;
 		snake.pos++;
 		if(snake.pos >= snake.trail.length) snake.pos = 0;
+		var i = snake.jumping.length - 1;
+		while(i >= 0) {
+			snake.jumping[i]++;
+			if(snake.jumping[i] == snake.trail.length) {
+				this.world.addEntity(new edge.Entity([new fly.components.Position(tx,ty),new fly.components.Droplet()]));
+				snake.jumping.pop();
+			}
+			i--;
+		}
 	}
 	,getRequirements: function() {
 		return [fly.components.Position,fly.components.Snake];
