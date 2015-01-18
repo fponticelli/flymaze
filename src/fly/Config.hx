@@ -17,9 +17,9 @@ class Config {
   public var cellSize : Float;
 
   public function new() {
-    width  = 640;
-    height = 480;
-    cols = 12;
+    width  = 642;
+    height = 514;
+    cols = 10;
     cellSize = Std.int(width / cols);
     rows = Std.int(height / cellSize);
     startCol = Std.int(cols / 2);
