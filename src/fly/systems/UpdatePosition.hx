@@ -16,4 +16,6 @@ class UpdatePosition implements ISystem {
 
   public function getRequirements() : Array<Class<Dynamic>>
     return [Position, Direction, Velocity];
+
+  public function toString() return "UpdatePosition";
 }

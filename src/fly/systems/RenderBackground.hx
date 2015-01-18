@@ -16,4 +16,6 @@ class RenderBackground implements ISystem {
 
   public function getRequirements() : Array<Class<Dynamic>>
     return [StageBackground];
+
+  public function toString() return "RenderBackground";
 }
