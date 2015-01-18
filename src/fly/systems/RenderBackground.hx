@@ -17,7 +17,7 @@ class RenderBackground implements ISystem {
     mini.fill(color);
   }
 
-  public function getRequirements() : Array<Class<Dynamic>>
+  public function getUpdateRequirements() : Array<Class<Dynamic>>
     return [];
 
   public function toString() return "RenderBackground";

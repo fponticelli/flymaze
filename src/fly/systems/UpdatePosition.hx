@@ -13,7 +13,7 @@ class UpdatePosition implements ISystem {
     position.y += direction.dy * velocity.value;
   }
 
-  public function getRequirements() : Array<Class<Dynamic>>
+  public function getUpdateRequirements() : Array<Class<Dynamic>>
     return [Position, Direction, Velocity];
 
   public function toString() return "UpdatePosition";

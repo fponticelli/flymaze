@@ -666,7 +666,7 @@ edge.Entity.prototype = {
 edge.ISystem = function() { };
 edge.ISystem.__name__ = ["edge","ISystem"];
 edge.ISystem.prototype = {
-	getRequirements: null
+	getUpdateRequirements: null
 	,__class__: edge.ISystem
 };
 edge.World = function() {
@@ -704,7 +704,7 @@ edge.World.prototype = {
 	,addSystem: function(system,cycle) {
 		this.removeSystem(system);
 		this.systemToCycle.set(system,cycle);
-		var requirements = system.getRequirements();
+		var requirements = system.getUpdateRequirements();
 		if(requirements.length > 0) {
 			this.mapCycles.get(cycle).push(system);
 			var value = new haxe.ds.ObjectMap();
@@ -719,7 +719,7 @@ edge.World.prototype = {
 	,removeSystem: function(system) {
 		if(!this.systemToCycle.exists(system)) return;
 		var cycle = this.systemToCycle.get(system);
-		var requirements = system.getRequirements();
+		var requirements = system.getUpdateRequirements();
 		this.systemToCycle.remove(system);
 		if(requirements.length > 0) {
 			var _this = this.mapCycles.get(cycle);
@@ -801,7 +801,7 @@ edge.World.prototype = {
 	,matchSystem: function(entity,system) {
 		var match = this.matches.get(system);
 		match.remove(entity);
-		var components = entity.matchRequirements(system.getRequirements());
+		var components = entity.matchRequirements(system.getUpdateRequirements());
 		if(components.length > 0) match.set(entity,components);
 	}
 	,__class__: edge.World
@@ -1075,7 +1075,7 @@ fly.systems.KeyboardInput.prototype = {
 			this.callback(this.event);
 		}
 	}
-	,getRequirements: function() {
+	,getUpdateRequirements: function() {
 		return [];
 	}
 	,toString: function() {
@@ -1124,7 +1124,7 @@ fly.systems.MazeCollision.prototype = {
 			d.angle = -d.angle;
 		}
 	}
-	,getRequirements: function() {
+	,getUpdateRequirements: function() {
 		return [fly.components.PreviousPosition,fly.components.Position,fly.components.Direction,amaze.Maze];
 	}
 	,__class__: fly.systems.MazeCollision
@@ -1141,7 +1141,7 @@ fly.systems.RenderBackground.prototype = {
 	,update: function() {
 		this.mini.fill(thx.color._RGBA.RGBA_Impl_.fromString(this.color));
 	}
-	,getRequirements: function() {
+	,getUpdateRequirements: function() {
 		return [];
 	}
 	,toString: function() {
@@ -1160,7 +1160,7 @@ fly.systems.RenderDroplet.prototype = {
 		this.mini.dot(position.x + 1,position.y + 1,droplet.radius + 0.5,thx.color._RGB.RGB_Impl_.toRGBA(thx.color._RGB.RGB_Impl_.darker(droplet.color,0.5)));
 		this.mini.dot(position.x,position.y,droplet.radius,thx.color._RGB.RGB_Impl_.toRGBA(droplet.color));
 	}
-	,getRequirements: function() {
+	,getUpdateRequirements: function() {
 		return [fly.components.Position,fly.components.Droplet];
 	}
 	,toString: function() {
@@ -1182,7 +1182,7 @@ fly.systems.RenderFly.prototype = {
 		this.mini.dot(position.x + 4.5 + p / 3,position.y + p,2,-855642386);
 		this.mini.dot(position.x,position.y,1.5,255);
 	}
-	,getRequirements: function() {
+	,getUpdateRequirements: function() {
 		return [fly.components.Position,fly.components.Fly];
 	}
 	,toString: function() {
@@ -1232,7 +1232,7 @@ fly.systems.RenderMaze.prototype = {
 			this.ctx.lineTo(0.5 + (col + 1) * size,0.5 + (1 + row) * size);
 		}
 	}
-	,getRequirements: function() {
+	,getUpdateRequirements: function() {
 		return [amaze.Maze];
 	}
 	,__class__: fly.systems.RenderMaze
@@ -1266,7 +1266,7 @@ fly.systems.RenderSnake.prototype = {
 		}
 		return m;
 	}
-	,getRequirements: function() {
+	,getUpdateRequirements: function() {
 		return [fly.components.Position,fly.components.Snake];
 	}
 	,toString: function() {
@@ -1283,7 +1283,7 @@ fly.systems.UpdateFly.prototype = {
 		position.x += 2 - Math.random() * 4;
 		position.y += 2 - Math.random() * 4;
 	}
-	,getRequirements: function() {
+	,getUpdateRequirements: function() {
 		return [fly.components.Position,fly.components.Fly];
 	}
 	,toString: function() {
@@ -1300,7 +1300,7 @@ fly.systems.UpdatePosition.prototype = {
 		position.x += direction.get_dx() * velocity.value;
 		position.y += direction.get_dy() * velocity.value;
 	}
-	,getRequirements: function() {
+	,getUpdateRequirements: function() {
 		return [fly.components.Position,fly.components.Direction,fly.components.Velocity];
 	}
 	,toString: function() {
@@ -1317,7 +1317,7 @@ fly.systems.UpdatePreviousPosition.prototype = {
 		previous.x = position.x;
 		previous.y = position.y;
 	}
-	,getRequirements: function() {
+	,getUpdateRequirements: function() {
 		return [fly.components.PreviousPosition,fly.components.Position];
 	}
 	,toString: function() {
@@ -1351,7 +1351,7 @@ fly.systems.UpdateSnake.prototype = {
 			i--;
 		}
 	}
-	,getRequirements: function() {
+	,getUpdateRequirements: function() {
 		return [fly.components.Position,fly.components.Snake];
 	}
 	,toString: function() {

@@ -12,7 +12,7 @@ class UpdateFly implements ISystem {
     position.y += 2 - Math.random() * 4;
   }
 
-  public function getRequirements() : Array<Class<Dynamic>>
+  public function getUpdateRequirements() : Array<Class<Dynamic>>
     return [Position, Fly];
 
   public function toString() return "UpdateFly";

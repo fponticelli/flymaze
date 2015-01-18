@@ -35,7 +35,7 @@ class UpdateSnake implements ISystem {
     }
   }
 
-  public function getRequirements() : Array<Class<Dynamic>>
+  public function getUpdateRequirements() : Array<Class<Dynamic>>
     return [Position, Snake];
 
   public function toString() return "UpdateSnake";

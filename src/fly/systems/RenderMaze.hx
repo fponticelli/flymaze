@@ -41,5 +41,5 @@ class RenderMaze implements ISystem {
     }
   }
 
-  public function getRequirements() : Array<Class<Dynamic>> return [Maze];
+  public function getUpdateRequirements() : Array<Class<Dynamic>> return [Maze];
 }

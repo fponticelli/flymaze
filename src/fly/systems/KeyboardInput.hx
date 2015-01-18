@@ -22,7 +22,7 @@ class KeyboardInput implements ISystem {
       callback(event);
     }
 
-  public function getRequirements() : Array<Class<Dynamic>>
+  public function getUpdateRequirements() : Array<Class<Dynamic>>
     return [];
 
   public function toString() return "KeyboardInput";

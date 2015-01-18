@@ -13,7 +13,7 @@ class RenderPosition implements ISystem {
     mini.dot(position.x, position.y, 9, 0x99BBCC66);
   }
 
-  public function getRequirements() : Array<Class<Dynamic>>
+  public function getUpdateRequirements() : Array<Class<Dynamic>>
     return [Position];
 
   public function toString() return "RenderPosition";

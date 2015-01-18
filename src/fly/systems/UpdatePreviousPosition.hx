@@ -11,7 +11,7 @@ class UpdatePreviousPosition implements ISystem {
     previous.y = position.y;
   }
 
-  public function getRequirements() : Array<Class<Dynamic>>
+  public function getUpdateRequirements() : Array<Class<Dynamic>>
     return [PreviousPosition, Position];
 
   public function toString() return "UpdatePreviousPosition";

@@ -26,7 +26,7 @@ class RenderDroplet implements ISystem {
 
   }
 
-  public function getRequirements() : Array<Class<Dynamic>>
+  public function getUpdateRequirements() : Array<Class<Dynamic>>
     return [Position, Droplet];
 
   public function toString() return "RenderDroplet";
