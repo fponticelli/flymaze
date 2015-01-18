@@ -35,13 +35,11 @@ class Game {
 
     world.addEntity(snake);
 
-    world.addEntity(new Entity([new StageBackground(config.backgroundColor)]));
-
     world.addSystem(new UpdatePosition(), Cycle.update);
     world.addSystem(new UpdateTrail(), Cycle.update);
     world.addSystem(new RenderSnake(mini), Cycle.render);
-    world.addSystem(new RenderBackground(mini), Cycle.preRender);
-    world.addSystem(new RenderPosition(mini), Cycle.render);
+    world.addSystem(new RenderBackground(mini, config.backgroundColor), Cycle.preRender);
+    //world.addSystem(new RenderPosition(mini), Cycle.render);
   }
 
   public function run() {

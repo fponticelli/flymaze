@@ -4,18 +4,23 @@ import edge.*;
 
 import fly.components.StageBackground;
 import minicanvas.MiniCanvas;
+import thx.color.RGB;
 
 class RenderBackground implements ISystem {
   var mini : MiniCanvas;
-  public function new(mini : MiniCanvas)
+  var color : String;
+  public function new(mini : MiniCanvas, color : RGB) {
     this.mini = mini;
+    this.color = color.toCSS3();
+  }
 
-  public function update(stage : StageBackground) {
-    mini.fill(stage.color.toCSS3());
+
+  public function update() {
+    mini.fill(color);
   }
 
   public function getRequirements() : Array<Class<Dynamic>>
-    return [StageBackground];
+    return [];
 
   public function toString() return "RenderBackground";
 }
