@@ -12,13 +12,31 @@ class RenderSnake implements ISystem {
     this.mini = mini;
 
   public function update(position : Position, snake : Snake) {
-    var pos = 0;
+    var pos = 0,
+        len = snake.trail.length;
     snake.map(function(a, b) {
-      var s = (pos / snake.trail.length).interpolate(snake.trailWidth, snake.headWidth);
-      mini.line(a.x, a.y, b.x, b.y, s, snake.colors[pos % snake.colors.length]);
+      var s = (pos / len).interpolate(snake.trailWidth, snake.headWidth);
+      mini.ctx.lineCap = "round";
+      mini.line(
+        a.x, a.y, b.x, b.y,
+        s * sizeMult(len - pos, snake.jumping),
+        snake.colors[pos % snake.colors.length]);
       pos++;
     });
-    mini.dot(position.x, position.y, snake.headWidth, snake.colors[pos % snake.colors.length]);
+    mini.dot(position.x, position.y, snake.headWidth * sizeMult(0, snake.jumping) / 1.5, snake.colors[pos % snake.colors.length]);
+  }
+
+  function sizeMult(p, jumpings : Array<Int>) {
+    var m = 1.0;
+    for(j in jumpings) {
+      if(j == p) m = m.max(4);
+      else if(j + 1 == p || j - 1 == p) m = m.max(3.75);
+      else if(j + 2 == p || j - 2 == p) m = m.max(3.5);
+      else if(j + 3 == p || j - 3 == p) m = m.max(2.5);
+      else if(j + 4 == p || j - 4 == p) m = m.max(1.5);
+      else if(j + 5 == p || j - 5 == p) m = m.max(1.25);
+    }
+    return m;
   }
 
   public function getRequirements() : Array<Class<Dynamic>>
