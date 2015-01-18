@@ -5,6 +5,7 @@ import amaze.Maze;
 import minicanvas.MiniCanvas;
 import thx.core.Functions;
 import thx.core.Timer;
+using thx.core.Floats;
 
 import edge.*;
 import edge.World;
@@ -24,7 +25,8 @@ class Game {
 
   public function new(mini : MiniCanvas, config : Config) {
     var p = new Position(config.width / 2, config.height / 2),
-        direction = new Direction(-Math.PI / 2);
+        direction = new Direction(-Math.PI / 2),
+        velocity = new Velocity(2);
 
     maze = new Maze(config.cols, config.rows, config.gen);
     maze.generate(0, 0);
@@ -32,7 +34,7 @@ class Game {
     snake = new Entity([
       p,
       direction,
-      new Velocity(2),
+      velocity,
       new Trail(40, p),
       maze
     ]);
@@ -53,6 +55,10 @@ class Game {
         direction.angle -= ONE_DEGREE * 3;
       case 39, 68: // right
         direction.angle += ONE_DEGREE * 3;
+      case 38, 87: // accellerate
+        velocity.value = (velocity.value + 0.01).min(4);
+      case 40, 83: // decellerate
+        velocity.value = (velocity.value - 0.01).max(0);
       case _: trace('key: $key');
     }), Cycle.preFrame);
 
