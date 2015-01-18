@@ -19,12 +19,12 @@ class Config {
   public function new() {
     width  = 640;
     height = 480;
-    cols = 16;
-    rows = 12;
+    cols = 12;
+    cellSize = Std.int(width / cols);
+    rows = Std.int(height / cellSize);
     startCol = Std.int(cols / 2);
     startRow = Std.int(rows / 4 * 3);
     backgroundColor = 0xDADA99;
     gen = new NativeRandom();
-    cellSize = 40;
   }
 }

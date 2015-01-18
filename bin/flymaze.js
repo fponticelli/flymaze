@@ -810,13 +810,13 @@ var fly = {};
 fly.Config = function() {
 	this.width = 640;
 	this.height = 480;
-	this.cols = 16;
-	this.rows = 12;
+	this.cols = 12;
+	this.cellSize = this.width / this.cols | 0;
+	this.rows = this.height / this.cellSize | 0;
 	this.startCol = this.cols / 2 | 0;
 	this.startRow = this.rows / 4 * 3 | 0;
 	this.backgroundColor = 14342809;
 	this.gen = new thx.math.random.NativeRandom();
-	this.cellSize = 40;
 };
 fly.Config.__name__ = ["fly","Config"];
 fly.Config.prototype = {
@@ -834,8 +834,8 @@ fly.Config.prototype = {
 fly.Game = function(mini,config) {
 	this.delta = 20.0;
 	this.remainder = 0.0;
-	var p = new fly.components.Position((config.startCol + 0.5) * config.cellSize,(config.startRow + 1) * config.cellSize);
-	var direction = new fly.components.Direction(-Math.PI / 2);
+	var p = new fly.components.Position((config.startCol + 0.5) * config.cellSize,(config.startRow + 1) * config.cellSize - 2);
+	var direction = new fly.components.Direction(-Math.PI / 2 + 3 * fly.Game.ONE_DEGREE);
 	var velocity = new fly.components.Velocity(2);
 	this.maze = new amaze.Maze(config.cols,config.rows,config.gen);
 	this.maze.generate(config.startRow,config.startCol);
@@ -872,7 +872,7 @@ fly.Game = function(mini,config) {
 				velocity.value = Math.max(velocity.value - 0.01,0);
 				break;
 			default:
-				haxe.Log.trace("key: " + key,{ fileName : "Game.hx", lineNumber : 71, className : "fly.Game", methodName : "new"});
+				haxe.Log.trace("key: " + key,{ fileName : "Game.hx", lineNumber : 73, className : "fly.Game", methodName : "new"});
 			}
 		}
 	}),"preFrame");
@@ -886,6 +886,11 @@ fly.Game.prototype = {
 	,cancel: null
 	,config: null
 	,maze: null
+	,createSnake: function(world,maze,w,h) {
+		var p = new fly.components.Position(Math.random() * w,Math.random() * h);
+		var snake = new edge.Entity([p,new fly.components.Direction(Math.random() * 2 * Math.PI),new fly.components.Velocity(2),new fly.components.Trail(40,p),maze,new fly.components.PreviousPosition(p.x,p.y)]);
+		world.addEntity(snake);
+	}
 	,run: function() {
 		this.cancel = thx.core.Timer.frame($bind(this,this.frame));
 	}

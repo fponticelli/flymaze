@@ -25,8 +25,8 @@ class Game {
   public function new(mini : MiniCanvas, config : Config) {
     var p = new Position(
           (config.startCol + 0.5) * config.cellSize,
-          (config.startRow + 1) * config.cellSize),
-        direction = new Direction(-Math.PI / 2),
+          (config.startRow + 1) * config.cellSize - 2),
+        direction = new Direction(-Math.PI / 2 + 3 * ONE_DEGREE),
         velocity = new Velocity(2);
 
     maze = new Maze(config.cols, config.rows, config.gen);
@@ -47,6 +47,9 @@ class Game {
     //Timer.repeat(function() direction.angle += Math.PI / 180, 10);
 
     world.addEntity(snake);
+
+//    for(i in 0...2)
+//      createSnake(world, maze, config.width, config.height);
 
     world.addSystem(new UpdatePosition(), Cycle.preUpdate);
     world.addSystem(new MazeCollision(config.cellSize), Cycle.update);
@@ -71,6 +74,19 @@ class Game {
     }), Cycle.preFrame);
 
     //world.addSystem(new RenderPosition(mini), Cycle.render);
+  }
+
+  function createSnake(world, maze,w, h) {
+    var p = new Position(Math.random() * w, Math.random() * h);
+    var snake = new Entity([
+      p,
+      new Direction(Math.random() * 2 * Math.PI),
+      new Velocity(2),
+      new Trail(40, p),
+      maze,
+      new PreviousPosition(p.x, p.y)
+    ]);
+    world.addEntity(snake);
   }
 
   public function run() {
