@@ -1,6 +1,6 @@
 package fly.components;
 
-class Position {
+class PreviousPosition {
   public function new(x : Float, y : Float) {
     this.x = x;
     this.y = y;
@@ -10,5 +10,5 @@ class Position {
   public var y : Float;
 
   public function toString()
-    return 'Position($x, $y)';
+    return 'PreviousPosition($x, $y)';
 }
