@@ -12,7 +12,6 @@ import fly.components.*;
 import fly.systems.*;
 
 class Game {
-  var snake : Entity;
   var world : World;
   var remainder = 0.0;
   var delta = 20.0;
@@ -35,18 +34,19 @@ class Game {
     maze.cells[config.startRow-1][config.startCol].bottom = true;
 
     world = new World();
-    snake = new Entity([
-      p,
-      direction,
-      velocity,
-      new Snake(40, p),
-      maze,
-      new PreviousPosition(p.x, p.y)
-    ]);
+    var snake = new Snake(80, p),
+        snakeEntity = new Entity([
+          p,
+          direction,
+          velocity,
+          snake,
+          maze,
+          new PreviousPosition(p.x, p.y)
+        ]);
 
     //Timer.repeat(function() direction.angle += Math.PI / 180, 10);
 
-    world.addEntity(snake);
+    world.addEntity(snakeEntity);
 
 //    for(i in 0...2)
 //      createSnake(world, maze, config.width, config.height);
@@ -75,13 +75,16 @@ class Game {
         velocity.value = (velocity.value + 0.01).min(4);
       case 40, 83: // decellerate
         velocity.value = (velocity.value - 0.01).max(0);
+      case 32: // spacebar
+        e.remove(key);
+        snake.jumping.push(0);
       case _: trace('key: $key');
     }), Cycle.preFrame);
 
     //world.addSystem(new RenderPosition(mini), Cycle.render);
   }
 
-  function createSnake(world, maze,w, h) {
+  function createSnake(world : World, maze : Maze, w, h) {
     var p = new Position(Math.random() * w, Math.random() * h);
     var snake = new Entity([
       p,
