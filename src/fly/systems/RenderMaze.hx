@@ -20,7 +20,7 @@ class RenderMaze implements ISystem {
       for(col in 0...cells.length) {
         var cell = cells[col];
         ctx.lineCap = "square";
-        ctx.strokeStyle = "#996633";
+        ctx.strokeStyle = "#669933";
         ctx.beginPath();
         drawCell(cell, row, col, cellSize);
         ctx.stroke();
