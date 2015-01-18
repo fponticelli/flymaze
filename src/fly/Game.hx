@@ -2,7 +2,6 @@ package fly;
 
 import fly.systems.*;
 import amaze.Maze;
-import minicanvas.MiniCanvas;
 import thx.core.Functions;
 import thx.core.Timer;
 using thx.core.Floats;
@@ -31,7 +30,6 @@ class Game {
         velocity = new Velocity(2);
 
     maze = new Maze(config.cols, config.rows, config.gen);
-
     maze.generate(config.startRow, config.startCol);
     maze.cells[config.startRow][config.startCol].top = true;
     maze.cells[config.startRow-1][config.startCol].bottom = true;

@@ -1,7 +1,6 @@
 package fly.systems;
 
 import edge.*;
-
 import minicanvas.MiniCanvas;
 import thx.color.RGB;
 

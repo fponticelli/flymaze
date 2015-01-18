@@ -1,7 +1,7 @@
 package fly.systems;
 
-import edge.ISystem;
 import amaze.*;
+import edge.ISystem;
 import js.html.CanvasRenderingContext2D;
 
 class RenderMaze implements ISystem {

@@ -1,7 +1,6 @@
 package fly.systems;
 
 import edge.*;
-
 import fly.components.Position;
 import minicanvas.MiniCanvas;
 

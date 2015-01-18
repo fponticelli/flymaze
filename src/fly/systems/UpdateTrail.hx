@@ -4,7 +4,6 @@ import edge.ISystem;
 import fly.components.Position;
 import fly.components.Trail;
 
-
 class UpdateTrail implements ISystem {
   public function new() {}
 
