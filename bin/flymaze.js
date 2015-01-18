@@ -815,7 +815,7 @@ fly.Config = function() {
 	this.rows = this.height / this.cellSize | 0;
 	this.startCol = this.cols / 2 | 0;
 	this.startRow = this.rows / 4 * 3 | 0;
-	this.backgroundColor = 14342809;
+	this.backgroundColor = 12245640;
 	this.gen = new thx.math.random.NativeRandom();
 };
 fly.Config.__name__ = ["fly","Config"];
@@ -844,20 +844,27 @@ fly.Game = function(mini,config) {
 	this.maze.cells[config.startRow - 1][config.startCol] = this.maze.cells[config.startRow - 1][config.startCol] | 4;
 	true;
 	this.world = new edge.World();
-	this.snake = new edge.Entity([p,direction,velocity,new fly.components.Trail(40,p),this.maze,new fly.components.PreviousPosition(p.x,p.y)]);
+	this.snake = new edge.Entity([p,direction,velocity,new fly.components.Snake(40,p),this.maze,new fly.components.PreviousPosition(p.x,p.y)]);
 	this.world.addEntity(this.snake);
+	var _g = 0;
+	while(_g < 100) {
+		var i = _g++;
+		this.createFly(this.world,config.width,config.height);
+	}
 	this.world.addSystem(new fly.systems.UpdatePosition(),"preUpdate");
+	this.world.addSystem(new fly.systems.UpdateFly(),"update");
 	this.world.addSystem(new fly.systems.MazeCollision(config.cellSize),"update");
 	this.world.addSystem(new fly.systems.UpdatePreviousPosition(),"postUpdate");
-	this.world.addSystem(new fly.systems.UpdateTrail(),"postUpdate");
+	this.world.addSystem(new fly.systems.UpdateSnake(),"postUpdate");
 	this.world.addSystem(new fly.systems.RenderSnake(mini),"render");
 	this.world.addSystem(new fly.systems.RenderMaze(mini.ctx,config.cellSize),"postRender");
+	this.world.addSystem(new fly.systems.RenderFly(mini),"postRender");
 	this.world.addSystem(new fly.systems.RenderBackground(mini,config.backgroundColor),"preRender");
 	this.world.addSystem(new fly.systems.KeyboardInput(function(keys) {
-		var _g = 0;
-		while(_g < keys.length) {
-			var key = keys[_g];
-			++_g;
+		var _g1 = 0;
+		while(_g1 < keys.length) {
+			var key = keys[_g1];
+			++_g1;
 			switch(key) {
 			case 37:case 65:
 				direction.angle -= fly.Game.ONE_DEGREE * 3;
@@ -872,7 +879,7 @@ fly.Game = function(mini,config) {
 				velocity.value = Math.max(velocity.value - 0.01,0);
 				break;
 			default:
-				haxe.Log.trace("key: " + key,{ fileName : "Game.hx", lineNumber : 73, className : "fly.Game", methodName : "new"});
+				haxe.Log.trace("key: " + key,{ fileName : "Game.hx", lineNumber : 78, className : "fly.Game", methodName : "new"});
 			}
 		}
 	}),"preFrame");
@@ -888,8 +895,13 @@ fly.Game.prototype = {
 	,maze: null
 	,createSnake: function(world,maze,w,h) {
 		var p = new fly.components.Position(Math.random() * w,Math.random() * h);
-		var snake = new edge.Entity([p,new fly.components.Direction(Math.random() * 2 * Math.PI),new fly.components.Velocity(2),new fly.components.Trail(40,p),maze,new fly.components.PreviousPosition(p.x,p.y)]);
+		var snake = new edge.Entity([p,new fly.components.Direction(Math.random() * 2 * Math.PI),new fly.components.Velocity(2),new fly.components.Snake(40,p),maze,new fly.components.PreviousPosition(p.x,p.y)]);
 		world.addEntity(snake);
+	}
+	,createFly: function(world,w,h) {
+		var p = new fly.components.Position(Math.random() * w,Math.random() * h);
+		var fly1 = new edge.Entity([p,new fly.components.Fly()]);
+		world.addEntity(fly1);
 	}
 	,run: function() {
 		this.cancel = thx.core.Timer.frame($bind(this,this.frame));
@@ -932,6 +944,15 @@ fly.components.Direction.prototype = {
 	}
 	,__class__: fly.components.Direction
 };
+fly.components.Fly = function() {
+};
+fly.components.Fly.__name__ = ["fly","components","Fly"];
+fly.components.Fly.prototype = {
+	toString: function() {
+		return "Fly";
+	}
+	,__class__: fly.components.Fly
+};
 fly.components.Position = function(x,y) {
 	this.x = x;
 	this.y = y;
@@ -958,7 +979,7 @@ fly.components.PreviousPosition.prototype = {
 	}
 	,__class__: fly.components.PreviousPosition
 };
-fly.components.Trail = function(length,start,trailWidth,headWidth) {
+fly.components.Snake = function(length,start,trailWidth,headWidth) {
 	if(headWidth == null) headWidth = 4;
 	if(trailWidth == null) trailWidth = 1;
 	this.pos = length - 1;
@@ -973,8 +994,8 @@ fly.components.Trail = function(length,start,trailWidth,headWidth) {
 	this.headWidth = headWidth;
 	this.colors = ["#ffffff","#dddddd","#bbbbbb","#000000","#000000"];
 };
-fly.components.Trail.__name__ = ["fly","components","Trail"];
-fly.components.Trail.prototype = {
+fly.components.Snake.__name__ = ["fly","components","Snake"];
+fly.components.Snake.prototype = {
 	pos: null
 	,trail: null
 	,trailWidth: null
@@ -996,7 +1017,7 @@ fly.components.Trail.prototype = {
 			callback(this.trail[p],this.trail[i1]);
 		}
 	}
-	,__class__: fly.components.Trail
+	,__class__: fly.components.Snake
 };
 fly.components.Velocity = function(value) {
 	this.value = value;
@@ -1088,6 +1109,27 @@ fly.systems.RenderBackground.prototype = {
 	}
 	,__class__: fly.systems.RenderBackground
 };
+fly.systems.RenderFly = function(mini) {
+	this.mini = mini;
+};
+fly.systems.RenderFly.__name__ = ["fly","systems","RenderFly"];
+fly.systems.RenderFly.__interfaces__ = [edge.ISystem];
+fly.systems.RenderFly.prototype = {
+	mini: null
+	,update: function(position,_) {
+		var p = Math.random() * 6 - 3;
+		this.mini.dot(position.x - 4.5 - p / 3,position.y + p,2,-855642386);
+		this.mini.dot(position.x + 4.5 + p / 3,position.y + p,2,-855642386);
+		this.mini.dot(position.x,position.y,1.5,255);
+	}
+	,getRequirements: function() {
+		return [fly.components.Position,fly.components.Fly];
+	}
+	,toString: function() {
+		return "RenderFly";
+	}
+	,__class__: fly.systems.RenderFly
+};
 fly.systems.RenderMaze = function(ctx,cellSize) {
 	this.ctx = ctx;
 	this.cellSize = cellSize;
@@ -1142,23 +1184,40 @@ fly.systems.RenderSnake.__name__ = ["fly","systems","RenderSnake"];
 fly.systems.RenderSnake.__interfaces__ = [edge.ISystem];
 fly.systems.RenderSnake.prototype = {
 	mini: null
-	,update: function(position,trail) {
+	,update: function(position,snake) {
 		var _g = this;
 		var pos = 0;
-		trail.map(function(a,b) {
-			var s = thx.core.Floats.interpolate(pos / trail.trail.length,trail.trailWidth,trail.headWidth);
-			_g.mini.line(a.x,a.y,b.x,b.y,s,thx.color._RGBA.RGBA_Impl_.fromString(trail.colors[pos % trail.colors.length]));
+		snake.map(function(a,b) {
+			var s = thx.core.Floats.interpolate(pos / snake.trail.length,snake.trailWidth,snake.headWidth);
+			_g.mini.line(a.x,a.y,b.x,b.y,s,thx.color._RGBA.RGBA_Impl_.fromString(snake.colors[pos % snake.colors.length]));
 			pos++;
 		});
-		this.mini.dot(position.x,position.y,trail.headWidth,thx.color._RGBA.RGBA_Impl_.fromString(trail.colors[pos % trail.colors.length]));
+		this.mini.dot(position.x,position.y,snake.headWidth,thx.color._RGBA.RGBA_Impl_.fromString(snake.colors[pos % snake.colors.length]));
 	}
 	,getRequirements: function() {
-		return [fly.components.Position,fly.components.Trail];
+		return [fly.components.Position,fly.components.Snake];
 	}
 	,toString: function() {
 		return "RenderSnake";
 	}
 	,__class__: fly.systems.RenderSnake
+};
+fly.systems.UpdateFly = function() {
+};
+fly.systems.UpdateFly.__name__ = ["fly","systems","UpdateFly"];
+fly.systems.UpdateFly.__interfaces__ = [edge.ISystem];
+fly.systems.UpdateFly.prototype = {
+	update: function(position,_) {
+		position.x += 2 - Math.random() * 4;
+		position.y += 2 - Math.random() * 4;
+	}
+	,getRequirements: function() {
+		return [fly.components.Position,fly.components.Fly];
+	}
+	,toString: function() {
+		return "UpdateFly";
+	}
+	,__class__: fly.systems.UpdateFly
 };
 fly.systems.UpdatePosition = function() {
 };
@@ -1194,24 +1253,24 @@ fly.systems.UpdatePreviousPosition.prototype = {
 	}
 	,__class__: fly.systems.UpdatePreviousPosition
 };
-fly.systems.UpdateTrail = function() {
+fly.systems.UpdateSnake = function() {
 };
-fly.systems.UpdateTrail.__name__ = ["fly","systems","UpdateTrail"];
-fly.systems.UpdateTrail.__interfaces__ = [edge.ISystem];
-fly.systems.UpdateTrail.prototype = {
-	update: function(position,trail) {
-		trail.trail[trail.pos].x = position.x;
-		trail.trail[trail.pos].y = position.y;
-		trail.pos++;
-		if(trail.pos >= trail.trail.length) trail.pos = 0;
+fly.systems.UpdateSnake.__name__ = ["fly","systems","UpdateSnake"];
+fly.systems.UpdateSnake.__interfaces__ = [edge.ISystem];
+fly.systems.UpdateSnake.prototype = {
+	update: function(position,snake) {
+		snake.trail[snake.pos].x = position.x;
+		snake.trail[snake.pos].y = position.y;
+		snake.pos++;
+		if(snake.pos >= snake.trail.length) snake.pos = 0;
 	}
 	,getRequirements: function() {
-		return [fly.components.Position,fly.components.Trail];
+		return [fly.components.Position,fly.components.Snake];
 	}
 	,toString: function() {
-		return "UpdateTrail";
+		return "UpdateSnake";
 	}
-	,__class__: fly.systems.UpdateTrail
+	,__class__: fly.systems.UpdateSnake
 };
 var haxe = {};
 haxe.StackItem = { __ename__ : ["haxe","StackItem"], __constructs__ : ["CFunction","Module","FilePos","Method","LocalFunction"] };

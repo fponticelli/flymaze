@@ -51,13 +51,18 @@ class Game {
 //    for(i in 0...2)
 //      createSnake(world, maze, config.width, config.height);
 
+    for(i in 0...100)
+      createFly(world, config.width, config.height);
+
     world.addSystem(new UpdatePosition(), Cycle.preUpdate);
+    world.addSystem(new UpdateFly(), Cycle.update);
     world.addSystem(new MazeCollision(config.cellSize), Cycle.update);
     world.addSystem(new UpdatePreviousPosition(), Cycle.postUpdate);
     world.addSystem(new UpdateSnake(), Cycle.postUpdate);
 
     world.addSystem(new RenderSnake(mini), Cycle.render);
     world.addSystem(new RenderMaze(mini.ctx, config.cellSize), Cycle.postRender);
+    world.addSystem(new RenderFly(mini), Cycle.postRender);
 
     // general systems
     world.addSystem(new RenderBackground(mini, config.backgroundColor), Cycle.preRender);
@@ -87,6 +92,15 @@ class Game {
       new PreviousPosition(p.x, p.y)
     ]);
     world.addEntity(snake);
+  }
+
+  function createFly(world, w, h) {
+    var p = new Position(Math.random() * w, Math.random() * h);
+    var fly = new Entity([
+      p,
+      new Fly()
+    ]);
+    world.addEntity(fly);
   }
 
   public function run() {
