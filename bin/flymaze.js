@@ -861,7 +861,8 @@ fly.Config = function() {
 	this.startCol = this.cols / 2 | 0;
 	this.startRow = this.rows / 4 * 3 | 0;
 	this.backgroundColor = 12245640;
-	this.gen = new thx.math.random.NativeRandom();
+	this.flyCircleRadius = 60;
+	this.gen = new thx.math.random.PseudoRandom(5);
 };
 fly.Config.__name__ = ["fly","Config"];
 fly.Config.prototype = {
@@ -874,6 +875,7 @@ fly.Config.prototype = {
 	,backgroundColor: null
 	,gen: null
 	,cellSize: null
+	,flyCircleRadius: null
 	,__class__: fly.Config
 };
 fly.Game = function(mini,config) {
@@ -895,13 +897,13 @@ fly.Game = function(mini,config) {
 	var _g = 0;
 	while(_g < 200) {
 		var i = _g++;
-		this.createFly(this.world,config.width,config.height);
+		this.createFly(this.world,config);
 	}
 	this.world.addSystem(new fly.systems.UpdatePosition(),"preUpdate");
-	this.world.addSystem(new fly.systems.UpdateFly(config.width,config.height),"update");
+	this.world.addSystem(new fly.systems.UpdateFly(config.width,config.height,config.gen),"update");
 	this.world.addSystem(new fly.systems.MazeCollision(config.cellSize),"update");
 	this.world.addSystem(new fly.systems.UpdatePreviousPosition(),"postUpdate");
-	this.world.addSystem(new fly.systems.UpdateSnake(this.world),"postUpdate");
+	this.world.addSystem(new fly.systems.UpdateSnake(this.world,config.gen),"postUpdate");
 	this.world.addSystem(new fly.systems.SnakeEatsFly(this.world,8),"postUpdate");
 	this.world.addSystem(new fly.systems.RenderDroplet(mini),"preRender");
 	this.world.addSystem(new fly.systems.RenderSnake(mini),"render");
@@ -941,15 +943,10 @@ fly.Game.prototype = {
 	,cancel: null
 	,config: null
 	,maze: null
-	,createSnake: function(world,maze,w,h) {
-		var p = new fly.components.Position(Math.random() * w,Math.random() * h);
-		var snake = new edge.Entity([p,new fly.components.Direction(Math.random() * 2 * Math.PI),new fly.components.Velocity(2),new fly.components.Snake(40,p),maze,new fly.components.PreviousPosition(p.x,p.y)]);
-		world.addEntity(snake);
-	}
-	,createFly: function(world,w,h) {
-		var p = new fly.components.Position(Math.random() * w,Math.random() * h);
-		var fly1 = new edge.Entity([p,new fly.components.Fly()]);
-		world.addEntity(fly1);
+	,createFly: function(world,config) {
+		var a = config.gen["float"]() * Math.PI * 2;
+		var p = new fly.components.Position(Math.cos(a) * config.gen["float"]() * config.flyCircleRadius + config.width / 2,Math.sin(a) * config.gen["float"]() * config.flyCircleRadius + config.height / 2);
+		world.addEntity(new edge.Entity([p,fly.components.Fly.create(config.gen)]));
 	}
 	,run: function() {
 		this.cancel = thx.core.Timer.frame($bind(this,this.frame));
@@ -992,11 +989,14 @@ fly.components.Direction.prototype = {
 	}
 	,__class__: fly.components.Direction
 };
-fly.components.Droplet = function() {
-	this.radius = Math.random() * 0.5 + 1.2;
-	this.color = thx.color._HSL.HSL_Impl_.toRGB(thx.color._HSL.HSL_Impl_.create(20 + 30 * Math.random(),Math.random() * 0.4 + 0.6,0.3));
+fly.components.Droplet = function(radius,color) {
+	this.radius = radius;
+	this.color = color;
 };
 fly.components.Droplet.__name__ = ["fly","components","Droplet"];
+fly.components.Droplet.create = function(gen) {
+	return new fly.components.Droplet(gen["float"]() * 0.5 + 1.2,thx.color._HSL.HSL_Impl_.toRGB(thx.color._HSL.HSL_Impl_.create(20 + 30 * gen["float"](),gen["float"]() * 0.4 + 0.6,0.3)));
+};
 fly.components.Droplet.prototype = {
 	radius: null
 	,color: null
@@ -1005,10 +1005,13 @@ fly.components.Droplet.prototype = {
 	}
 	,__class__: fly.components.Droplet
 };
-fly.components.Fly = function() {
-	this.height = Math.random() * 5;
+fly.components.Fly = function(height) {
+	this.height = height;
 };
 fly.components.Fly.__name__ = ["fly","components","Fly"];
+fly.components.Fly.create = function(gen) {
+	return new fly.components.Fly(gen["float"]() * 5);
+};
 fly.components.Fly.prototype = {
 	height: null
 	,toString: function() {
@@ -1375,19 +1378,21 @@ fly.systems.SnakeEatsFly.prototype = {
 	}
 	,__class__: fly.systems.SnakeEatsFly
 };
-fly.systems.UpdateFly = function(width,height) {
+fly.systems.UpdateFly = function(width,height,gen) {
 	this.width = width;
 	this.height = height;
+	this.gen = gen;
 };
 fly.systems.UpdateFly.__name__ = ["fly","systems","UpdateFly"];
 fly.systems.UpdateFly.__interfaces__ = [edge.ISystem];
 fly.systems.UpdateFly.prototype = {
 	width: null
 	,height: null
+	,gen: null
 	,update: function(position,fly1) {
-		position.x = Math.min(Math.max(0,position.x + 2 - Math.random() * 4),this.width);
-		position.y = Math.min(Math.max(0,position.y + 2 - Math.random() * 4),this.height);
-		fly1.height = Math.min(Math.max(0,fly1.height + Math.random() - 0.5),6);
+		position.x = Math.min(Math.max(0,position.x + 2 - this.gen["float"]() * 4),this.width);
+		position.y = Math.min(Math.max(0,position.y + 2 - this.gen["float"]() * 4),this.height);
+		fly1.height = Math.min(Math.max(0,fly1.height + this.gen["float"]() - 0.5),6);
 	}
 	,getUpdateRequirements: function() {
 		return [fly.components.Position,fly.components.Fly];
@@ -1440,13 +1445,15 @@ fly.systems.UpdatePreviousPosition.prototype = {
 	}
 	,__class__: fly.systems.UpdatePreviousPosition
 };
-fly.systems.UpdateSnake = function(world) {
+fly.systems.UpdateSnake = function(world,gen) {
 	this.world = world;
+	this.gen = gen;
 };
 fly.systems.UpdateSnake.__name__ = ["fly","systems","UpdateSnake"];
 fly.systems.UpdateSnake.__interfaces__ = [edge.ISystem];
 fly.systems.UpdateSnake.prototype = {
 	world: null
+	,gen: null
 	,update: function(position,snake) {
 		var last = snake.pos + 1;
 		if(last >= snake.trail.length) last = 0;
@@ -1460,7 +1467,7 @@ fly.systems.UpdateSnake.prototype = {
 		while(i >= 0) {
 			snake.jumping[i]++;
 			if(snake.jumping[i] == snake.trail.length) {
-				this.world.addEntity(new edge.Entity([new fly.components.Position(tx,ty),new fly.components.Droplet()]));
+				this.world.addEntity(new edge.Entity([new fly.components.Position(tx,ty),fly.components.Droplet.create(this.gen)]));
 				snake.jumping.pop();
 			}
 			i--;
@@ -7970,18 +7977,6 @@ thx.core.error.NullArgument.prototype = $extend(thx.core.Error.prototype,{
 });
 thx.math = {};
 thx.math.random = {};
-thx.math.random.NativeRandom = function() {
-};
-thx.math.random.NativeRandom.__name__ = ["thx","math","random","NativeRandom"];
-thx.math.random.NativeRandom.prototype = {
-	'int': function() {
-		return Std.random(2147483647);
-	}
-	,'float': function() {
-		return Math.random();
-	}
-	,__class__: thx.math.random.NativeRandom
-};
 thx.math.random.PseudoRandom = function(seed) {
 	if(seed == null) seed = 1;
 	this.seed = seed;

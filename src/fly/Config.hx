@@ -1,7 +1,7 @@
 package fly;
 
 import thx.math.random.Random;
-import thx.math.random.NativeRandom;
+import thx.math.random.PseudoRandom;
 
 using thx.color.RGB;
 
@@ -15,6 +15,7 @@ class Config {
   public var backgroundColor : RGB;
   public var gen : Random;
   public var cellSize : Float;
+  public var flyCircleRadius : Float;
 
   public function new() {
     width  = 642;
@@ -25,6 +26,7 @@ class Config {
     startCol = Std.int(cols / 2);
     startRow = Std.int(rows / 4 * 3);
     backgroundColor = 0xBADA88;
-    gen = new NativeRandom();
+    flyCircleRadius = 60;
+    gen = new PseudoRandom(5);
   }
 }

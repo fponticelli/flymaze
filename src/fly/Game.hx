@@ -52,13 +52,13 @@ class Game {
 //      createSnake(world, maze, config.width, config.height);
 
     for(i in 0...200)
-      createFly(world, config.width, config.height);
+      createFly(world, config);
 
     world.addSystem(new UpdatePosition(), Cycle.preUpdate);
-    world.addSystem(new UpdateFly(config.width, config.height), Cycle.update);
+    world.addSystem(new UpdateFly(config.width, config.height, config.gen), Cycle.update);
     world.addSystem(new MazeCollision(config.cellSize), Cycle.update);
     world.addSystem(new UpdatePreviousPosition(), Cycle.postUpdate);
-    world.addSystem(new UpdateSnake(world), Cycle.postUpdate);
+    world.addSystem(new UpdateSnake(world, config.gen), Cycle.postUpdate);
     world.addSystem(new SnakeEatsFly(world, 8), Cycle.postUpdate);
 
     world.addSystem(new RenderDroplet(mini), Cycle.preRender);
@@ -85,7 +85,7 @@ class Game {
 
     //world.addSystem(new RenderPosition(mini), Cycle.render);
   }
-
+/*
   function createSnake(world : World, maze : Maze, w, h) {
     var p = new Position(Math.random() * w, Math.random() * h);
     var snake = new Entity([
@@ -98,14 +98,13 @@ class Game {
     ]);
     world.addEntity(snake);
   }
-
-  function createFly(world, w, h) {
-    var p = new Position(Math.random() * w, Math.random() * h);
-    var fly = new Entity([
-      p,
-      new Fly()
-    ]);
-    world.addEntity(fly);
+*/
+  function createFly(world : World, config : Config) {
+    var a = config.gen.float() * Math.PI * 2,
+        p = new Position(
+          Math.cos(a) * config.gen.float() * config.flyCircleRadius + config.width / 2,
+          Math.sin(a) * config.gen.float() * config.flyCircleRadius + config.height / 2);
+    world.addEntity(new Entity([p, Fly.create(config.gen)]));
   }
 
   public function run() {
