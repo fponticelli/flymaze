@@ -1,7 +1,10 @@
 package fly.components;
 
 class Fly {
-  public function new() {}
+  public var height : Float;
+  public function new() {
+    height = Math.random() * 5;
+  }
 
   public function toString()
     return 'Fly';
