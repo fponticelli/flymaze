@@ -51,11 +51,11 @@ class Game {
 //    for(i in 0...2)
 //      createSnake(world, maze, config.width, config.height);
 
-    for(i in 0...300)
+    for(i in 0...200)
       createFly(world, config.width, config.height);
 
     world.addSystem(new UpdatePosition(), Cycle.preUpdate);
-    world.addSystem(new UpdateFly(), Cycle.update);
+    world.addSystem(new UpdateFly(config.width, config.height), Cycle.update);
     world.addSystem(new MazeCollision(config.cellSize), Cycle.update);
     world.addSystem(new UpdatePreviousPosition(), Cycle.postUpdate);
     world.addSystem(new UpdateSnake(world), Cycle.postUpdate);
