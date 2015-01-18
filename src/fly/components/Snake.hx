@@ -1,5 +1,6 @@
 package fly.components;
 
+import edge.World;
 import fly.components.Position;
 
 class Snake {
@@ -8,12 +9,14 @@ class Snake {
   public var trailWidth : Float;
   public var headWidth : Float;
   public var colors : Array<String>;
+  public var jumping : Array<Int>;
   public function new(length : Int, start : Position, trailWidth : Float = 1, headWidth : Float = 4) {
     pos = length - 1;
     trail = [for(i in 0...length) new Position(start.x, start.y)];
     this.trailWidth = trailWidth;
     this.headWidth = headWidth;
     this.colors = ["#ffffff", "#dddddd", "#bbbbbb", "#000000", "#000000"];
+    jumping = [];
   }
 
   public function map(callback : Position -> Position -> Void) {
