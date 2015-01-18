@@ -1,6 +1,7 @@
 package fly;
 
-import fly.systems.UpdatePosition;
+import fly.systems.*;
+import minicanvas.MiniCanvas;
 import thx.core.Functions;
 import thx.core.Timer;
 
@@ -15,8 +16,9 @@ class Game {
   var remainder = 0.0;
   var delta = 20.0;
   var cancel : Void -> Void;
+  var config : Config;
 
-  public function new() {
+  public function new(mini : MiniCanvas, config : Config) {
     world = new World();
 
     fly = new Entity();
@@ -28,7 +30,10 @@ class Game {
 
     world.addEntity(fly);
 
+    world.addEntity(new Entity([new StageBackground(config.backgroundColor)]));
+
     world.addSystem(new UpdatePosition(), Cycle.update);
+    world.addSystem(new RenderBackground(mini), Cycle.preRender);
   }
 
   public function run() {
@@ -39,6 +44,7 @@ class Game {
         world.update();
       }
       remainder = t;
+      world.preRender();
       world.render();
     });
   }
