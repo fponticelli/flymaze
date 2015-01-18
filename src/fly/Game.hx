@@ -66,7 +66,7 @@ class Game {
 
     // general systems
     world.addSystem(new RenderBackground(mini, config.backgroundColor), Cycle.preRender);
-    world.addSystem(new KeyboardInput(function(keys) for(key in keys) switch key {
+    world.addSystem(new KeyboardInput(function(e) for(key in e.keys) switch key {
       case 37, 65: // left
         direction.angle -= ONE_DEGREE * 3;
       case 39, 68: // right
