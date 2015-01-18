@@ -24,12 +24,18 @@ class Game {
   static var ONE_DEGREE = Math.PI / 180;
 
   public function new(mini : MiniCanvas, config : Config) {
-    var p = new Position(config.width / 2, config.height / 2),
+    var p = new Position(
+          (config.startCol + 0.5) * config.cellSize,
+          (config.startRow + 1) * config.cellSize),
         direction = new Direction(-Math.PI / 2),
         velocity = new Velocity(2);
 
     maze = new Maze(config.cols, config.rows, config.gen);
-    maze.generate(0, 0);
+
+    maze.generate(config.startRow, config.startCol);
+    maze.cells[config.startRow][config.startCol].top = true;
+    maze.cells[config.startRow-1][config.startCol].bottom = true;
+
     world = new World();
     snake = new Entity([
       p,
