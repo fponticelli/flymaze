@@ -6,3 +6,6 @@
 -lib amaze
 -lib sui
 -lib minicanvas
+#-dce full
+#-D analyzer
+-D js-flatten
