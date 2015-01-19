@@ -19,6 +19,8 @@ class Game {
   var config : Config;
   var maze : Maze;
 
+  public var running(default, null) : Bool = false;
+
   static var ONE_DEGREE = Math.PI / 180;
 
   public function new(mini : MiniCanvas, config : Config) {
@@ -76,14 +78,21 @@ class Game {
       case 39, 68: // right
         direction.angle += ONE_DEGREE * 3;
       case 38, 87: // accellerate
-        velocity.value = (velocity.value + 0.01).min(4);
+        velocity.value = (velocity.value + 0.01).min(20);
       case 40, 83: // decellerate
-        velocity.value = (velocity.value - 0.01).max(0);
-//      case 32: // spacebar
-//        e.remove(key);
-//        snake.jumping.push(0);
+        velocity.value = (velocity.value - 0.01).max(0.02);
       case _: trace('key: $key');
     }), Cycle.preFrame);
+
+    js.Browser.window.addEventListener("keyup", function(e) {
+      if(e.keyCode == 32) {
+        if(running)
+          stop();
+        else {
+          run();
+        }
+      }
+    });
 
     //world.addSystem(new RenderPosition(mini), Cycle.render);
   }
@@ -110,7 +119,9 @@ class Game {
   }
 
   public function run() {
+    if(running) return;
     cancel = Timer.frame(frame);
+    running = true;
   }
 
   function frame(t : Float) {
@@ -130,7 +141,9 @@ class Game {
   }
 
   public function stop() {
+    if(!running) return;
     cancel();
+    running = false;
     cancel = Functions.noop;
   }
 }
