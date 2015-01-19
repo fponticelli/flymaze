@@ -15,7 +15,7 @@ class Snake {
     trail = [for(i in 0...length) new Position(start.x, start.y)];
     this.trailWidth = trailWidth;
     this.headWidth = headWidth;
-    this.colors = ["#ffffff", "#dddddd", "#bbbbbb", "#000000", "#000000"];
+    this.colors = ["#ffffff", "#dddddd", "#bbbbbb", "#0000ff", "#000055"];
     jumping = [];
   }
 
