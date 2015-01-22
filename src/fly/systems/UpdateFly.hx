@@ -20,9 +20,4 @@ class UpdateFly implements ISystem {
     position.y = 0.max(position.y + 2 - gen.float() * 4).min(height);
     fly.height = 0.max(fly.height + gen.float() * 1 - 0.5).min(6);
   }
-
-  public var componentRequirements(default, null) : Array<Class<Dynamic>> = [Position, Fly];
-  public var entityRequirements(default, null) = null;
-
-  public function toString() return "UpdateFly";
 }

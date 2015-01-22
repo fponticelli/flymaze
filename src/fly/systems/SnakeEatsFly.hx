@@ -14,7 +14,6 @@ class SnakeEatsFly implements ISystem {
   }
 
   public function update(position : Position, snake : Snake, score : Score) {
-    //trace(entities.length);
     var dx, dy;
     for(o in entities) {
       dx = position.x - o.position.x;
@@ -26,12 +25,4 @@ class SnakeEatsFly implements ISystem {
       }
     }
   }
-
-  public var componentRequirements(default, null) : Array<Class<Dynamic>> = [Position, Snake, Score];
-  public var entityRequirements(default, null) : Array<{ name : String , cls : Class<Dynamic> }> = [
-      { name : "position", cls : Position },
-      { name : "fly", cls : Fly }
-    ];
-
-  public function toString() return "SnakeEatsFly";
 }

@@ -37,9 +37,4 @@ class UpdateSnake implements ISystem {
       i--;
     }
   }
-
-  public var componentRequirements(default, null) : Array<Class<Dynamic>> = [Position, Snake];
-  public var entityRequirements(default, null) = null;
-
-  public function toString() return "UpdateSnake";
 }

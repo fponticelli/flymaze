@@ -40,7 +40,4 @@ class RenderMaze implements ISystem {
       ctx.lineTo(0.5 + (col + 1) * size, 0.5 + (1 + row) * size);
     }
   }
-
-  public var componentRequirements(default, null) : Array<Class<Dynamic>> = [Maze];
-  public var entityRequirements(default, null) = null;
 }

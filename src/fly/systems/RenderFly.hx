@@ -17,9 +17,4 @@ class RenderFly implements ISystem {
     mini.dot(position.x + 4.5 + p / 3, position.y + p, 2, 0xCCFFEEEE);
     mini.dot(position.x, position.y, 1.5, 0x000000FF);
   }
-
-  public var componentRequirements(default, null) : Array<Class<Dynamic>> = [Position, Fly];
-  public var entityRequirements(default, null) = null;
-
-  public function toString() return "RenderFly";
 }

@@ -21,11 +21,6 @@ class KeyboardInput implements ISystem {
       event.keys = keys;
       callback(event);
     }
-
-  public var componentRequirements(default, null) : Array<Class<Dynamic>> = null;
-  public var entityRequirements(default, null) = null;
-
-  public function toString() return "KeyboardInput";
 }
 
 @:access(fly.systems.KeyboardInput)

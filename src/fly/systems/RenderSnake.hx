@@ -38,9 +38,4 @@ class RenderSnake implements ISystem {
     }
     return m;
   }
-
-  public var componentRequirements(default, null) : Array<Class<Dynamic>> = [Position, Snake];
-  public var entityRequirements(default, null) = null;
-
-  public function toString() return "RenderSnake";
 }

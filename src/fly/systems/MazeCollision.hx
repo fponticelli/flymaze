@@ -41,7 +41,4 @@ class MazeCollision implements ISystem {
       d.angle = -d.angle;
     }
   }
-
-  public var componentRequirements(default, null) : Array<Class<Dynamic>> = [PreviousPosition, Position, Direction, Maze];
-  public var entityRequirements(default, null) = null;
 }

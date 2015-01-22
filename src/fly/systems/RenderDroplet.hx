@@ -24,9 +24,4 @@ class RenderDroplet implements ISystem {
       droplet.color
     );
   }
-
-  public var componentRequirements(default, null) : Array<Class<Dynamic>> = [Position, Droplet];
-  public var entityRequirements(default, null) = null;
-
-  public function toString() return "RenderDroplet";
 }

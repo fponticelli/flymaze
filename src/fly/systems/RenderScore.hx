@@ -15,9 +15,4 @@ class RenderScore implements ISystem {
     mini.ctx.fillStyle = "#000000";
     mini.ctx.fillText('${score.value}', 10, 20);
   }
-
-  public var componentRequirements(default, null) : Array<Class<Dynamic>> = [Score];
-  public var entityRequirements(default, null) = null;
-
-  public function toString() return "RenderScore";
 }

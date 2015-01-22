@@ -621,8 +621,8 @@ edge_Engine.prototype = {
 		var $it1 = this.mapInfo.keys();
 		while( $it1.hasNext() ) {
 			var system1 = $it1.next();
-			var this2 = this.mapInfo.h[system1.__id__].entities;
-			this2.remove(entity);
+			var this11 = this.mapInfo.h[system1.__id__].entities;
+			this11.remove(entity);
 		}
 		this.mapEntities.remove(entity);
 		entity.engine = null;
@@ -1234,7 +1234,7 @@ fly_components_Velocity.prototype = {
 };
 var fly_systems_KeyboardInput = function(callback) {
 	this.entityRequirements = null;
-	this.componentRequirements = null;
+	this.componentRequirements = [];
 	var _g = this;
 	this.callback = callback;
 	this.keys = thx_core__$Set_Set_$Impl_$.create([]);
@@ -1261,7 +1261,7 @@ fly_systems_KeyboardInput.prototype = {
 	,componentRequirements: null
 	,entityRequirements: null
 	,toString: function() {
-		return "KeyboardInput";
+		return "fly.systems.KeyboardInput";
 	}
 	,__class__: fly_systems_KeyboardInput
 };
@@ -1310,11 +1310,14 @@ fly_systems_MazeCollision.prototype = {
 	}
 	,componentRequirements: null
 	,entityRequirements: null
+	,toString: function() {
+		return "fly.systems.MazeCollision";
+	}
 	,__class__: fly_systems_MazeCollision
 };
 var fly_systems_RenderBackground = function(mini,color) {
 	this.entityRequirements = null;
-	this.componentRequirements = null;
+	this.componentRequirements = [];
 	this.mini = mini;
 	this.color = thx_color__$RGB_RGB_$Impl_$.toCSS3(color);
 };
@@ -1329,7 +1332,7 @@ fly_systems_RenderBackground.prototype = {
 	,componentRequirements: null
 	,entityRequirements: null
 	,toString: function() {
-		return "RenderBackground";
+		return "fly.systems.RenderBackground";
 	}
 	,__class__: fly_systems_RenderBackground
 };
@@ -1349,7 +1352,7 @@ fly_systems_RenderDroplet.prototype = {
 	,componentRequirements: null
 	,entityRequirements: null
 	,toString: function() {
-		return "RenderDroplet";
+		return "fly.systems.RenderDroplet";
 	}
 	,__class__: fly_systems_RenderDroplet
 };
@@ -1372,7 +1375,7 @@ fly_systems_RenderFly.prototype = {
 	,componentRequirements: null
 	,entityRequirements: null
 	,toString: function() {
-		return "RenderFly";
+		return "fly.systems.RenderFly";
 	}
 	,__class__: fly_systems_RenderFly
 };
@@ -1422,6 +1425,9 @@ fly_systems_RenderMaze.prototype = {
 	}
 	,componentRequirements: null
 	,entityRequirements: null
+	,toString: function() {
+		return "fly.systems.RenderMaze";
+	}
 	,__class__: fly_systems_RenderMaze
 };
 var fly_systems_RenderScore = function(mini) {
@@ -1441,7 +1447,7 @@ fly_systems_RenderScore.prototype = {
 	,componentRequirements: null
 	,entityRequirements: null
 	,toString: function() {
-		return "RenderScore";
+		return "fly.systems.RenderScore";
 	}
 	,__class__: fly_systems_RenderScore
 };
@@ -1479,7 +1485,7 @@ fly_systems_RenderSnake.prototype = {
 	,componentRequirements: null
 	,entityRequirements: null
 	,toString: function() {
-		return "RenderSnake";
+		return "fly.systems.RenderSnake";
 	}
 	,__class__: fly_systems_RenderSnake
 };
@@ -1516,7 +1522,7 @@ fly_systems_SnakeEatsFly.prototype = {
 	,componentRequirements: null
 	,entityRequirements: null
 	,toString: function() {
-		return "SnakeEatsFly";
+		return "fly.systems.SnakeEatsFly";
 	}
 	,__class__: fly_systems_SnakeEatsFly
 };
@@ -1541,7 +1547,7 @@ fly_systems_UpdateFly.prototype = {
 	,componentRequirements: null
 	,entityRequirements: null
 	,toString: function() {
-		return "UpdateFly";
+		return "fly.systems.UpdateFly";
 	}
 	,__class__: fly_systems_UpdateFly
 };
@@ -1559,7 +1565,7 @@ fly_systems_UpdatePosition.prototype = {
 	,componentRequirements: null
 	,entityRequirements: null
 	,toString: function() {
-		return "UpdatePosition";
+		return "fly.systems.UpdatePosition";
 	}
 	,__class__: fly_systems_UpdatePosition
 };
@@ -1577,7 +1583,7 @@ fly_systems_UpdatePreviousPosition.prototype = {
 	,componentRequirements: null
 	,entityRequirements: null
 	,toString: function() {
-		return "UpdatePreviousPosition";
+		return "fly.systems.UpdatePreviousPosition";
 	}
 	,__class__: fly_systems_UpdatePreviousPosition
 };
@@ -1614,7 +1620,7 @@ fly_systems_UpdateSnake.prototype = {
 	,componentRequirements: null
 	,entityRequirements: null
 	,toString: function() {
-		return "UpdateSnake";
+		return "fly.systems.UpdateSnake";
 	}
 	,__class__: fly_systems_UpdateSnake
 };

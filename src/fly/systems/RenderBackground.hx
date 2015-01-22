@@ -12,13 +12,7 @@ class RenderBackground implements ISystem {
     this.color = color.toCSS3();
   }
 
-
   public function update() {
     mini.fill(color);
   }
-
-  public var componentRequirements(default, null) : Array<Class<Dynamic>> = null;
-  public var entityRequirements(default, null) = null;
-
-  public function toString() return "RenderBackground";
 }
