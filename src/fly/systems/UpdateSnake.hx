@@ -5,10 +5,10 @@ import fly.components.*;
 import thx.math.random.Random;
 
 class UpdateSnake implements ISystem {
-  var world : World;
+  var engine : Engine;
   var gen : Random;
-  public function new(world : World, gen : Random) {
-    this.world = world;
+  public function new(engine : Engine, gen : Random) {
+    this.engine = engine;
     this.gen = gen;
   }
 
@@ -28,7 +28,7 @@ class UpdateSnake implements ISystem {
     while(i >= 0 ) {
       snake.jumping[i]++;
       if(snake.jumping[i] == snake.trail.length) {
-        world.addEntity(new Entity([
+        engine.addEntity(new Entity([
           new Position(tx, ty),
           Droplet.create(gen)
         ]));
@@ -38,11 +38,8 @@ class UpdateSnake implements ISystem {
     }
   }
 
-  public function getUpdateRequirements() : Array<Class<Dynamic>>
-    return [Position, Snake];
-
-  public function getEntitiesRequirements() : Array<{ name : String , cls : Class<Dynamic> }>
-    return null;
+  public var componentRequirements(default, null) : Array<Class<Dynamic>> = [Position, Snake];
+  public var entityRequirements(default, null) = null;
 
   public function toString() return "UpdateSnake";
 }

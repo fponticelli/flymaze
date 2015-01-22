@@ -22,11 +22,8 @@ class KeyboardInput implements ISystem {
       callback(event);
     }
 
-  public function getUpdateRequirements() : Array<Class<Dynamic>>
-    return null;
-
-  public function getEntitiesRequirements() : Array<{ name : String , cls : Class<Dynamic> }>
-    return null;
+  public var componentRequirements(default, null) : Array<Class<Dynamic>> = null;
+  public var entityRequirements(default, null) = null;
 
   public function toString() return "KeyboardInput";
 }

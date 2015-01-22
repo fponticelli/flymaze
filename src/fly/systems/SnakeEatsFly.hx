@@ -4,11 +4,11 @@ import edge.*;
 import fly.components.*;
 
 class SnakeEatsFly implements ISystem {
-  var world : World;
+  var engine : Engine;
   var sqdistance : Float;
   public var entities : Array<{ position : Position, fly : Fly, entity : Entity }>;
-  public function new(world : World, distance : Float) {
-    this.world = world;
+  public function new(engine : Engine, distance : Float) {
+    this.engine = engine;
     this.entities = [];
     this.sqdistance = distance * distance;
   }
@@ -20,18 +20,15 @@ class SnakeEatsFly implements ISystem {
       dx = position.x - o.position.x;
       dy = position.y - o.position.y;
       if(dx * dx + dy * dy <= sqdistance) {
-        world.removeEntity(o.entity);
+        engine.removeEntity(o.entity);
         snake.jumping.push(0);
         score.value++;
       }
     }
   }
 
-  public function getUpdateRequirements() : Array<Class<Dynamic>>
-    return [Position, Snake, Score];
-
-  public function getEntitiesRequirements() : Array<{ name : String , cls : Class<Dynamic> }>
-    return [
+  public var componentRequirements(default, null) : Array<Class<Dynamic>> = [Position, Snake, Score];
+  public var entityRequirements(default, null) : Array<{ name : String , cls : Class<Dynamic> }> = [
       { name : "position", cls : Position },
       { name : "fly", cls : Fly }
     ];

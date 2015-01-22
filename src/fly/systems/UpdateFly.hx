@@ -21,11 +21,8 @@ class UpdateFly implements ISystem {
     fly.height = 0.max(fly.height + gen.float() * 1 - 0.5).min(6);
   }
 
-  public function getUpdateRequirements() : Array<Class<Dynamic>>
-    return [Position, Fly];
-
-  public function getEntitiesRequirements() : Array<{ name : String , cls : Class<Dynamic> }>
-    return null;
+  public var componentRequirements(default, null) : Array<Class<Dynamic>> = [Position, Fly];
+  public var entityRequirements(default, null) = null;
 
   public function toString() return "UpdateFly";
 }

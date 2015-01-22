@@ -13,9 +13,7 @@ import fly.systems.*;
 
 class Game {
   var world : World;
-  var remainder = 0.0;
-  var delta = 20.0;
-  var cancel : Void -> Void;
+  var engine : Engine;
   var config : Config;
   var maze : Maze;
 
@@ -36,6 +34,7 @@ class Game {
     maze.cells[config.startRow-1][config.startCol].bottom = true;
 
     world = new World();
+    engine = world.engine;
     var snake = new Snake(60, p),
         snakeEntity = new Entity([
           p,
@@ -44,45 +43,49 @@ class Game {
           snake,
           maze,
           new PreviousPosition(p.x, p.y),
-          new Score()
+          new Score()//,
+          //new Fly(10)
         ]);
 
     //Timer.repeat(function() direction.angle += Math.PI / 180, 10);
 
-    world.addEntity(snakeEntity);
+    engine.addEntity(snakeEntity);
 
 //    for(i in 0...2)
 //      createSnake(world, maze, config.width, config.height);
 
     for(i in 0...200)
-      createFly(world, config);
+      createFly(engine, config);
 
-    world.addSystem(new UpdatePosition(), Cycle.preUpdate);
-    world.addSystem(new UpdateFly(config.width, config.height, config.gen), Cycle.update);
-    world.addSystem(new MazeCollision(config.cellSize), Cycle.update);
-    world.addSystem(new UpdatePreviousPosition(), Cycle.postUpdate);
-    world.addSystem(new UpdateSnake(world, config.gen), Cycle.postUpdate);
-    world.addSystem(new SnakeEatsFly(world, 8), Cycle.postUpdate);
+    var steering = ONE_DEGREE * 5;
 
-    world.addSystem(new RenderDroplet(mini), Cycle.preRender);
-    world.addSystem(new RenderSnake(mini), Cycle.render);
-    world.addSystem(new RenderMaze(mini.ctx, config.cellSize), Cycle.postRender);
-    world.addSystem(new RenderFly(mini), Cycle.postRender);
-    world.addSystem(new RenderScore(mini), Cycle.postRender);
-
-    // general systems
-    world.addSystem(new RenderBackground(mini, config.backgroundColor), Cycle.preRender);
-    world.addSystem(new KeyboardInput(function(e) for(key in e.keys) switch key {
+    world.frame.add(new KeyboardInput(function(e) for(key in e.keys) switch key {
       case 37, 65: // left
-        direction.angle -= ONE_DEGREE * 3;
+        direction.angle -= steering;
       case 39, 68: // right
-        direction.angle += ONE_DEGREE * 3;
+        direction.angle += steering;
       case 38, 87: // accellerate
         velocity.value = (velocity.value + 0.01).min(20);
       case 40, 83: // decellerate
         velocity.value = (velocity.value - 0.01).max(0.02);
       case _: trace('key: $key');
-    }), Cycle.preFrame);
+    }));
+
+    world.physics.add(new UpdatePosition());
+    world.physics.add(new UpdateFly(config.width, config.height, config.gen));
+    world.physics.add(new MazeCollision(config.cellSize));
+    world.physics.add(new UpdatePreviousPosition());
+    world.physics.add(new UpdateSnake(engine, config.gen));
+    world.physics.add(new SnakeEatsFly(engine, 8));
+
+    world.render.add(new RenderBackground(mini, config.backgroundColor));
+    world.render.add(new RenderDroplet(mini));
+    world.render.add(new RenderSnake(mini));
+    world.render.add(new RenderMaze(mini.ctx, config.cellSize));
+    world.render.add(new RenderFly(mini));
+    world.render.add(new RenderScore(mini));
+
+    // general systems
 
     js.Browser.window.addEventListener("keyup", function(e) {
       if(e.keyCode == 32) {
@@ -94,7 +97,7 @@ class Game {
       }
     });
 
-    //world.addSystem(new RenderPosition(mini), Cycle.render);
+    //world.render.add(new RenderPosition(mini), Cycle.render);
   }
 /*
   function createSnake(world : World, maze : Maze, w, h) {
@@ -107,43 +110,20 @@ class Game {
       maze,
       new PreviousPosition(p.x, p.y)
     ]);
-    world.addEntity(snake);
+    engine.addEntity(snake);
   }
 */
-  function createFly(world : World, config : Config) {
+  function createFly(engine : Engine, config : Config) {
     var a = config.gen.float() * Math.PI * 2,
         p = new Position(
           Math.cos(a) * config.gen.float() * config.flyCircleRadius + config.width / 2,
           Math.sin(a) * config.gen.float() * config.flyCircleRadius + config.height / 2);
-    world.addEntity(new Entity([p, Fly.create(config.gen)]));
+    engine.addEntity(new Entity([p, Fly.create(config.gen)]));
   }
 
-  public function run() {
-    if(running) return;
-    cancel = Timer.frame(frame);
-    running = true;
-  }
+  public function run()
+    world.start();
 
-  function frame(t : Float) {
-    world.preFrame();
-    t += remainder;
-    while(t > delta) {
-      t -= delta;
-      world.preUpdate();
-      world.update();
-      world.postUpdate();
-    }
-    remainder = t;
-    world.preRender();
-    world.render();
-    world.postRender();
-    world.postFrame();
-  }
-
-  public function stop() {
-    if(!running) return;
-    cancel();
-    running = false;
-    cancel = Functions.noop;
-  }
+  public function stop()
+    world.stop();
 }
