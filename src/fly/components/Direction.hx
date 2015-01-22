@@ -1,9 +1,6 @@
 package fly.components;
 
-class Direction {
-  public function new(angle)
-    this.angle = angle;
-
+class Direction implements edge.IComponent {
   public var angle : Float;
   public var dx(get, null) : Float;
   public var dy(get, null) : Float;

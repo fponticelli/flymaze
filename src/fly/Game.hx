@@ -43,7 +43,7 @@ class Game {
           snake,
           maze,
           new PreviousPosition(p.x, p.y),
-          new Score()
+          new Score(0)
         ]);
 
     engine.addEntity(snakeEntity);

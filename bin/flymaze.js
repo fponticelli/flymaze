@@ -135,7 +135,7 @@ Main.main = function() {
 	var config = new fly_Config();
 	var mini = minicanvas_MiniCanvas.create(config.width,config.height).display("flymaze");
 	var game = new fly_Game(mini,config);
-	game.run();
+	game.start();
 };
 Math.__name__ = ["Math"];
 var Reflect = function() { };
@@ -808,6 +808,8 @@ edge_Entity.prototype = {
 	}
 	,__class__: edge_Entity
 };
+var edge_IComponent = function() { };
+edge_IComponent.__name__ = ["edge","IComponent"];
 var edge_ISystem = function() { };
 edge_ISystem.__name__ = ["edge","ISystem"];
 edge_ISystem.prototype = {
@@ -954,6 +956,7 @@ var edge_World = function(delta,schedule) {
 	this.physics = this.engine.createPhase();
 	this.render = this.engine.createPhase();
 	this.remainder = 0;
+	this.running = false;
 	this.delta = delta;
 	if(null != schedule) this.schedule = schedule; else this.schedule = thx_core_Timer.frame;
 };
@@ -964,11 +967,13 @@ edge_World.prototype = {
 	,render: null
 	,engine: null
 	,delta: null
+	,running: null
 	,schedule: null
 	,cancel: null
 	,remainder: null
 	,start: function() {
-		if(null != this.cancel) return;
+		if(this.running) return;
+		this.running = true;
 		this.cancel = this.schedule($bind(this,this.run));
 	}
 	,run: function(t) {
@@ -982,9 +987,9 @@ edge_World.prototype = {
 		this.render.update();
 	}
 	,stop: function() {
-		if(null == this.cancel) return;
+		if(!this.running) return;
+		this.running = false;
 		this.cancel();
-		this.cancel = null;
 	}
 	,__class__: edge_World
 };
@@ -1029,7 +1034,7 @@ var fly_Game = function(mini,config) {
 	this.world = new edge_World();
 	this.engine = this.world.engine;
 	var snake = new fly_components_Snake(60,p);
-	var snakeEntity = new edge_Entity([p,direction,velocity,snake,this.maze,new fly_components_PreviousPosition(p.x,p.y),new fly_components_Score()]);
+	var snakeEntity = new edge_Entity([p,direction,velocity,snake,this.maze,new fly_components_PreviousPosition(p.x,p.y),new fly_components_Score(0)]);
 	this.engine.addEntity(snakeEntity);
 	var _g1 = 0;
 	while(_g1 < 200) {
@@ -1057,7 +1062,7 @@ var fly_Game = function(mini,config) {
 				velocity.value = Math.max(velocity.value - 0.01,0.02);
 				break;
 			default:
-				haxe_Log.trace("key: " + key,{ fileName : "Game.hx", lineNumber : 71, className : "fly.Game", methodName : "new"});
+				haxe_Log.trace("key: " + key,{ fileName : "Game.hx", lineNumber : 65, className : "fly.Game", methodName : "new"});
 			}
 		}
 	}));
@@ -1075,7 +1080,7 @@ var fly_Game = function(mini,config) {
 	this.world.render.add(new fly_systems_RenderScore(mini));
 	window.addEventListener("keyup",function(e1) {
 		if(e1.keyCode == 32) {
-			if(_g.running) _g.stop(); else _g.run();
+			if(_g.world.running) _g.stop(); else _g.start();
 		}
 	});
 };
@@ -1091,7 +1096,7 @@ fly_Game.prototype = {
 		var p = new fly_components_Position(Math.cos(a) * config.gen["float"]() * config.flyCircleRadius + config.width / 2,Math.sin(a) * config.gen["float"]() * config.flyCircleRadius + config.height / 2);
 		engine.addEntity(new edge_Entity([p,fly_components_Fly.create(config.gen)]));
 	}
-	,run: function() {
+	,start: function() {
 		this.world.start();
 	}
 	,stop: function() {
@@ -1103,6 +1108,7 @@ var fly_components_Direction = function(angle) {
 	this.angle = angle;
 };
 fly_components_Direction.__name__ = ["fly","components","Direction"];
+fly_components_Direction.__interfaces__ = [edge_IComponent];
 fly_components_Direction.prototype = {
 	angle: null
 	,dx: null
@@ -1113,6 +1119,9 @@ fly_components_Direction.prototype = {
 	,get_dy: function() {
 		return Math.sin(this.angle);
 	}
+	,toString: function() {
+		return "Direction(angle=$angle)";
+	}
 	,__class__: fly_components_Direction
 };
 var fly_components_Droplet = function(radius,color) {
@@ -1120,6 +1129,7 @@ var fly_components_Droplet = function(radius,color) {
 	this.color = color;
 };
 fly_components_Droplet.__name__ = ["fly","components","Droplet"];
+fly_components_Droplet.__interfaces__ = [edge_IComponent];
 fly_components_Droplet.create = function(gen) {
 	return new fly_components_Droplet(gen["float"]() * 0.5 + 1.2,thx_color__$HSL_HSL_$Impl_$.toRGB(thx_color__$HSL_HSL_$Impl_$.create(20 + 30 * gen["float"](),gen["float"]() * 0.4 + 0.6,0.3)));
 };
@@ -1127,7 +1137,7 @@ fly_components_Droplet.prototype = {
 	radius: null
 	,color: null
 	,toString: function() {
-		return "Droplet";
+		return "Droplet(radius=$radius,color=$color)";
 	}
 	,__class__: fly_components_Droplet
 };
@@ -1135,13 +1145,14 @@ var fly_components_Fly = function(height) {
 	this.height = height;
 };
 fly_components_Fly.__name__ = ["fly","components","Fly"];
+fly_components_Fly.__interfaces__ = [edge_IComponent];
 fly_components_Fly.create = function(gen) {
 	return new fly_components_Fly(gen["float"]() * 5);
 };
 fly_components_Fly.prototype = {
 	height: null
 	,toString: function() {
-		return "Fly";
+		return "Fly(height=$height)";
 	}
 	,__class__: fly_components_Fly
 };
@@ -1150,11 +1161,12 @@ var fly_components_Position = function(x,y) {
 	this.y = y;
 };
 fly_components_Position.__name__ = ["fly","components","Position"];
+fly_components_Position.__interfaces__ = [edge_IComponent];
 fly_components_Position.prototype = {
 	x: null
 	,y: null
 	,toString: function() {
-		return "Position(" + this.x + ", " + this.y + ")";
+		return "Position(x=$x,y=$y)";
 	}
 	,__class__: fly_components_Position
 };
@@ -1163,22 +1175,24 @@ var fly_components_PreviousPosition = function(x,y) {
 	this.y = y;
 };
 fly_components_PreviousPosition.__name__ = ["fly","components","PreviousPosition"];
+fly_components_PreviousPosition.__interfaces__ = [edge_IComponent];
 fly_components_PreviousPosition.prototype = {
 	x: null
 	,y: null
 	,toString: function() {
-		return "PreviousPosition(" + this.x + ", " + this.y + ")";
+		return "PreviousPosition(x=$x,y=$y)";
 	}
 	,__class__: fly_components_PreviousPosition
 };
-var fly_components_Score = function() {
-	this.value = 0;
+var fly_components_Score = function(value) {
+	this.value = value;
 };
 fly_components_Score.__name__ = ["fly","components","Score"];
+fly_components_Score.__interfaces__ = [edge_IComponent];
 fly_components_Score.prototype = {
 	value: null
 	,toString: function() {
-		return "Score(" + this.value + ")";
+		return "Score(value=$value)";
 	}
 	,__class__: fly_components_Score
 };
@@ -1199,6 +1213,7 @@ var fly_components_Snake = function(length,start,trailWidth,headWidth) {
 	this.jumping = [];
 };
 fly_components_Snake.__name__ = ["fly","components","Snake"];
+fly_components_Snake.__interfaces__ = [edge_IComponent];
 fly_components_Snake.prototype = {
 	pos: null
 	,trail: null
@@ -1222,14 +1237,21 @@ fly_components_Snake.prototype = {
 			callback(this.trail[p],this.trail[i1]);
 		}
 	}
+	,toString: function() {
+		return "Snake(pos=$pos,trail=$trail,trailWidth=$trailWidth,headWidth=$headWidth,colors=$colors,jumping=$jumping)";
+	}
 	,__class__: fly_components_Snake
 };
 var fly_components_Velocity = function(value) {
 	this.value = value;
 };
 fly_components_Velocity.__name__ = ["fly","components","Velocity"];
+fly_components_Velocity.__interfaces__ = [edge_IComponent];
 fly_components_Velocity.prototype = {
 	value: null
+	,toString: function() {
+		return "Velocity(value=$value)";
+	}
 	,__class__: fly_components_Velocity
 };
 var fly_systems_KeyboardInput = function(callback) {

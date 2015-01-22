@@ -3,7 +3,7 @@ package fly.components;
 import edge.World;
 import fly.components.Position;
 
-class Snake {
+class Snake implements edge.IComponent {
   public var pos : Int;
   public var trail : Array<Position>;
   public var trailWidth : Float;
