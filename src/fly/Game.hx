@@ -68,6 +68,10 @@ class Game {
     world.physics.add(new UpdatePosition());
     world.physics.add(new UpdateFly(config.width, config.height, config.gen));
     world.physics.add(new MazeCollision(config.cellSize));
+    // TO DO:
+    // this can be refactored by removing PreviousPosition
+    // and moving MazeCollision before UpdatePosition and calculate
+    // everything in the first
     world.physics.add(new UpdatePreviousPosition());
     world.physics.add(new UpdateSnake(engine, config.gen));
     world.physics.add(new SnakeEatsFly(engine, 8));
