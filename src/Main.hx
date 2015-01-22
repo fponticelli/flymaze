@@ -8,7 +8,7 @@ class Main {
     var config = new Config(),
         mini = MiniCanvas.create(config.width, config.height).display("flymaze"),
         game = new fly.Game(mini, config);
-    game.run();
+    game.start();
 /*
     var sui = new Sui();
     sui.bind(maze.width);

@@ -89,10 +89,10 @@ class Game {
 
     js.Browser.window.addEventListener("keyup", function(e) {
       if(e.keyCode == 32) {
-        if(running)
+        if(world.running)
           stop();
         else {
-          run();
+          start();
         }
       }
     });
@@ -121,7 +121,7 @@ class Game {
     engine.addEntity(new Entity([p, Fly.create(config.gen)]));
   }
 
-  public function run()
+  public function start()
     world.start();
 
   public function stop()
