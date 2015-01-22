@@ -43,16 +43,10 @@ class Game {
           snake,
           maze,
           new PreviousPosition(p.x, p.y),
-          new Score()//,
-          //new Fly(10)
+          new Score()
         ]);
 
-    //Timer.repeat(function() direction.angle += Math.PI / 180, 10);
-
     engine.addEntity(snakeEntity);
-
-//    for(i in 0...2)
-//      createSnake(world, maze, config.width, config.height);
 
     for(i in 0...200)
       createFly(engine, config);
@@ -85,8 +79,6 @@ class Game {
     world.render.add(new RenderFly(mini));
     world.render.add(new RenderScore(mini));
 
-    // general systems
-
     js.Browser.window.addEventListener("keyup", function(e) {
       if(e.keyCode == 32) {
         if(world.running)
@@ -96,23 +88,8 @@ class Game {
         }
       }
     });
+  }
 
-    //world.render.add(new RenderPosition(mini), Cycle.render);
-  }
-/*
-  function createSnake(world : World, maze : Maze, w, h) {
-    var p = new Position(Math.random() * w, Math.random() * h);
-    var snake = new Entity([
-      p,
-      new Direction(Math.random() * 2 * Math.PI),
-      new Velocity(2),
-      new Snake(40, p),
-      maze,
-      new PreviousPosition(p.x, p.y)
-    ]);
-    engine.addEntity(snake);
-  }
-*/
   function createFly(engine : Engine, config : Config) {
     var a = config.gen.float() * Math.PI * 2,
         p = new Position(
