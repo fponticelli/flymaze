@@ -70,8 +70,8 @@ class Game {
     world.physics.add(new MazeCollision(config.cellSize));
     world.physics.add(new UpdatePosition());
     world.physics.add(new UpdateFly(config.width, config.height, config.gen));
-    world.physics.add(new UpdateSnake(engine, config.gen));
-    world.physics.add(new SnakeEats(engine, 8));
+    world.physics.add(new UpdateSnake());
+    world.physics.add(new SnakeEats(engine, config.gen, 8));
 
     world.render.add(new RenderBackground(mini, config.backgroundColor));
     world.render.add(new RenderDroplet(mini));
@@ -92,8 +92,8 @@ class Game {
     });
   }
 
-  static var edibleFly = new Edible(true);
-  static var edibleFlower = new Edible(false);
+  static var edibleFly = new Edible(true, true);
+  static var edibleFlower = new Edible(false, false);
 
   function createFly(engine : Engine, config : Config) {
     var a = config.gen.float() * Math.PI * 2,

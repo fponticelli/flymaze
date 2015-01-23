@@ -2,13 +2,16 @@ package fly.systems;
 
 import edge.*;
 import fly.components.*;
+import thx.math.random.Random;
 
 class SnakeEats implements ISystem {
   var engine : Engine;
   var sqdistance : Float;
+  var gen : Random;
   public var entities : Iterator<{ position : Position, edible : Edible, entity : Entity }>;
-  public function new(engine : Engine, distance : Float) {
+  public function new(engine : Engine, gen : Random, distance : Float) {
     this.engine = engine;
+    this.gen = gen;
     this.sqdistance = distance * distance;
   }
 
@@ -21,6 +24,11 @@ class SnakeEats implements ISystem {
         engine.removeEntity(o.entity);
         if(o.edible.makeJump)
           snake.jumping.push(0);
+        if(o.edible.makeDroplet)
+          engine.addEntity(new Entity([
+            new Position(position.x, position.y),
+            Droplet.create(gen)
+          ]));
         score.value++;
       }
     }

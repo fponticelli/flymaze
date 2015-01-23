@@ -135,7 +135,6 @@ Main.main = function() {
 	var config = new fly_Config();
 	var mini = minicanvas_MiniCanvas.create(config.width,config.height).display("flymaze");
 	var game = new fly_Game(mini,config);
-	mini.canvas.parentElement.classList.add("main");
 	game.start();
 };
 Math.__name__ = ["Math"];
@@ -1020,15 +1019,17 @@ fly_Config.prototype = {
 	,flyCircleRadius: null
 	,__class__: fly_Config
 };
-var fly_components_Edible = function(makeJump) {
+var fly_components_Edible = function(makeJump,makeDroplet) {
 	this.makeJump = makeJump;
+	this.makeDroplet = makeDroplet;
 };
 fly_components_Edible.__name__ = ["fly","components","Edible"];
 fly_components_Edible.__interfaces__ = [edge_IComponent];
 fly_components_Edible.prototype = {
 	makeJump: null
+	,makeDroplet: null
 	,toString: function() {
-		return "Edible(makeJump=$makeJump)";
+		return "Edible(makeJump=$makeJump,makeDroplet=$makeDroplet)";
 	}
 	,__class__: fly_components_Edible
 };
@@ -1087,8 +1088,8 @@ var fly_Game = function(mini,config) {
 	this.world.physics.add(new fly_systems_MazeCollision(config.cellSize));
 	this.world.physics.add(new fly_systems_UpdatePosition());
 	this.world.physics.add(new fly_systems_UpdateFly(config.width,config.height,config.gen));
-	this.world.physics.add(new fly_systems_UpdateSnake(this.engine,config.gen));
-	this.world.physics.add(new fly_systems_SnakeEats(this.engine,8));
+	this.world.physics.add(new fly_systems_UpdateSnake());
+	this.world.physics.add(new fly_systems_SnakeEats(this.engine,config.gen,8));
 	this.world.render.add(new fly_systems_RenderBackground(mini,config.backgroundColor));
 	this.world.render.add(new fly_systems_RenderDroplet(mini));
 	this.world.render.add(new fly_systems_RenderMaze(mini.ctx,config.cellSize));
@@ -1614,10 +1615,11 @@ fly_systems_RenderSnake.prototype = {
 	}
 	,__class__: fly_systems_RenderSnake
 };
-var fly_systems_SnakeEats = function(engine,distance) {
+var fly_systems_SnakeEats = function(engine,gen,distance) {
 	this.entityRequirements = [{ name : "position", cls : fly_components_Position},{ name : "edible", cls : fly_components_Edible}];
 	this.componentRequirements = [fly_components_Position,fly_components_Snake,fly_components_Score];
 	this.engine = engine;
+	this.gen = gen;
 	this.sqdistance = distance * distance;
 };
 fly_systems_SnakeEats.__name__ = ["fly","systems","SnakeEats"];
@@ -1625,6 +1627,7 @@ fly_systems_SnakeEats.__interfaces__ = [edge_ISystem];
 fly_systems_SnakeEats.prototype = {
 	engine: null
 	,sqdistance: null
+	,gen: null
 	,entities: null
 	,update: function(position,snake,score) {
 		var dx;
@@ -1637,6 +1640,7 @@ fly_systems_SnakeEats.prototype = {
 			if(dx * dx + dy * dy <= this.sqdistance) {
 				this.engine.removeEntity(o.entity);
 				if(o.edible.makeJump) snake.jumping.push(0);
+				if(o.edible.makeDroplet) this.engine.addEntity(new edge_Entity([new fly_components_Position(position.x,position.y),fly_components_Droplet.create(this.gen)]));
 				score.value++;
 			}
 		}
@@ -1691,18 +1695,14 @@ fly_systems_UpdatePosition.prototype = {
 	}
 	,__class__: fly_systems_UpdatePosition
 };
-var fly_systems_UpdateSnake = function(engine,gen) {
+var fly_systems_UpdateSnake = function() {
 	this.entityRequirements = null;
 	this.componentRequirements = [fly_components_Position,fly_components_Snake];
-	this.engine = engine;
-	this.gen = gen;
 };
 fly_systems_UpdateSnake.__name__ = ["fly","systems","UpdateSnake"];
 fly_systems_UpdateSnake.__interfaces__ = [edge_ISystem];
 fly_systems_UpdateSnake.prototype = {
-	engine: null
-	,gen: null
-	,update: function(position,snake) {
+	update: function(position,snake) {
 		var last = snake.pos + 1;
 		if(last >= snake.trail.length) last = 0;
 		var tx = snake.trail[last].x;
@@ -1714,10 +1714,7 @@ fly_systems_UpdateSnake.prototype = {
 		var i = snake.jumping.length - 1;
 		while(i >= 0) {
 			snake.jumping[i]++;
-			if(snake.jumping[i] == snake.trail.length) {
-				this.engine.addEntity(new edge_Entity([new fly_components_Position(tx,ty),fly_components_Droplet.create(this.gen)]));
-				snake.jumping.pop();
-			}
+			if(snake.jumping[i] == snake.trail.length) snake.jumping.pop();
 			i--;
 		}
 	}
@@ -10349,8 +10346,8 @@ if(typeof(scope.performance.now) == "undefined") {
 dots_Html.pattern = new EReg("[<]([^> ]+)","");
 dots_Query.doc = document;
 fly_Game.ONE_DEGREE = Math.PI / 180;
-fly_Game.edibleFly = new fly_components_Edible(true);
-fly_Game.edibleFlower = new fly_components_Edible(false);
+fly_Game.edibleFly = new fly_components_Edible(true,true);
+fly_Game.edibleFlower = new fly_components_Edible(false,false);
 fly_systems_MazeCollision.E = 0.00001;
 haxe_ds_ObjectMap.count = 0;
 js_Boot.__toStr = {}.toString;

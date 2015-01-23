@@ -2,16 +2,8 @@ package fly.systems;
 
 import edge.*;
 import fly.components.*;
-import thx.math.random.Random;
 
 class UpdateSnake implements ISystem {
-  var engine : Engine;
-  var gen : Random;
-  public function new(engine : Engine, gen : Random) {
-    this.engine = engine;
-    this.gen = gen;
-  }
-
   public function update(position : Position, snake : Snake) {
     var last = snake.pos + 1;
     if(last >= snake.trail.length)
@@ -28,10 +20,6 @@ class UpdateSnake implements ISystem {
     while(i >= 0 ) {
       snake.jumping[i]++;
       if(snake.jumping[i] == snake.trail.length) {
-        engine.addEntity(new Entity([
-          new Position(tx, ty),
-          Droplet.create(gen)
-        ]));
         snake.jumping.pop();
       }
       i--;
