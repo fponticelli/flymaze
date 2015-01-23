@@ -68,7 +68,7 @@ class Game {
     world.physics.add(new UpdatePosition());
     world.physics.add(new UpdateFly(config.width, config.height, config.gen));
     world.physics.add(new UpdateSnake(engine, config.gen));
-    world.physics.add(new SnakeEatsFly(engine, 8));
+    world.physics.add(new SnakeEats(engine, 8));
 
     world.render.add(new RenderBackground(mini, config.backgroundColor));
     world.render.add(new RenderDroplet(mini));
@@ -88,12 +88,13 @@ class Game {
     });
   }
 
+  static var edibleFly = new Edible(true);
   function createFly(engine : Engine, config : Config) {
     var a = config.gen.float() * Math.PI * 2,
         p = new Position(
           Math.cos(a) * config.gen.float() * config.flyCircleRadius + config.width / 2,
           Math.sin(a) * config.gen.float() * config.flyCircleRadius + config.height / 2);
-    engine.addEntity(new Entity([p, Fly.create(config.gen)]));
+    engine.addEntity(new Entity([p, Fly.create(config.gen), edibleFly]));
   }
 
   public function start()

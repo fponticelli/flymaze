@@ -3,13 +3,12 @@ package fly.systems;
 import edge.*;
 import fly.components.*;
 
-class SnakeEatsFly implements ISystem {
+class SnakeEats implements ISystem {
   var engine : Engine;
   var sqdistance : Float;
-  public var entities : Array<{ position : Position, fly : Fly, entity : Entity }>;
+  public var entities : Iterator<{ position : Position, edible : Edible, entity : Entity }>;
   public function new(engine : Engine, distance : Float) {
     this.engine = engine;
-    this.entities = [];
     this.sqdistance = distance * distance;
   }
 
@@ -20,7 +19,8 @@ class SnakeEatsFly implements ISystem {
       dy = position.y - o.position.y;
       if(dx * dx + dy * dy <= sqdistance) {
         engine.removeEntity(o.entity);
-        snake.jumping.push(0);
+        if(o.edible.makeJump)
+          snake.jumping.push(0);
         score.value++;
       }
     }
