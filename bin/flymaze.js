@@ -1302,8 +1302,11 @@ fly_systems_MazeCollision.prototype = {
 		var row = Math.floor(p.y / this.cellSize);
 		if(dcol == col && drow == row) return;
 		var cell = maze.cells[row][col];
-		if(dx <= col * this.cellSize && !(0 != (cell & 8))) d.angle = -d.angle + Math.PI; else if(dx >= (col + 1) * this.cellSize && !(0 != (cell & 2))) d.angle = -d.angle + Math.PI;
-		if(dy <= row * this.cellSize && !(0 != (cell & 1))) d.angle = -d.angle; else if(dy >= (row + 1) * this.cellSize && !(0 != (cell & 4))) d.angle = -d.angle;
+		if(dcol == col) {
+			if(drow < row && !(0 != (cell & 1)) || drow > row && !(0 != (cell & 4))) d.angle = -d.angle;
+		} else if(drow == row) {
+			if(dcol < col && !(0 != (cell & 8)) || dcol > col && !(0 != (cell & 2))) d.angle = -d.angle + Math.PI;
+		}
 	}
 	,componentRequirements: null
 	,entityRequirements: null

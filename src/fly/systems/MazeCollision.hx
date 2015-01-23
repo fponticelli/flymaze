@@ -21,21 +21,13 @@ class MazeCollision implements ISystem {
 
     if(dcol == col && drow == row) // no change in cell, nothing to do
       return;
-
     var cell = maze.cells[row][col];
-    if(dx <= col * cellSize && !cell.left) {
-      // crossing left
-      d.angle = -d.angle + Math.PI;
-    } else if(dx >= (col + 1) * cellSize && !cell.right) {
-      // crossing right
-      d.angle = -d.angle + Math.PI;
-    }
-    if(dy <= row * cellSize && !cell.top) {
-      // crossing top
-      d.angle = -d.angle;
-    } else if(dy >= (row + 1) * cellSize && !cell.bottom) {
-      // crossing bottom
-      d.angle = -d.angle;
+    if(dcol == col) {
+      if(drow < row && !cell.top || drow > row && !cell.bottom)
+        d.angle = -d.angle;
+    } else if(drow == row) {
+      if(dcol < col && !cell.left || dcol > col && !cell.right)
+        d.angle = -d.angle + Math.PI;
     }
   }
 }
