@@ -50,7 +50,7 @@ class Game {
     for(i in 0...200)
       createFly(engine, config);
 
-    for(i in 0...3500)
+    for(i in 0...1500)
       createFlower(engine, config);
 
     var steering = ONE_DEGREE * 5;
@@ -76,7 +76,7 @@ class Game {
     world.render.add(new RenderBackground(mini, config.backgroundColor));
     world.render.add(new RenderDroplet(mini));
     world.render.add(new RenderMaze(mini.ctx, config.cellSize));
-    world.render.add(new RenderFlower(mini, 200, 18));
+    world.render.add(new RenderFlower(mini, 200, 22));
     world.render.add(new RenderSnake(mini));
     world.render.add(new RenderFly(mini));
     world.render.add(new RenderScore(mini));

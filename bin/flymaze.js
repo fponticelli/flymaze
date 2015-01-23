@@ -1056,7 +1056,7 @@ var fly_Game = function(mini,config) {
 		this.createFly(this.engine,config);
 	}
 	var _g2 = 0;
-	while(_g2 < 3500) {
+	while(_g2 < 1500) {
 		var i1 = _g2++;
 		this.createFlower(this.engine,config);
 	}
@@ -1093,7 +1093,7 @@ var fly_Game = function(mini,config) {
 	this.world.render.add(new fly_systems_RenderBackground(mini,config.backgroundColor));
 	this.world.render.add(new fly_systems_RenderDroplet(mini));
 	this.world.render.add(new fly_systems_RenderMaze(mini.ctx,config.cellSize));
-	this.world.render.add(new fly_systems_RenderFlower(mini,200,18));
+	this.world.render.add(new fly_systems_RenderFlower(mini,200,22));
 	this.world.render.add(new fly_systems_RenderSnake(mini));
 	this.world.render.add(new fly_systems_RenderFly(mini));
 	this.world.render.add(new fly_systems_RenderScore(mini));
