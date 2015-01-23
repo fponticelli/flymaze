@@ -621,8 +621,8 @@ edge_Engine.prototype = {
 		var $it1 = this.mapInfo.keys();
 		while( $it1.hasNext() ) {
 			var system1 = $it1.next();
-			var this11 = this.mapInfo.h[system1.__id__].entities;
-			this11.remove(entity);
+			var this2 = this.mapInfo.h[system1.__id__].entities;
+			this2.remove(entity);
 		}
 		this.mapEntities.remove(entity);
 		entity.engine = null;
@@ -1034,7 +1034,7 @@ var fly_Game = function(mini,config) {
 	this.world = new edge_World();
 	this.engine = this.world.engine;
 	var snake = new fly_components_Snake(60,p);
-	var snakeEntity = new edge_Entity([p,direction,velocity,snake,this.maze,new fly_components_PreviousPosition(p.x,p.y),new fly_components_Score(0)]);
+	var snakeEntity = new edge_Entity([p,direction,velocity,snake,this.maze,new fly_components_Score(0)]);
 	this.engine.addEntity(snakeEntity);
 	var _g1 = 0;
 	while(_g1 < 200) {
@@ -1062,14 +1062,13 @@ var fly_Game = function(mini,config) {
 				velocity.value = Math.max(velocity.value - 0.01,0.02);
 				break;
 			default:
-				haxe_Log.trace("key: " + key,{ fileName : "Game.hx", lineNumber : 65, className : "fly.Game", methodName : "new"});
+				haxe_Log.trace("key: " + key,{ fileName : "Game.hx", lineNumber : 64, className : "fly.Game", methodName : "new"});
 			}
 		}
 	}));
+	this.world.physics.add(new fly_systems_MazeCollision(config.cellSize));
 	this.world.physics.add(new fly_systems_UpdatePosition());
 	this.world.physics.add(new fly_systems_UpdateFly(config.width,config.height,config.gen));
-	this.world.physics.add(new fly_systems_MazeCollision(config.cellSize));
-	this.world.physics.add(new fly_systems_UpdatePreviousPosition());
 	this.world.physics.add(new fly_systems_UpdateSnake(this.engine,config.gen));
 	this.world.physics.add(new fly_systems_SnakeEatsFly(this.engine,8));
 	this.world.render.add(new fly_systems_RenderBackground(mini,config.backgroundColor));
@@ -1169,20 +1168,6 @@ fly_components_Position.prototype = {
 		return "Position(x=$x,y=$y)";
 	}
 	,__class__: fly_components_Position
-};
-var fly_components_PreviousPosition = function(x,y) {
-	this.x = x;
-	this.y = y;
-};
-fly_components_PreviousPosition.__name__ = ["fly","components","PreviousPosition"];
-fly_components_PreviousPosition.__interfaces__ = [edge_IComponent];
-fly_components_PreviousPosition.prototype = {
-	x: null
-	,y: null
-	,toString: function() {
-		return "PreviousPosition(x=$x,y=$y)";
-	}
-	,__class__: fly_components_PreviousPosition
 };
 var fly_components_Score = function(value) {
 	this.value = value;
@@ -1301,32 +1286,34 @@ fly_systems_KeyboardEvent.prototype = {
 };
 var fly_systems_MazeCollision = function(cellSize) {
 	this.entityRequirements = null;
-	this.componentRequirements = [fly_components_PreviousPosition,fly_components_Position,fly_components_Direction,amaze_Maze];
+	this.componentRequirements = [fly_components_Position,fly_components_Direction,fly_components_Velocity,amaze_Maze];
 	this.cellSize = cellSize;
 };
 fly_systems_MazeCollision.__name__ = ["fly","systems","MazeCollision"];
 fly_systems_MazeCollision.__interfaces__ = [edge_ISystem];
 fly_systems_MazeCollision.prototype = {
 	cellSize: null
-	,update: function(a,b,d,maze) {
-		var bx = b.x / this.cellSize | 0;
-		var by = b.y / this.cellSize | 0;
-		var col = a.x / this.cellSize | 0;
-		var row = a.y / this.cellSize | 0;
-		if(bx == col && by == row) return;
+	,update: function(p,d,v,maze) {
+		var dx = p.x + d.get_dx() * v.value;
+		var dy = p.y + d.get_dy() * v.value;
+		var dcol = dx / this.cellSize | 0;
+		var drow = dy / this.cellSize | 0;
+		var col = p.x / this.cellSize | 0;
+		var row = p.y / this.cellSize | 0;
+		if(dcol == col && drow == row) return;
 		var cell = maze.cells[row][col];
-		if(b.x <= col * this.cellSize && !(0 != (cell & 8))) {
-			b.x = 2 * col * this.cellSize - b.x;
+		if(dx <= col * this.cellSize && !(0 != (cell & 8))) {
+			dx = 2 * col * this.cellSize - dx;
 			d.angle = -d.angle + Math.PI;
-		} else if(b.x >= (col + 1) * this.cellSize && !(0 != (cell & 2))) {
-			b.x = 2 * (col + 1) * this.cellSize - b.x;
+		} else if(dx >= (col + 1) * this.cellSize && !(0 != (cell & 2))) {
+			dx = 2 * (col + 1) * this.cellSize - dx;
 			d.angle = -d.angle + Math.PI;
 		}
-		if(b.y <= row * this.cellSize && !(0 != (cell & 1))) {
-			b.y = 2 * row * this.cellSize - b.y;
+		if(dy <= row * this.cellSize && !(0 != (cell & 1))) {
+			dy = 2 * row * this.cellSize - dy;
 			d.angle = -d.angle;
-		} else if(b.y >= (row + 1) * this.cellSize && !(0 != (cell & 4))) {
-			b.y = 2 * (row + 1) * this.cellSize - b.y;
+		} else if(dy >= (row + 1) * this.cellSize && !(0 != (cell & 4))) {
+			dy = 2 * (row + 1) * this.cellSize - dy;
 			d.angle = -d.angle;
 		}
 	}
@@ -1590,24 +1577,6 @@ fly_systems_UpdatePosition.prototype = {
 		return "fly.systems.UpdatePosition";
 	}
 	,__class__: fly_systems_UpdatePosition
-};
-var fly_systems_UpdatePreviousPosition = function() {
-	this.entityRequirements = null;
-	this.componentRequirements = [fly_components_PreviousPosition,fly_components_Position];
-};
-fly_systems_UpdatePreviousPosition.__name__ = ["fly","systems","UpdatePreviousPosition"];
-fly_systems_UpdatePreviousPosition.__interfaces__ = [edge_ISystem];
-fly_systems_UpdatePreviousPosition.prototype = {
-	update: function(previous,position) {
-		previous.x = position.x;
-		previous.y = position.y;
-	}
-	,componentRequirements: null
-	,entityRequirements: null
-	,toString: function() {
-		return "fly.systems.UpdatePreviousPosition";
-	}
-	,__class__: fly_systems_UpdatePreviousPosition
 };
 var fly_systems_UpdateSnake = function(engine,gen) {
 	this.entityRequirements = null;

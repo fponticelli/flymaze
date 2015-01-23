@@ -11,33 +11,35 @@ class MazeCollision implements ISystem {
     this.cellSize = cellSize;
   }
 
-  public function update(a : PreviousPosition, b : Position, d : Direction, maze : Maze) {
-    var bx = Std.int(b.x / cellSize),
-        by = Std.int(b.y / cellSize),
-        col = Std.int(a.x / cellSize),
-        row = Std.int(a.y / cellSize);
+  public function update(p : Position, d : Direction, v : Velocity, maze : Maze) {
+    var dx = p.x + d.dx * v.value,
+        dy = p.y + d.dy * v.value,
+        dcol = Std.int(dx / cellSize),
+        drow = Std.int(dy / cellSize),
+        col = Std.int(p.x / cellSize),
+        row = Std.int(p.y / cellSize);
 
-    if(bx == col && by == row) // no change in cell, nothing to do
+    if(dcol == col && drow == row) // no change in cell, nothing to do
       return;
 
     var cell = maze.cells[row][col];
 
-    if(b.x <= col * cellSize && !cell.left) {
+    if(dx <= col * cellSize && !cell.left) {
       // crossing left
-      b.x = 2 * col * cellSize - b.x;
+      dx = 2 * col * cellSize - dx;
       d.angle = -d.angle + Math.PI;
-    } else if(b.x >= (col + 1) * cellSize && !cell.right) {
+    } else if(dx >= (col + 1) * cellSize && !cell.right) {
       // crossing right
-      b.x = 2 * (col + 1) * cellSize - b.x;
+      dx = 2 * (col + 1) * cellSize - dx;
       d.angle = -d.angle + Math.PI;
     }
-    if(b.y <= row * cellSize && !cell.top) {
+    if(dy <= row * cellSize && !cell.top) {
       // crossing top
-      b.y = 2 * row * cellSize - b.y;
+      dy = 2 * row * cellSize - dy;
       d.angle = -d.angle;
-    } else if(b.y >= (row + 1) * cellSize && !cell.bottom) {
+    } else if(dy >= (row + 1) * cellSize && !cell.bottom) {
       // crossing bottom
-      b.y = 2 * (row + 1) * cellSize - b.y;
+      dy = 2 * (row + 1) * cellSize - dy;
       d.angle = -d.angle;
     }
   }
