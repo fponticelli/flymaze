@@ -1056,7 +1056,7 @@ var fly_Game = function(mini,config) {
 				direction.angle += steering;
 				break;
 			case 38:case 87:
-				velocity.value = Math.min(velocity.value + 0.01,20);
+				velocity.value = Math.min(velocity.value + 0.01,10);
 				break;
 			case 40:case 83:
 				velocity.value = Math.max(velocity.value - 0.01,0.02);
@@ -1296,26 +1296,14 @@ fly_systems_MazeCollision.prototype = {
 	,update: function(p,d,v,maze) {
 		var dx = p.x + d.get_dx() * v.value;
 		var dy = p.y + d.get_dy() * v.value;
-		var dcol = dx / this.cellSize | 0;
-		var drow = dy / this.cellSize | 0;
-		var col = p.x / this.cellSize | 0;
-		var row = p.y / this.cellSize | 0;
+		var dcol = Math.floor(dx / this.cellSize);
+		var drow = Math.floor(dy / this.cellSize);
+		var col = Math.floor(p.x / this.cellSize);
+		var row = Math.floor(p.y / this.cellSize);
 		if(dcol == col && drow == row) return;
 		var cell = maze.cells[row][col];
-		if(dx <= col * this.cellSize && !(0 != (cell & 8))) {
-			dx = 2 * col * this.cellSize - dx;
-			d.angle = -d.angle + Math.PI;
-		} else if(dx >= (col + 1) * this.cellSize && !(0 != (cell & 2))) {
-			dx = 2 * (col + 1) * this.cellSize - dx;
-			d.angle = -d.angle + Math.PI;
-		}
-		if(dy <= row * this.cellSize && !(0 != (cell & 1))) {
-			dy = 2 * row * this.cellSize - dy;
-			d.angle = -d.angle;
-		} else if(dy >= (row + 1) * this.cellSize && !(0 != (cell & 4))) {
-			dy = 2 * (row + 1) * this.cellSize - dy;
-			d.angle = -d.angle;
-		}
+		if(dx <= col * this.cellSize && !(0 != (cell & 8))) d.angle = -d.angle + Math.PI; else if(dx >= (col + 1) * this.cellSize && !(0 != (cell & 2))) d.angle = -d.angle + Math.PI;
+		if(dy <= row * this.cellSize && !(0 != (cell & 1))) d.angle = -d.angle; else if(dy >= (row + 1) * this.cellSize && !(0 != (cell & 4))) d.angle = -d.angle;
 	}
 	,componentRequirements: null
 	,entityRequirements: null

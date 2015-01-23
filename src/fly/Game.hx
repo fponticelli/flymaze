@@ -58,7 +58,7 @@ class Game {
       case 39, 68: // right
         direction.angle += steering;
       case 38, 87: // accellerate
-        velocity.value = (velocity.value + 0.01).min(20);
+        velocity.value = (velocity.value + 0.01).min(10);
       case 40, 83: // decellerate
         velocity.value = (velocity.value - 0.01).max(0.02);
       case _: trace('key: $key');
