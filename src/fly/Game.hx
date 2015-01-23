@@ -50,6 +50,9 @@ class Game {
     for(i in 0...200)
       createFly(engine, config);
 
+    for(i in 0...3500)
+      createFlower(engine, config);
+
     var steering = ONE_DEGREE * 5;
 
     world.frame.add(new KeyboardInput(function(e) for(key in e.keys) switch key {
@@ -72,8 +75,9 @@ class Game {
 
     world.render.add(new RenderBackground(mini, config.backgroundColor));
     world.render.add(new RenderDroplet(mini));
-    world.render.add(new RenderSnake(mini));
     world.render.add(new RenderMaze(mini.ctx, config.cellSize));
+    world.render.add(new RenderFlower(mini, 200, 18));
+    world.render.add(new RenderSnake(mini));
     world.render.add(new RenderFly(mini));
     world.render.add(new RenderScore(mini));
 
@@ -89,12 +93,22 @@ class Game {
   }
 
   static var edibleFly = new Edible(true);
+  static var edibleFlower = new Edible(false);
+
   function createFly(engine : Engine, config : Config) {
     var a = config.gen.float() * Math.PI * 2,
         p = new Position(
           Math.cos(a) * config.gen.float() * config.flyCircleRadius + config.width / 2,
           Math.sin(a) * config.gen.float() * config.flyCircleRadius + config.height / 2);
     engine.addEntity(new Entity([p, Fly.create(config.gen), edibleFly]));
+  }
+
+  function createFlower(engine : Engine, config : Config) {
+    var p = new Position(
+          config.width * config.gen.float(),
+          config.height * config.gen.float()
+        );
+    engine.addEntity(new Entity([p, new Flower(config.gen.int()), edibleFlower]));
   }
 
   public function start()

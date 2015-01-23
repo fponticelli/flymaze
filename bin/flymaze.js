@@ -135,6 +135,7 @@ Main.main = function() {
 	var config = new fly_Config();
 	var mini = minicanvas_MiniCanvas.create(config.width,config.height).display("flymaze");
 	var game = new fly_Game(mini,config);
+	mini.canvas.parentElement.classList.add("main");
 	game.start();
 };
 Math.__name__ = ["Math"];
@@ -621,8 +622,8 @@ edge_Engine.prototype = {
 		var $it1 = this.mapInfo.keys();
 		while( $it1.hasNext() ) {
 			var system1 = $it1.next();
-			var this2 = this.mapInfo.h[system1.__id__].entities;
-			this2.remove(entity);
+			var this11 = this.mapInfo.h[system1.__id__].entities;
+			this11.remove(entity);
 		}
 		this.mapEntities.remove(entity);
 		entity.engine = null;
@@ -666,12 +667,12 @@ edge_Engine.prototype = {
 	,updateSystem: function(system) {
 		var info = this.mapInfo.h[system.__id__];
 		if(!info.hasComponents) Reflect.callMethod(system,info.update,[]); else {
+			if(info.hasEntities) Reflect.setField(system,"entities",info.entities.iterator());
 			var $it0 = info.components.keys();
 			while( $it0.hasNext() ) {
 				var entity = $it0.next();
 				var components = info.components.h[entity.__id__];
 				if(info.hasEntity) system.entity = entity;
-				if(info.hasEntities) Reflect.setField(system,"entities",thx_core_Iterators.toArray(info.entities.iterator()));
 				Reflect.callMethod(system,info.update,components);
 			}
 		}
@@ -1019,6 +1020,18 @@ fly_Config.prototype = {
 	,flyCircleRadius: null
 	,__class__: fly_Config
 };
+var fly_components_Edible = function(makeJump) {
+	this.makeJump = makeJump;
+};
+fly_components_Edible.__name__ = ["fly","components","Edible"];
+fly_components_Edible.__interfaces__ = [edge_IComponent];
+fly_components_Edible.prototype = {
+	makeJump: null
+	,toString: function() {
+		return "Edible(makeJump=$makeJump)";
+	}
+	,__class__: fly_components_Edible
+};
 var fly_Game = function(mini,config) {
 	this.running = false;
 	var _g = this;
@@ -1041,13 +1054,18 @@ var fly_Game = function(mini,config) {
 		var i = _g1++;
 		this.createFly(this.engine,config);
 	}
+	var _g2 = 0;
+	while(_g2 < 3500) {
+		var i1 = _g2++;
+		this.createFlower(this.engine,config);
+	}
 	var steering = fly_Game.ONE_DEGREE * 5;
 	this.world.frame.add(new fly_systems_KeyboardInput(function(e) {
-		var _g2 = 0;
+		var _g3 = 0;
 		var _g11 = e.keys;
-		while(_g2 < _g11.length) {
-			var key = _g11[_g2];
-			++_g2;
+		while(_g3 < _g11.length) {
+			var key = _g11[_g3];
+			++_g3;
 			switch(key) {
 			case 37:case 65:
 				direction.angle -= steering;
@@ -1062,7 +1080,7 @@ var fly_Game = function(mini,config) {
 				velocity.value = Math.max(velocity.value - 0.01,0.02);
 				break;
 			default:
-				haxe_Log.trace("key: " + key,{ fileName : "Game.hx", lineNumber : 64, className : "fly.Game", methodName : "new"});
+				haxe_Log.trace("key: " + key,{ fileName : "Game.hx", lineNumber : 67, className : "fly.Game", methodName : "new"});
 			}
 		}
 	}));
@@ -1070,11 +1088,12 @@ var fly_Game = function(mini,config) {
 	this.world.physics.add(new fly_systems_UpdatePosition());
 	this.world.physics.add(new fly_systems_UpdateFly(config.width,config.height,config.gen));
 	this.world.physics.add(new fly_systems_UpdateSnake(this.engine,config.gen));
-	this.world.physics.add(new fly_systems_SnakeEatsFly(this.engine,8));
+	this.world.physics.add(new fly_systems_SnakeEats(this.engine,8));
 	this.world.render.add(new fly_systems_RenderBackground(mini,config.backgroundColor));
 	this.world.render.add(new fly_systems_RenderDroplet(mini));
-	this.world.render.add(new fly_systems_RenderSnake(mini));
 	this.world.render.add(new fly_systems_RenderMaze(mini.ctx,config.cellSize));
+	this.world.render.add(new fly_systems_RenderFlower(mini,200,18));
+	this.world.render.add(new fly_systems_RenderSnake(mini));
 	this.world.render.add(new fly_systems_RenderFly(mini));
 	this.world.render.add(new fly_systems_RenderScore(mini));
 	window.addEventListener("keyup",function(e1) {
@@ -1093,7 +1112,11 @@ fly_Game.prototype = {
 	,createFly: function(engine,config) {
 		var a = config.gen["float"]() * Math.PI * 2;
 		var p = new fly_components_Position(Math.cos(a) * config.gen["float"]() * config.flyCircleRadius + config.width / 2,Math.sin(a) * config.gen["float"]() * config.flyCircleRadius + config.height / 2);
-		engine.addEntity(new edge_Entity([p,fly_components_Fly.create(config.gen)]));
+		engine.addEntity(new edge_Entity([p,fly_components_Fly.create(config.gen),fly_Game.edibleFly]));
+	}
+	,createFlower: function(engine,config) {
+		var p = new fly_components_Position(config.width * config.gen["float"](),config.height * config.gen["float"]());
+		engine.addEntity(new edge_Entity([p,new fly_components_Flower(config.gen["int"]()),fly_Game.edibleFlower]));
 	}
 	,start: function() {
 		this.world.start();
@@ -1139,6 +1162,18 @@ fly_components_Droplet.prototype = {
 		return "Droplet(radius=$radius,color=$color)";
 	}
 	,__class__: fly_components_Droplet
+};
+var fly_components_Flower = function(id) {
+	this.id = id;
+};
+fly_components_Flower.__name__ = ["fly","components","Flower"];
+fly_components_Flower.__interfaces__ = [edge_IComponent];
+fly_components_Flower.prototype = {
+	id: null
+	,toString: function() {
+		return "Flower(id=$id)";
+	}
+	,__class__: fly_components_Flower
 };
 var fly_components_Fly = function(height) {
 	this.height = height;
@@ -1306,7 +1341,42 @@ fly_systems_MazeCollision.prototype = {
 			if(drow < row && !(0 != (cell & 1)) || drow > row && !(0 != (cell & 4))) d.angle = -d.angle;
 		} else if(drow == row) {
 			if(dcol < col && !(0 != (cell & 8)) || dcol > col && !(0 != (cell & 2))) d.angle = -d.angle + Math.PI;
+		} else if(dcol < col && drow < row) {
+			if(this.pos(col * this.cellSize,row * this.cellSize,p.x,p.y,dx,dy) > 0) {
+				if(!(0 != (cell & 1))) {
+					if(!(0 != (cell & 8))) d.angle += Math.PI; else d.angle = -d.angle;
+				} else if(null != maze.cells[row - 1][col] && !(0 != (maze.cells[row - 1][col] & 8))) d.angle = -d.angle + Math.PI;
+			} else if(!(0 != (cell & 8))) {
+				if(!(0 != (cell & 1))) d.angle += Math.PI; else d.angle = -d.angle + Math.PI;
+			} else if(null != maze.cells[row][col - 1] && !(0 != (maze.cells[row][col - 1] & 1))) d.angle = -d.angle;
+		} else if(dcol > col && drow > row) {
+			if(this.pos(col * this.cellSize,row * this.cellSize,p.x,p.y,dx,dy) > 0) {
+				if(!(0 != (cell & 4))) {
+					if(!(0 != (cell & 2))) d.angle += Math.PI; else d.angle = -d.angle;
+				} else if(null != maze.cells[row + 1][col] && !(0 != (maze.cells[row + 1][col] & 2))) d.angle = -d.angle + Math.PI;
+			} else if(!(0 != (cell & 2))) {
+				if(!(0 != (cell & 4))) d.angle += Math.PI; else d.angle = -d.angle + Math.PI;
+			} else if(null != maze.cells[row][col + 1] && !(0 != (maze.cells[row][col + 1] & 4))) d.angle = -d.angle;
+		} else if(dcol < col && drow > row) {
+			if(this.pos(col * this.cellSize,row * this.cellSize,p.x,p.y,dx,dy) > 0) {
+				if(!(0 != (cell & 4))) {
+					if(!(0 != (cell & 8))) d.angle += Math.PI; else d.angle = -d.angle;
+				} else if(null != maze.cells[row + 1][col] && !(0 != (maze.cells[row + 1][col] & 8))) d.angle = -d.angle + Math.PI;
+			} else if(!(0 != (cell & 8))) {
+				if(!(0 != (cell & 4))) d.angle += Math.PI; else d.angle = -d.angle + Math.PI;
+			} else if(null != maze.cells[row][col - 1] && !(0 != (maze.cells[row][col - 1] & 4))) d.angle = -d.angle;
+		} else if(dcol > col && drow < row) {
+			if(this.pos(col * this.cellSize,row * this.cellSize,p.x,p.y,dx,dy) > 0) {
+				if(!(0 != (cell & 1))) {
+					if(!(0 != (cell & 2))) d.angle += Math.PI; else d.angle = -d.angle;
+				} else if(null != maze.cells[row - 1][col] && !(0 != (maze.cells[row - 1][col] & 2))) d.angle = -d.angle + Math.PI;
+			} else if(!(0 != (cell & 2))) {
+				if(!(0 != (cell & 1))) d.angle += Math.PI; else d.angle = -d.angle + Math.PI;
+			} else if(null != maze.cells[row][col + 1] && !(0 != (maze.cells[row][col + 1] & 1))) d.angle = -d.angle;
 		}
+	}
+	,pos: function(x,y,ax,ay,bx,by) {
+		if((bx - ax) * (y - ay) - (by - ay) * (x - ax) < 0) return -1; else return 1;
 	}
 	,componentRequirements: null
 	,entityRequirements: null
@@ -1355,6 +1425,61 @@ fly_systems_RenderDroplet.prototype = {
 		return "fly.systems.RenderDroplet";
 	}
 	,__class__: fly_systems_RenderDroplet
+};
+var fly_systems_RenderFlower = function(mini,cells,size) {
+	this.entityRequirements = null;
+	this.componentRequirements = [fly_components_Position,fly_components_Flower];
+	this.mini = mini;
+	this.size = size;
+	this.images = [];
+	var src = minicanvas_MiniCanvas.create(size,size,minicanvas_ScaleMode.NoScale);
+	var _g = 0;
+	while(_g < cells) {
+		var cell = _g++;
+		this.images.push(fly_systems_RenderFlower.generate(src,size));
+	}
+};
+fly_systems_RenderFlower.__name__ = ["fly","systems","RenderFlower"];
+fly_systems_RenderFlower.__interfaces__ = [edge_ISystem];
+fly_systems_RenderFlower.generate = function(mini,size) {
+	var ctx = mini.ctx;
+	var c = size / 2;
+	ctx.clearRect(0,0,size,size);
+	var n = Std["int"](Math.random() * 6) + 5;
+	var r1 = Math.random() * size / 4 + 1;
+	var r2 = Math.min(Math.random() * c * n / 10 + r1,c);
+	var rp = (r2 - r1) / 2;
+	var r = rp + r1;
+	var sa = Math.random() * Math.PI;
+	var pcolor = thx_color__$HSL_HSL_$Impl_$.create(180 + 240 * Math.random(),Math.random(),Math.random() * 0.3 + 0.5);
+	var _g = 0;
+	while(_g < n) {
+		var i = _g++;
+		var a = sa + Math.PI * 2 * i / n;
+		mini.dot(c + Math.cos(a) * r,c + Math.sin(a) * r,rp,thx_color__$HSL_HSL_$Impl_$.toRGBA(pcolor));
+	}
+	pcolor = thx_color__$HSL_HSL_$Impl_$.lighter(pcolor,Math.random());
+	mini.dot(c,c,r1,thx_color__$HSL_HSL_$Impl_$.toRGBA(pcolor));
+	var image = new Image();
+	image.width = mini.width / 2;
+	image.height = mini.height / 2;
+	image.src = mini.canvas.toDataURL();
+	return image;
+};
+fly_systems_RenderFlower.prototype = {
+	mini: null
+	,size: null
+	,images: null
+	,update: function(position,f) {
+		var image = this.images[f.id % this.images.length];
+		this.mini.ctx.drawImage(image,position.x - this.size / 2,position.y - this.size / 2);
+	}
+	,componentRequirements: null
+	,entityRequirements: null
+	,toString: function() {
+		return "fly.systems.RenderFlower";
+	}
+	,__class__: fly_systems_RenderFlower
 };
 var fly_systems_RenderFly = function(mini) {
 	this.entityRequirements = null;
@@ -1489,32 +1614,29 @@ fly_systems_RenderSnake.prototype = {
 	}
 	,__class__: fly_systems_RenderSnake
 };
-var fly_systems_SnakeEatsFly = function(engine,distance) {
-	this.entityRequirements = [{ name : "position", cls : fly_components_Position},{ name : "fly", cls : fly_components_Fly}];
+var fly_systems_SnakeEats = function(engine,distance) {
+	this.entityRequirements = [{ name : "position", cls : fly_components_Position},{ name : "edible", cls : fly_components_Edible}];
 	this.componentRequirements = [fly_components_Position,fly_components_Snake,fly_components_Score];
 	this.engine = engine;
-	this.entities = [];
 	this.sqdistance = distance * distance;
 };
-fly_systems_SnakeEatsFly.__name__ = ["fly","systems","SnakeEatsFly"];
-fly_systems_SnakeEatsFly.__interfaces__ = [edge_ISystem];
-fly_systems_SnakeEatsFly.prototype = {
+fly_systems_SnakeEats.__name__ = ["fly","systems","SnakeEats"];
+fly_systems_SnakeEats.__interfaces__ = [edge_ISystem];
+fly_systems_SnakeEats.prototype = {
 	engine: null
 	,sqdistance: null
 	,entities: null
 	,update: function(position,snake,score) {
 		var dx;
 		var dy;
-		var _g = 0;
-		var _g1 = this.entities;
-		while(_g < _g1.length) {
-			var o = _g1[_g];
-			++_g;
+		var $it0 = this.entities;
+		while( $it0.hasNext() ) {
+			var o = $it0.next();
 			dx = position.x - o.position.x;
 			dy = position.y - o.position.y;
 			if(dx * dx + dy * dy <= this.sqdistance) {
 				this.engine.removeEntity(o.entity);
-				snake.jumping.push(0);
+				if(o.edible.makeJump) snake.jumping.push(0);
 				score.value++;
 			}
 		}
@@ -1522,9 +1644,9 @@ fly_systems_SnakeEatsFly.prototype = {
 	,componentRequirements: null
 	,entityRequirements: null
 	,toString: function() {
-		return "fly.systems.SnakeEatsFly";
+		return "fly.systems.SnakeEats";
 	}
-	,__class__: fly_systems_SnakeEatsFly
+	,__class__: fly_systems_SnakeEats
 };
 var fly_systems_UpdateFly = function(width,height,gen) {
 	this.entityRequirements = null;
@@ -10227,6 +10349,8 @@ if(typeof(scope.performance.now) == "undefined") {
 dots_Html.pattern = new EReg("[<]([^> ]+)","");
 dots_Query.doc = document;
 fly_Game.ONE_DEGREE = Math.PI / 180;
+fly_Game.edibleFly = new fly_components_Edible(true);
+fly_Game.edibleFlower = new fly_components_Edible(false);
 fly_systems_MazeCollision.E = 0.00001;
 haxe_ds_ObjectMap.count = 0;
 js_Boot.__toStr = {}.toString;
