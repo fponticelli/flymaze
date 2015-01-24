@@ -73,6 +73,7 @@ class Game {
     world.physics.add(new UpdateFly(config.width, config.height, config.gen));
     world.physics.add(new UpdateSnake());
     world.physics.add(new SnakeEats(8));
+    world.physics.add(new UpdateExplosion());
 
     world.render.add(new RenderBackground(mini, config.backgroundColor));
     world.render.add(new RenderDroplet(mini));
@@ -80,6 +81,7 @@ class Game {
     world.render.add(new RenderFlower(mini, 200, 22));
     world.render.add(new RenderSnake(mini));
     world.render.add(new RenderFly(mini));
+    world.render.add(new RenderExplosion(mini));
     world.render.add(new RenderScore(mini));
 
     js.Browser.window.addEventListener("keyup", function(e) {
