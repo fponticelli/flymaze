@@ -16,13 +16,12 @@ class UpdateSnake implements ISystem {
     if(snake.pos >= snake.trail.length)
       snake.pos = 0;
 
-    var i = snake.jumping.length - 1;
-    while(i >= 0 ) {
+    var i = snake.jumping.length;
+    while(--i >= 0) {
       snake.jumping[i]++;
       if(snake.jumping[i] == snake.trail.length) {
         snake.jumping.pop();
       }
-      i--;
     }
   }
 }
