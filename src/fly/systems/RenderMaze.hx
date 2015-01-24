@@ -31,12 +31,12 @@ class RenderMaze implements ISystem {
     ctx.lineWidth = 4;
     ctx.lineCap = "square";
     ctx.strokeStyle = "#669933";
-    for(row in 0...cells.length) {
-      var cells = cells[row];
-      for(col in 0...cells.length) {
-        var cell = cells[col];
+    for(i in 0...cells.length) {
+      var row = cells[i];
+      for(j in 0...row.length) {
+        var cell = row[j];
         ctx.beginPath();
-        drawCell(cell, row, col, cellSize, row == cells.length - 1, col == cells.length - 1);
+        drawCell(cell, i, j, cellSize, i == cells.length - 1, j == row.length - 1);
         ctx.stroke();
       }
     }
