@@ -18,11 +18,11 @@ class SnakeEats implements ISystem {
       dx = position.x - o.position.x;
       dy = position.y - o.position.y;
       if(dx * dx + dy * dy <= sqdistance) {
-        engine.removeEntity(o.entity);
+        engine.remove(o.entity);
         if(o.edible.makeJump)
           snake.jumping.push(0);
         if(o.edible.makeDroplet)
-          engine.addEntity(new Entity([
+          engine.add(new Entity([
             new Position(position.x, position.y),
             new DelayedComponents(
               50,

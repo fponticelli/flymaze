@@ -45,7 +45,7 @@ class Game {
           new Score(0)
         ]);
 
-    engine.addEntity(snakeEntity);
+    engine.add(snakeEntity);
 
     for(i in 0...200)
       createFly(engine, config);
@@ -105,7 +105,7 @@ class Game {
         p = new Position(
           Math.cos(a) * config.gen.float() * config.flyCircleRadius + config.width / 2,
           Math.sin(a) * config.gen.float() * config.flyCircleRadius + config.height / 2);
-    engine.addEntity(new Entity([p, Fly.create(config.gen), edibleFly]));
+    engine.add(new Entity([p, Fly.create(config.gen), edibleFly]));
   }
 
   function createFlower(engine : Engine, config : Config) {
@@ -113,7 +113,7 @@ class Game {
           config.width * config.gen.float(),
           config.height * config.gen.float()
         );
-    engine.addEntity(new Entity([p, new Flower(config.gen.int()), edibleFlower]));
+    engine.add(new Entity([p, new Flower(config.gen.int()), edibleFlower]));
   }
 
   public function start()

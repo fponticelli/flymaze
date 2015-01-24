@@ -16,7 +16,7 @@ class UpdateDetonation implements ISystem {
       dx = position.x - o.position.x;
       dy = position.y - o.position.y;
       if(dx * dx + dy * dy <= sqdistance) {
-        engine.removeEntity(o.entity);
+        engine.remove(o.entity);
       }
     }
     entity.remove(detonation);

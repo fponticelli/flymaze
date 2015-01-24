@@ -13,6 +13,6 @@ class UpdateExplosion implements ISystem {
       entity.add(Detonation.instance);
     explosion.stage--;
     if(explosion.stage <= 0)
-      engine.removeEntity(entity);
+      engine.remove(entity);
   }
 }

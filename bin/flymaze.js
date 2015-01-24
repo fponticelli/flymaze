@@ -1,4 +1,5 @@
 (function (console) { "use strict";
+var $estr = function() { return js_Boot.__string_rec(this,''); };
 function $extend(from, fields) {
 	function Inherit() {} Inherit.prototype = from; var proto = new Inherit();
 	for (var name in fields) proto[name] = fields[name];
@@ -142,7 +143,7 @@ Main.decorateBackground = function() {
 	var w = 300;
 	var h = 300;
 	var s = 20;
-	var mini = minicanvas_MiniCanvas.create(w,h).fill(858993663);
+	var mini = minicanvas_MiniCanvas.create(w,h).fill(-1999896321);
 	var render = new fly_systems_RenderFlower(mini,400,s);
 	var p = new fly_components_Position(0,0);
 	var f = new fly_components_Flower(0);
@@ -172,7 +173,7 @@ Main.decorateBackground = function() {
 		}
 		if($double) render.update(p,f);
 	}
-	mini.fill(-103);
+	mini.fill(-52);
 	el.style.backgroundSize = "" + w + "px " + h + "px";
 	el.style.backgroundImage = "url(" + mini.canvas.toDataURL("image/png") + ")";
 };
@@ -294,20 +295,27 @@ StringTools.hex = function(n,digits) {
 };
 var ValueType = { __ename__ : ["ValueType"], __constructs__ : ["TNull","TInt","TFloat","TBool","TObject","TFunction","TClass","TEnum","TUnknown"] };
 ValueType.TNull = ["TNull",0];
+ValueType.TNull.toString = $estr;
 ValueType.TNull.__enum__ = ValueType;
 ValueType.TInt = ["TInt",1];
+ValueType.TInt.toString = $estr;
 ValueType.TInt.__enum__ = ValueType;
 ValueType.TFloat = ["TFloat",2];
+ValueType.TFloat.toString = $estr;
 ValueType.TFloat.__enum__ = ValueType;
 ValueType.TBool = ["TBool",3];
+ValueType.TBool.toString = $estr;
 ValueType.TBool.__enum__ = ValueType;
 ValueType.TObject = ["TObject",4];
+ValueType.TObject.toString = $estr;
 ValueType.TObject.__enum__ = ValueType;
 ValueType.TFunction = ["TFunction",5];
+ValueType.TFunction.toString = $estr;
 ValueType.TFunction.__enum__ = ValueType;
-ValueType.TClass = function(c) { var $x = ["TClass",6,c]; $x.__enum__ = ValueType; return $x; };
-ValueType.TEnum = function(e) { var $x = ["TEnum",7,e]; $x.__enum__ = ValueType; return $x; };
+ValueType.TClass = function(c) { var $x = ["TClass",6,c]; $x.__enum__ = ValueType; $x.toString = $estr; return $x; };
+ValueType.TEnum = function(e) { var $x = ["TEnum",7,e]; $x.__enum__ = ValueType; $x.toString = $estr; return $x; };
 ValueType.TUnknown = ["TUnknown",8];
+ValueType.TUnknown.toString = $estr;
 ValueType.TUnknown.__enum__ = ValueType;
 var Type = function() { };
 Type.__name__ = ["Type"];
@@ -648,13 +656,20 @@ edge_Engine.prototype = {
 	mapInfo: null
 	,mapEntities: null
 	,listPhases: null
-	,addEntity: function(entity) {
+	,add: function(entity) {
 		entity.engine = this;
 		this.mapEntities.set(entity,true);
 		this.matchSystems(entity);
 		this.matchEntities(entity);
 	}
-	,removeEntity: function(entity) {
+	,clear: function() {
+		var $it0 = this.mapEntities.keys();
+		while( $it0.hasNext() ) {
+			var entity = $it0.next();
+			this.remove(entity);
+		}
+	}
+	,remove: function(entity) {
 		var $it0 = this.mapInfo.keys();
 		while( $it0.hasNext() ) {
 			var system = $it0.next();
@@ -664,8 +679,8 @@ edge_Engine.prototype = {
 		var $it1 = this.mapInfo.keys();
 		while( $it1.hasNext() ) {
 			var system1 = $it1.next();
-			var this11 = this.mapInfo.h[system1.__id__].entities;
-			this11.remove(entity);
+			var this2 = this.mapInfo.h[system1.__id__].entities;
+			this2.remove(entity);
 		}
 		this.mapEntities.remove(entity);
 		entity.engine = null;
@@ -1088,17 +1103,18 @@ var fly_Game = function(mini,config) {
 	var p = new fly_components_Position((config.startCol + 0.5) * config.cellSize,(config.startRow + 1) * config.cellSize - 2);
 	var direction = new fly_components_Direction(-Math.PI / 2 + 3 * fly_Game.ONE_DEGREE);
 	var velocity = new fly_components_Velocity(2);
-	this.maze = new amaze_Maze(config.cols,config.rows,config.gen);
-	this.maze.generate(config.startRow,config.startCol);
-	this.maze.cells[config.startRow][config.startCol] = this.maze.cells[config.startRow][config.startCol] | 1;
+	var m = new amaze_Maze(config.cols,config.rows,config.gen);
+	m.generate(config.startRow,config.startCol);
+	m.cells[config.startRow][config.startCol] = m.cells[config.startRow][config.startCol] | 1;
 	true;
-	this.maze.cells[config.startRow - 1][config.startCol] = this.maze.cells[config.startRow - 1][config.startCol] | 4;
+	m.cells[config.startRow - 1][config.startCol] = m.cells[config.startRow - 1][config.startCol] | 4;
 	true;
+	this.maze = new fly_components_Maze(m,1);
 	this.world = new edge_World();
 	this.engine = this.world.engine;
 	var snake = new fly_components_Snake(60,p);
 	var snakeEntity = new edge_Entity([p,direction,velocity,snake,this.maze,new fly_components_Score(0)]);
-	this.engine.addEntity(snakeEntity);
+	this.engine.add(snakeEntity);
 	var _g1 = 0;
 	while(_g1 < 200) {
 		var i = _g1++;
@@ -1139,13 +1155,17 @@ var fly_Game = function(mini,config) {
 	this.world.physics.add(new fly_systems_UpdatePosition());
 	this.world.physics.add(new fly_systems_UpdateFly(config.width,config.height,config.gen));
 	this.world.physics.add(new fly_systems_UpdateSnake());
-	this.world.physics.add(new fly_systems_SnakeEats(config.gen,8));
+	this.world.physics.add(new fly_systems_SnakeEats(8));
+	this.world.physics.add(new fly_systems_UpdateDroplet());
+	this.world.physics.add(new fly_systems_UpdateExplosion());
+	this.world.physics.add(new fly_systems_UpdateDetonation());
 	this.world.render.add(new fly_systems_RenderBackground(mini,config.backgroundColor));
 	this.world.render.add(new fly_systems_RenderDroplet(mini));
 	this.world.render.add(new fly_systems_RenderMaze(mini.ctx,config.cellSize));
 	this.world.render.add(new fly_systems_RenderFlower(mini,200,22));
 	this.world.render.add(new fly_systems_RenderSnake(mini));
 	this.world.render.add(new fly_systems_RenderFly(mini));
+	this.world.render.add(new fly_systems_RenderExplosion(mini));
 	this.world.render.add(new fly_systems_RenderScore(mini));
 	window.addEventListener("keyup",function(e1) {
 		if(e1.keyCode == 32) {
@@ -1163,11 +1183,11 @@ fly_Game.prototype = {
 	,createFly: function(engine,config) {
 		var a = config.gen["float"]() * Math.PI * 2;
 		var p = new fly_components_Position(Math.cos(a) * config.gen["float"]() * config.flyCircleRadius + config.width / 2,Math.sin(a) * config.gen["float"]() * config.flyCircleRadius + config.height / 2);
-		engine.addEntity(new edge_Entity([p,fly_components_Fly.create(config.gen),fly_Game.edibleFly]));
+		engine.add(new edge_Entity([p,fly_components_Fly.create(config.gen),fly_Game.edibleFly]));
 	}
 	,createFlower: function(engine,config) {
 		var p = new fly_components_Position(config.width * config.gen["float"](),config.height * config.gen["float"]());
-		engine.addEntity(new edge_Entity([p,new fly_components_Flower(config.gen["int"]()),fly_Game.edibleFlower]));
+		engine.add(new edge_Entity([p,new fly_components_Flower(config.gen["int"]()),fly_Game.edibleFlower]));
 	}
 	,start: function() {
 		this.world.start();
@@ -1193,6 +1213,52 @@ fly_components_DelayedComponents.prototype = {
 	}
 	,__class__: fly_components_DelayedComponents
 };
+var fly_components_Explosion = function(stage,draw) {
+	this.stage = stage;
+	this.draw = draw;
+};
+fly_components_Explosion.__name__ = ["fly","components","Explosion"];
+fly_components_Explosion.__interfaces__ = [edge_IComponent];
+fly_components_Explosion.create = function() {
+	var offset = 20;
+	var size = (fly_components_Explosion.radius + Math.ceil(offset)) * 2;
+	var mini = minicanvas_MiniCanvas.create(size,size);
+	var a = Math.random() * Math.PI;
+	mini.ctx.translate(size / 2,size / 2);
+	mini.ctx.rotate(a);
+	mini.dot(-offset / 2,-offset / 2,fly_components_Explosion.radius,-3394663);
+	mini.dot(-offset / 4,-offset / 4,fly_components_Explosion.radius,-16777012);
+	mini.ctx.globalCompositeOperation = "destination-out";
+	mini.dot(0,0,fly_components_Explosion.radius,-1);
+	mini.ctx.globalCompositeOperation = "source-over";
+	mini.dot(offset / 4,offset / 4,fly_components_Explosion.radius,-154);
+	return new fly_components_Explosion(fly_components_Explosion.maxStage,function(stage,pos,m) {
+		var s;
+		if(stage > fly_components_Explosion.peak) s = 1 - (stage - fly_components_Explosion.peak) / (fly_components_Explosion.maxStage - fly_components_Explosion.peak); else s = 1 - (fly_components_Explosion.peak - stage) / fly_components_Explosion.peak;
+		var w = fly_components_Explosion.radius * 2 * s;
+		m.ctx.drawImage(mini.canvas,pos.x - w / 2,pos.y - w / 2,w,w);
+	});
+};
+fly_components_Explosion.prototype = {
+	stage: null
+	,draw: null
+	,toString: function() {
+		return "Explosion(stage=$stage,draw=$draw)";
+	}
+	,__class__: fly_components_Explosion
+};
+var fly_components_Detonation = function(radius) {
+	this.radius = radius;
+};
+fly_components_Detonation.__name__ = ["fly","components","Detonation"];
+fly_components_Detonation.__interfaces__ = [edge_IComponent];
+fly_components_Detonation.prototype = {
+	radius: null
+	,toString: function() {
+		return "Detonation(radius=$radius)";
+	}
+	,__class__: fly_components_Detonation
+};
 var fly_components_Direction = function(angle) {
 	this.angle = angle;
 };
@@ -1213,20 +1279,22 @@ fly_components_Direction.prototype = {
 	}
 	,__class__: fly_components_Direction
 };
-var fly_components_Droplet = function(radius,color) {
+var fly_components_Droplet = function(radius,color,life) {
 	this.radius = radius;
 	this.color = color;
+	this.life = life;
 };
 fly_components_Droplet.__name__ = ["fly","components","Droplet"];
 fly_components_Droplet.__interfaces__ = [edge_IComponent];
-fly_components_Droplet.create = function(gen) {
-	return new fly_components_Droplet(gen["float"]() * 0.5 + 1.2,thx_color__$HSL_HSL_$Impl_$.toRGB(thx_color__$HSL_HSL_$Impl_$.create(20 + 30 * gen["float"](),gen["float"]() * 0.4 + 0.6,0.3)));
+fly_components_Droplet.create = function() {
+	return new fly_components_Droplet(Math.random() * 0.5 + 1.2,thx_color__$HSL_HSL_$Impl_$.toRGB(thx_color__$HSL_HSL_$Impl_$.create(20 + 30 * Math.random(),Math.random() * 0.4 + 0.6,0.3)),fly_components_Droplet.maxLife);
 };
 fly_components_Droplet.prototype = {
 	radius: null
 	,color: null
+	,life: null
 	,toString: function() {
-		return "Droplet(radius=$radius,color=$color)";
+		return "Droplet(radius=$radius,color=$color,life=$life)";
 	}
 	,__class__: fly_components_Droplet
 };
@@ -1256,6 +1324,20 @@ fly_components_Fly.prototype = {
 		return "Fly(height=$height)";
 	}
 	,__class__: fly_components_Fly
+};
+var fly_components_Maze = function(maze,id) {
+	this.maze = maze;
+	this.id = id;
+};
+fly_components_Maze.__name__ = ["fly","components","Maze"];
+fly_components_Maze.__interfaces__ = [edge_IComponent];
+fly_components_Maze.prototype = {
+	maze: null
+	,id: null
+	,toString: function() {
+		return "Maze(maze=$maze,id=$id)";
+	}
+	,__class__: fly_components_Maze
 };
 var fly_components_Position = function(x,y) {
 	this.x = x;
@@ -1388,7 +1470,7 @@ fly_systems_KeyboardEvent.prototype = {
 };
 var fly_systems_MazeCollision = function(cellSize) {
 	this.entityRequirements = null;
-	this.componentRequirements = [fly_components_Position,fly_components_Direction,fly_components_Velocity,amaze_Maze];
+	this.componentRequirements = [fly_components_Position,fly_components_Direction,fly_components_Velocity,fly_components_Maze];
 	this.cellSize = cellSize;
 };
 fly_systems_MazeCollision.__name__ = ["fly","systems","MazeCollision"];
@@ -1402,8 +1484,9 @@ fly_systems_MazeCollision.prototype = {
 		var drow = Math.floor(dy / this.cellSize);
 		var col = Math.floor(p.x / this.cellSize);
 		var row = Math.floor(p.y / this.cellSize);
+		var cells = maze.maze.cells;
 		if(dcol == col && drow == row) return;
-		var cell = maze.cells[row][col];
+		var cell = cells[row][col];
 		if(dcol == col) {
 			if(drow < row && !(0 != (cell & 1)) || drow > row && !(0 != (cell & 4))) d.angle = -d.angle;
 		} else if(drow == row) {
@@ -1412,34 +1495,34 @@ fly_systems_MazeCollision.prototype = {
 			if(this.pos(col * this.cellSize,row * this.cellSize,p.x,p.y,dx,dy) > 0) {
 				if(!(0 != (cell & 1))) {
 					if(!(0 != (cell & 8))) d.angle += Math.PI; else d.angle = -d.angle;
-				} else if(null != maze.cells[row - 1][col] && !(0 != (maze.cells[row - 1][col] & 8))) d.angle = -d.angle + Math.PI;
+				} else if(null != cells[row - 1][col] && !(0 != (cells[row - 1][col] & 8))) d.angle = -d.angle + Math.PI;
 			} else if(!(0 != (cell & 8))) {
 				if(!(0 != (cell & 1))) d.angle += Math.PI; else d.angle = -d.angle + Math.PI;
-			} else if(null != maze.cells[row][col - 1] && !(0 != (maze.cells[row][col - 1] & 1))) d.angle = -d.angle;
+			} else if(null != cells[row][col - 1] && !(0 != (cells[row][col - 1] & 1))) d.angle = -d.angle;
 		} else if(dcol > col && drow > row) {
 			if(this.pos(col * this.cellSize,row * this.cellSize,p.x,p.y,dx,dy) > 0) {
 				if(!(0 != (cell & 4))) {
 					if(!(0 != (cell & 2))) d.angle += Math.PI; else d.angle = -d.angle;
-				} else if(null != maze.cells[row + 1][col] && !(0 != (maze.cells[row + 1][col] & 2))) d.angle = -d.angle + Math.PI;
+				} else if(null != cells[row + 1][col] && !(0 != (cells[row + 1][col] & 2))) d.angle = -d.angle + Math.PI;
 			} else if(!(0 != (cell & 2))) {
 				if(!(0 != (cell & 4))) d.angle += Math.PI; else d.angle = -d.angle + Math.PI;
-			} else if(null != maze.cells[row][col + 1] && !(0 != (maze.cells[row][col + 1] & 4))) d.angle = -d.angle;
+			} else if(null != cells[row][col + 1] && !(0 != (cells[row][col + 1] & 4))) d.angle = -d.angle;
 		} else if(dcol < col && drow > row) {
 			if(this.pos(col * this.cellSize,row * this.cellSize,p.x,p.y,dx,dy) > 0) {
 				if(!(0 != (cell & 4))) {
 					if(!(0 != (cell & 8))) d.angle += Math.PI; else d.angle = -d.angle;
-				} else if(null != maze.cells[row + 1][col] && !(0 != (maze.cells[row + 1][col] & 8))) d.angle = -d.angle + Math.PI;
+				} else if(null != cells[row + 1][col] && !(0 != (cells[row + 1][col] & 8))) d.angle = -d.angle + Math.PI;
 			} else if(!(0 != (cell & 8))) {
 				if(!(0 != (cell & 4))) d.angle += Math.PI; else d.angle = -d.angle + Math.PI;
-			} else if(null != maze.cells[row][col - 1] && !(0 != (maze.cells[row][col - 1] & 4))) d.angle = -d.angle;
+			} else if(null != cells[row][col - 1] && !(0 != (cells[row][col - 1] & 4))) d.angle = -d.angle;
 		} else if(dcol > col && drow < row) {
 			if(this.pos(col * this.cellSize,row * this.cellSize,p.x,p.y,dx,dy) > 0) {
 				if(!(0 != (cell & 1))) {
 					if(!(0 != (cell & 2))) d.angle += Math.PI; else d.angle = -d.angle;
-				} else if(null != maze.cells[row - 1][col] && !(0 != (maze.cells[row - 1][col] & 2))) d.angle = -d.angle + Math.PI;
+				} else if(null != cells[row - 1][col] && !(0 != (cells[row - 1][col] & 2))) d.angle = -d.angle + Math.PI;
 			} else if(!(0 != (cell & 2))) {
 				if(!(0 != (cell & 1))) d.angle += Math.PI; else d.angle = -d.angle + Math.PI;
-			} else if(null != maze.cells[row][col + 1] && !(0 != (maze.cells[row][col + 1] & 1))) d.angle = -d.angle;
+			} else if(null != cells[row][col + 1] && !(0 != (cells[row][col + 1] & 1))) d.angle = -d.angle;
 		}
 	}
 	,pos: function(x,y,ax,ay,bx,by) {
@@ -1493,13 +1576,32 @@ fly_systems_RenderDroplet.prototype = {
 	}
 	,__class__: fly_systems_RenderDroplet
 };
+var fly_systems_RenderExplosion = function(mini) {
+	this.entityRequirements = null;
+	this.componentRequirements = [fly_components_Position,fly_components_Explosion];
+	this.mini = mini;
+};
+fly_systems_RenderExplosion.__name__ = ["fly","systems","RenderExplosion"];
+fly_systems_RenderExplosion.__interfaces__ = [edge_ISystem];
+fly_systems_RenderExplosion.prototype = {
+	mini: null
+	,update: function(position,explosion) {
+		explosion.draw(explosion.stage,position,this.mini);
+	}
+	,componentRequirements: null
+	,entityRequirements: null
+	,toString: function() {
+		return "fly.systems.RenderExplosion";
+	}
+	,__class__: fly_systems_RenderExplosion
+};
 var fly_systems_RenderFlower = function(mini,cells,size) {
 	this.entityRequirements = null;
 	this.componentRequirements = [fly_components_Position,fly_components_Flower];
 	this.mini = mini;
 	this.size = size;
 	this.images = [];
-	var src = minicanvas_MiniCanvas.create(size,size,minicanvas_ScaleMode.NoScale);
+	var src = minicanvas_MiniCanvas.create(size,size);
 	var _g = 0;
 	while(_g < cells) {
 		var cell = _g++;
@@ -1518,7 +1620,9 @@ fly_systems_RenderFlower.generate = function(mini,size) {
 	var rp = (r2 - r1) / 2;
 	var r = rp + r1;
 	var sa = Math.random() * Math.PI;
-	var pcolor = thx_color__$HSL_HSL_$Impl_$.create(180 + 240 * Math.random(),Math.random(),Math.random() * 0.3 + 0.5);
+	var angle = 180 + 200 * Math.random();
+	if(angle > 270) angle += 70;
+	var pcolor = thx_color__$HSL_HSL_$Impl_$.create(angle,Math.random(),Math.random() * 0.3 + 0.5);
 	var _g = 0;
 	while(_g < n) {
 		var i = _g++;
@@ -1539,7 +1643,7 @@ fly_systems_RenderFlower.prototype = {
 	,images: null
 	,update: function(position,f) {
 		var image = this.images[f.id % this.images.length];
-		this.mini.ctx.drawImage(image,position.x - this.size / 2,position.y - this.size / 2);
+		this.mini.ctx.drawImage(image,position.x - this.size / 2,position.y - this.size / 2,this.size,this.size);
 	}
 	,componentRequirements: null
 	,entityRequirements: null
@@ -1560,8 +1664,8 @@ fly_systems_RenderFly.prototype = {
 	,update: function(position,f) {
 		var p = Math.random() * 6 - 3;
 		this.mini.dot(position.x + f.height,position.y + f.height * 2,2.5,68);
-		this.mini.dot(position.x - 4.5 - p / 3,position.y + p,2,-855642386);
-		this.mini.dot(position.x + 4.5 + p / 3,position.y + p,2,-855642386);
+		this.mini.dot(position.x - 4.5 - p / 3,position.y + p,2,-285217025);
+		this.mini.dot(position.x + 4.5 + p / 3,position.y + p,2,-285217025);
 		this.mini.dot(position.x,position.y,1.5,255);
 	}
 	,componentRequirements: null
@@ -1573,7 +1677,10 @@ fly_systems_RenderFly.prototype = {
 };
 var fly_systems_RenderMaze = function(ctx,cellSize) {
 	this.entityRequirements = null;
-	this.componentRequirements = [amaze_Maze];
+	this.componentRequirements = [fly_components_Maze];
+	this.maxAngleDeviation = 2;
+	this.id = -1;
+	this.mini = minicanvas_MiniCanvas.create(ctx.canvas.width,ctx.canvas.height);
 	this.ctx = ctx;
 	this.cellSize = cellSize;
 };
@@ -1582,36 +1689,80 @@ fly_systems_RenderMaze.__interfaces__ = [edge_ISystem];
 fly_systems_RenderMaze.prototype = {
 	ctx: null
 	,cellSize: null
+	,mini: null
+	,id: null
 	,update: function(maze) {
-		this.ctx.save();
-		this.ctx.lineWidth = 4;
+		if(this.id != maze.id) {
+			this.id = maze.id;
+			this.render(maze);
+		}
+		this.ctx.drawImage(this.mini.canvas,0,0,this.mini.width,this.mini.height);
+	}
+	,render: function(maze) {
+		var ctx = this.mini.ctx;
+		var cells = maze.maze.cells;
+		ctx.lineWidth = 2;
+		ctx.lineCap = "round";
 		var _g1 = 0;
-		var _g = maze.cells.length;
+		var _g = cells.length;
 		while(_g1 < _g) {
-			var row = _g1++;
-			var cells = maze.cells[row];
+			var i = _g1++;
+			var row = cells[i];
 			var _g3 = 0;
-			var _g2 = cells.length;
+			var _g2 = row.length;
 			while(_g3 < _g2) {
-				var col = _g3++;
-				var cell = cells[col];
-				this.ctx.lineCap = "square";
-				this.ctx.strokeStyle = "#669933";
-				this.ctx.beginPath();
-				this.drawCell(cell,row,col,this.cellSize,row == maze.cells.length - 1,col == cells.length - 1);
-				this.ctx.stroke();
+				var j = _g3++;
+				var cell = row[j];
+				this.drawCell(cell,i,j,this.cellSize,i == cells.length - 1,j == row.length - 1);
 			}
 		}
-		this.ctx.restore();
+	}
+	,createColor: function() {
+		return thx_color__$HSLA_HSLA_$Impl_$.create(120 + Math.random() * 20,0.6,0.3,1);
 	}
 	,drawCell: function(cell,row,col,size,lastRow,lastCol) {
-		if(!lastCol && !(0 != (cell & 2))) {
-			this.ctx.moveTo(0.5 + (1 + col) * size,0.5 + row * size);
-			this.ctx.lineTo(0.5 + (1 + col) * size,0.5 + (row + 1) * size);
+		var ctx = this.mini.ctx;
+		if(!lastCol && !(0 != (cell & 2))) this.vinePath(0.5 + (1 + col) * size,0.5 + row * size,0.5 + (1 + col) * size,0.5 + (row + 1) * size,20,Math.random() * 2.5 + 2.5,this.createColor(),40);
+		if(!lastRow && !(0 != (cell & 4))) this.vinePath(0.5 + col * size,0.5 + (1 + row) * size,0.5 + (col + 1) * size,0.5 + (1 + row) * size,20,Math.random() * 2.5 + 2.5,this.createColor(),40);
+	}
+	,fdist: function(x0,y0,x1,y1) {
+		return Math.sqrt((x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0));
+	}
+	,fangle: function(max) {
+		return (Math.random() * max - max / 2) * Math.PI / 180;
+	}
+	,maxAngleDeviation: null
+	,vinePath: function(x0,y0,x1,y1,dist,width,color,maxAngle) {
+		if(width < 0.5) return;
+		var ctx = this.mini.ctx;
+		var d = this.fdist(x0,y0,x1,y1);
+		var branches = [];
+		var angle;
+		ctx.beginPath();
+		ctx.strokeStyle = thx_color__$HSLA_HSLA_$Impl_$.toCSS3(color);
+		ctx.lineWidth = width;
+		ctx.moveTo(x0,y0);
+		while(d >= dist) {
+			angle = Math.atan2(y1 - y0,x1 - x0);
+			angle += this.fangle(maxAngle);
+			d = Math.random() * dist;
+			x0 += Math.cos(angle) * d;
+			y0 += Math.sin(angle) * d;
+			ctx.lineTo(x0,y0);
+			if(Math.random() < 1) {
+				angle += this.fangle(maxAngle);
+				d = Math.random() * d;
+				branches.push({ x0 : x0, y0 : y0, x1 : x0 + Math.cos(angle) * d, y1 : y0 + Math.sin(angle) * d, d : d, width : width * Math.random() * 0.1 + 0.9});
+			}
+			d = this.fdist(x0,y0,x1,y1);
 		}
-		if(!lastRow && !(0 != (cell & 4))) {
-			this.ctx.moveTo(0.5 + col * size,0.5 + (1 + row) * size);
-			this.ctx.lineTo(0.5 + (col + 1) * size,0.5 + (1 + row) * size);
+		ctx.lineTo(x1,y1);
+		ctx.stroke();
+		var _g = 0;
+		while(_g < branches.length) {
+			var branch = branches[_g];
+			++_g;
+			this.vinePath(branch.x0,branch.y0,branch.x1,branch.y1,branch.d,branch.width,thx_color__$HSLA_HSLA_$Impl_$.lighter(color,0.1),Math.min(maxAngle * this.maxAngleDeviation,90));
 		}
 	}
 	,componentRequirements: null
@@ -1632,6 +1783,9 @@ fly_systems_RenderScore.prototype = {
 	mini: null
 	,update: function(score) {
 		this.mini.ctx.font = "16px 'Montserrat', sans-serif";
+		this.mini.ctx.lineWidth = 4;
+		this.mini.ctx.strokeStyle = "#FFFFFF";
+		this.mini.ctx.strokeText("" + score.value,10,20);
 		this.mini.ctx.fillStyle = "#000000";
 		this.mini.ctx.fillText("" + score.value,10,20);
 	}
@@ -1680,10 +1834,9 @@ fly_systems_RenderSnake.prototype = {
 	}
 	,__class__: fly_systems_RenderSnake
 };
-var fly_systems_SnakeEats = function(gen,distance) {
+var fly_systems_SnakeEats = function(distance) {
 	this.entityRequirements = [{ name : "position", cls : fly_components_Position},{ name : "edible", cls : fly_components_Edible}];
 	this.componentRequirements = [fly_components_Position,fly_components_Snake,fly_components_Score];
-	this.gen = gen;
 	this.sqdistance = distance * distance;
 };
 fly_systems_SnakeEats.__name__ = ["fly","systems","SnakeEats"];
@@ -1691,7 +1844,6 @@ fly_systems_SnakeEats.__interfaces__ = [edge_ISystem];
 fly_systems_SnakeEats.prototype = {
 	engine: null
 	,sqdistance: null
-	,gen: null
 	,entities: null
 	,update: function(position,snake,score) {
 		var dx;
@@ -1702,9 +1854,9 @@ fly_systems_SnakeEats.prototype = {
 			dx = position.x - o.position.x;
 			dy = position.y - o.position.y;
 			if(dx * dx + dy * dy <= this.sqdistance) {
-				this.engine.removeEntity(o.entity);
+				this.engine.remove(o.entity);
 				if(o.edible.makeJump) snake.jumping.push(0);
-				if(o.edible.makeDroplet) this.engine.addEntity(new edge_Entity([new fly_components_Position(position.x,position.y),new fly_components_DelayedComponents(50,[fly_components_Droplet.create(this.gen)],[fly_components_DelayedComponents])]));
+				if(o.edible.makeDroplet) this.engine.add(new edge_Entity([new fly_components_Position(position.x,position.y),new fly_components_DelayedComponents(50,[fly_components_Droplet.create()],[fly_components_DelayedComponents])]));
 				score.value += o.edible.score;
 			}
 		}
@@ -1736,6 +1888,80 @@ fly_systems_UpdateDelayedComponents.prototype = {
 		return "fly.systems.UpdateDelayedComponents";
 	}
 	,__class__: fly_systems_UpdateDelayedComponents
+};
+var fly_systems_UpdateDetonation = function() {
+	this.entityRequirements = [{ name : "position", cls : fly_components_Position},{ name : "edible", cls : fly_components_Edible}];
+	this.componentRequirements = [fly_components_Detonation,fly_components_Position];
+};
+fly_systems_UpdateDetonation.__name__ = ["fly","systems","UpdateDetonation"];
+fly_systems_UpdateDetonation.__interfaces__ = [edge_ISystem];
+fly_systems_UpdateDetonation.prototype = {
+	entity: null
+	,engine: null
+	,entities: null
+	,update: function(detonation,position) {
+		var sqdistance = detonation.radius * detonation.radius;
+		var dx;
+		var dy;
+		var $it0 = this.entities;
+		while( $it0.hasNext() ) {
+			var o = $it0.next();
+			dx = position.x - o.position.x;
+			dy = position.y - o.position.y;
+			if(dx * dx + dy * dy <= sqdistance) this.engine.remove(o.entity);
+		}
+		this.entity.remove(detonation);
+	}
+	,componentRequirements: null
+	,entityRequirements: null
+	,toString: function() {
+		return "fly.systems.UpdateDetonation";
+	}
+	,__class__: fly_systems_UpdateDetonation
+};
+var fly_systems_UpdateDroplet = function() {
+	this.entityRequirements = null;
+	this.componentRequirements = [fly_components_Droplet];
+};
+fly_systems_UpdateDroplet.__name__ = ["fly","systems","UpdateDroplet"];
+fly_systems_UpdateDroplet.__interfaces__ = [edge_ISystem];
+fly_systems_UpdateDroplet.prototype = {
+	entity: null
+	,engine: null
+	,update: function(droplet) {
+		droplet.life--;
+		if(droplet.life <= 0) {
+			this.entity.remove(droplet);
+			this.entity.add(fly_components_Explosion.create());
+		}
+	}
+	,componentRequirements: null
+	,entityRequirements: null
+	,toString: function() {
+		return "fly.systems.UpdateDroplet";
+	}
+	,__class__: fly_systems_UpdateDroplet
+};
+var fly_systems_UpdateExplosion = function() {
+	this.entityRequirements = null;
+	this.componentRequirements = [fly_components_Explosion];
+};
+fly_systems_UpdateExplosion.__name__ = ["fly","systems","UpdateExplosion"];
+fly_systems_UpdateExplosion.__interfaces__ = [edge_ISystem];
+fly_systems_UpdateExplosion.prototype = {
+	entity: null
+	,engine: null
+	,update: function(explosion) {
+		if(explosion.stage == fly_components_Explosion.maxStage) this.entity.add(fly_components_Detonation.instance);
+		explosion.stage--;
+		if(explosion.stage <= 0) this.engine.remove(this.entity);
+	}
+	,componentRequirements: null
+	,entityRequirements: null
+	,toString: function() {
+		return "fly.systems.UpdateExplosion";
+	}
+	,__class__: fly_systems_UpdateExplosion
 };
 var fly_systems_UpdateFly = function(width,height,gen) {
 	this.entityRequirements = null;
@@ -1812,11 +2038,12 @@ fly_systems_UpdateSnake.prototype = {
 };
 var haxe_StackItem = { __ename__ : ["haxe","StackItem"], __constructs__ : ["CFunction","Module","FilePos","Method","LocalFunction"] };
 haxe_StackItem.CFunction = ["CFunction",0];
+haxe_StackItem.CFunction.toString = $estr;
 haxe_StackItem.CFunction.__enum__ = haxe_StackItem;
-haxe_StackItem.Module = function(m) { var $x = ["Module",1,m]; $x.__enum__ = haxe_StackItem; return $x; };
-haxe_StackItem.FilePos = function(s,file,line) { var $x = ["FilePos",2,s,file,line]; $x.__enum__ = haxe_StackItem; return $x; };
-haxe_StackItem.Method = function(classname,method) { var $x = ["Method",3,classname,method]; $x.__enum__ = haxe_StackItem; return $x; };
-haxe_StackItem.LocalFunction = function(v) { var $x = ["LocalFunction",4,v]; $x.__enum__ = haxe_StackItem; return $x; };
+haxe_StackItem.Module = function(m) { var $x = ["Module",1,m]; $x.__enum__ = haxe_StackItem; $x.toString = $estr; return $x; };
+haxe_StackItem.FilePos = function(s,file,line) { var $x = ["FilePos",2,s,file,line]; $x.__enum__ = haxe_StackItem; $x.toString = $estr; return $x; };
+haxe_StackItem.Method = function(classname,method) { var $x = ["Method",3,classname,method]; $x.__enum__ = haxe_StackItem; $x.toString = $estr; return $x; };
+haxe_StackItem.LocalFunction = function(v) { var $x = ["LocalFunction",4,v]; $x.__enum__ = haxe_StackItem; $x.toString = $estr; return $x; };
 var haxe_CallStack = function() { };
 haxe_CallStack.__name__ = ["haxe","CallStack"];
 haxe_CallStack.callStack = function() {
@@ -1999,8 +2226,9 @@ haxe_ds_ObjectMap.prototype = {
 	,__class__: haxe_ds_ObjectMap
 };
 var haxe_ds_Option = { __ename__ : ["haxe","ds","Option"], __constructs__ : ["Some","None"] };
-haxe_ds_Option.Some = function(v) { var $x = ["Some",0,v]; $x.__enum__ = haxe_ds_Option; return $x; };
+haxe_ds_Option.Some = function(v) { var $x = ["Some",0,v]; $x.__enum__ = haxe_ds_Option; $x.toString = $estr; return $x; };
 haxe_ds_Option.None = ["None",1];
+haxe_ds_Option.None.toString = $estr;
 haxe_ds_Option.None.__enum__ = haxe_ds_Option;
 var haxe_ds__$StringMap_StringMapIterator = function(map,keys) {
 	this.map = map;
@@ -2753,10 +2981,12 @@ minicanvas_MiniCanvas.prototype = {
 };
 var minicanvas_ScaleMode = { __ename__ : ["minicanvas","ScaleMode"], __constructs__ : ["NoScale","Auto","Scaled"] };
 minicanvas_ScaleMode.NoScale = ["NoScale",0];
+minicanvas_ScaleMode.NoScale.toString = $estr;
 minicanvas_ScaleMode.NoScale.__enum__ = minicanvas_ScaleMode;
 minicanvas_ScaleMode.Auto = ["Auto",1];
+minicanvas_ScaleMode.Auto.toString = $estr;
 minicanvas_ScaleMode.Auto.__enum__ = minicanvas_ScaleMode;
-minicanvas_ScaleMode.Scaled = function(v) { var $x = ["Scaled",2,v]; $x.__enum__ = minicanvas_ScaleMode; return $x; };
+minicanvas_ScaleMode.Scaled = function(v) { var $x = ["Scaled",2,v]; $x.__enum__ = minicanvas_ScaleMode; $x.toString = $estr; return $x; };
 var minicanvas_BrowserCanvas = function(width,height,scaleMode) {
 	this.isNode = false;
 	this.isBrowser = true;
@@ -3437,9 +3667,9 @@ sui_components_Grid.prototype = {
 	,__class__: sui_components_Grid
 };
 var sui_components_CellContent = { __ename__ : ["sui","components","CellContent"], __constructs__ : ["Single","VerticalPair","HorizontalPair"] };
-sui_components_CellContent.Single = function(control) { var $x = ["Single",0,control]; $x.__enum__ = sui_components_CellContent; return $x; };
-sui_components_CellContent.VerticalPair = function(top,bottom) { var $x = ["VerticalPair",1,top,bottom]; $x.__enum__ = sui_components_CellContent; return $x; };
-sui_components_CellContent.HorizontalPair = function(left,right) { var $x = ["HorizontalPair",2,left,right]; $x.__enum__ = sui_components_CellContent; return $x; };
+sui_components_CellContent.Single = function(control) { var $x = ["Single",0,control]; $x.__enum__ = sui_components_CellContent; $x.toString = $estr; return $x; };
+sui_components_CellContent.VerticalPair = function(top,bottom) { var $x = ["VerticalPair",1,top,bottom]; $x.__enum__ = sui_components_CellContent; $x.toString = $estr; return $x; };
+sui_components_CellContent.HorizontalPair = function(left,right) { var $x = ["HorizontalPair",2,left,right]; $x.__enum__ = sui_components_CellContent; $x.toString = $estr; return $x; };
 var sui_controls_IControl = function() { };
 sui_controls_IControl.__name__ = ["sui","controls","IControl"];
 sui_controls_IControl.prototype = {
@@ -4450,26 +4680,36 @@ sui_controls_NumberSelectControl.prototype = $extend(sui_controls_SelectControl.
 });
 var sui_controls_DateKind = { __ename__ : ["sui","controls","DateKind"], __constructs__ : ["DateOnly","DateTime"] };
 sui_controls_DateKind.DateOnly = ["DateOnly",0];
+sui_controls_DateKind.DateOnly.toString = $estr;
 sui_controls_DateKind.DateOnly.__enum__ = sui_controls_DateKind;
 sui_controls_DateKind.DateTime = ["DateTime",1];
+sui_controls_DateKind.DateTime.toString = $estr;
 sui_controls_DateKind.DateTime.__enum__ = sui_controls_DateKind;
 var sui_controls_FloatKind = { __ename__ : ["sui","controls","FloatKind"], __constructs__ : ["FloatNumber","FloatTime"] };
 sui_controls_FloatKind.FloatNumber = ["FloatNumber",0];
+sui_controls_FloatKind.FloatNumber.toString = $estr;
 sui_controls_FloatKind.FloatNumber.__enum__ = sui_controls_FloatKind;
 sui_controls_FloatKind.FloatTime = ["FloatTime",1];
+sui_controls_FloatKind.FloatTime.toString = $estr;
 sui_controls_FloatKind.FloatTime.__enum__ = sui_controls_FloatKind;
 var sui_controls_TextKind = { __ename__ : ["sui","controls","TextKind"], __constructs__ : ["TextEmail","TextPassword","TextSearch","TextTel","PlainText","TextUrl"] };
 sui_controls_TextKind.TextEmail = ["TextEmail",0];
+sui_controls_TextKind.TextEmail.toString = $estr;
 sui_controls_TextKind.TextEmail.__enum__ = sui_controls_TextKind;
 sui_controls_TextKind.TextPassword = ["TextPassword",1];
+sui_controls_TextKind.TextPassword.toString = $estr;
 sui_controls_TextKind.TextPassword.__enum__ = sui_controls_TextKind;
 sui_controls_TextKind.TextSearch = ["TextSearch",2];
+sui_controls_TextKind.TextSearch.toString = $estr;
 sui_controls_TextKind.TextSearch.__enum__ = sui_controls_TextKind;
 sui_controls_TextKind.TextTel = ["TextTel",3];
+sui_controls_TextKind.TextTel.toString = $estr;
 sui_controls_TextKind.TextTel.__enum__ = sui_controls_TextKind;
 sui_controls_TextKind.PlainText = ["PlainText",4];
+sui_controls_TextKind.PlainText.toString = $estr;
 sui_controls_TextKind.PlainText.__enum__ = sui_controls_TextKind;
 sui_controls_TextKind.TextUrl = ["TextUrl",5];
+sui_controls_TextKind.TextUrl.toString = $estr;
 sui_controls_TextKind.TextUrl.__enum__ = sui_controls_TextKind;
 var sui_controls_PasswordControl = function(value,options) {
 	sui_controls_BaseTextControl.call(this,value,"text","password",options);
@@ -6667,12 +6907,12 @@ thx_color_parse_ColorInfo.prototype = {
 	,__class__: thx_color_parse_ColorInfo
 };
 var thx_color_parse_ChannelInfo = { __ename__ : ["thx","color","parse","ChannelInfo"], __constructs__ : ["CIPercent","CIFloat","CIDegree","CIInt8","CIInt","CIBool"] };
-thx_color_parse_ChannelInfo.CIPercent = function(value) { var $x = ["CIPercent",0,value]; $x.__enum__ = thx_color_parse_ChannelInfo; return $x; };
-thx_color_parse_ChannelInfo.CIFloat = function(value) { var $x = ["CIFloat",1,value]; $x.__enum__ = thx_color_parse_ChannelInfo; return $x; };
-thx_color_parse_ChannelInfo.CIDegree = function(value) { var $x = ["CIDegree",2,value]; $x.__enum__ = thx_color_parse_ChannelInfo; return $x; };
-thx_color_parse_ChannelInfo.CIInt8 = function(value) { var $x = ["CIInt8",3,value]; $x.__enum__ = thx_color_parse_ChannelInfo; return $x; };
-thx_color_parse_ChannelInfo.CIInt = function(value) { var $x = ["CIInt",4,value]; $x.__enum__ = thx_color_parse_ChannelInfo; return $x; };
-thx_color_parse_ChannelInfo.CIBool = function(value) { var $x = ["CIBool",5,value]; $x.__enum__ = thx_color_parse_ChannelInfo; return $x; };
+thx_color_parse_ChannelInfo.CIPercent = function(value) { var $x = ["CIPercent",0,value]; $x.__enum__ = thx_color_parse_ChannelInfo; $x.toString = $estr; return $x; };
+thx_color_parse_ChannelInfo.CIFloat = function(value) { var $x = ["CIFloat",1,value]; $x.__enum__ = thx_color_parse_ChannelInfo; $x.toString = $estr; return $x; };
+thx_color_parse_ChannelInfo.CIDegree = function(value) { var $x = ["CIDegree",2,value]; $x.__enum__ = thx_color_parse_ChannelInfo; $x.toString = $estr; return $x; };
+thx_color_parse_ChannelInfo.CIInt8 = function(value) { var $x = ["CIInt8",3,value]; $x.__enum__ = thx_color_parse_ChannelInfo; $x.toString = $estr; return $x; };
+thx_color_parse_ChannelInfo.CIInt = function(value) { var $x = ["CIInt",4,value]; $x.__enum__ = thx_color_parse_ChannelInfo; $x.toString = $estr; return $x; };
+thx_color_parse_ChannelInfo.CIBool = function(value) { var $x = ["CIBool",5,value]; $x.__enum__ = thx_color_parse_ChannelInfo; $x.toString = $estr; return $x; };
 var thx_core_Arrays = function() { };
 thx_core_Arrays.__name__ = ["thx","core","Arrays"];
 thx_core_Arrays.after = function(array,element) {
@@ -7108,8 +7348,8 @@ thx_core_ArrayStrings.min = function(arr) {
 	},arr[0]);
 };
 var thx_core_Either = { __ename__ : ["thx","core","Either"], __constructs__ : ["Left","Right"] };
-thx_core_Either.Left = function(value) { var $x = ["Left",0,value]; $x.__enum__ = thx_core_Either; return $x; };
-thx_core_Either.Right = function(value) { var $x = ["Right",1,value]; $x.__enum__ = thx_core_Either; return $x; };
+thx_core_Either.Left = function(value) { var $x = ["Left",0,value]; $x.__enum__ = thx_core_Either; $x.toString = $estr; return $x; };
+thx_core_Either.Right = function(value) { var $x = ["Right",1,value]; $x.__enum__ = thx_core_Either; $x.toString = $estr; return $x; };
 var thx_core_Error = function(message,stack,pos) {
 	Error.call(this,message);
 	this.message = message;
@@ -7532,6 +7772,7 @@ thx_core_Iterators.toArray = function(it) {
 };
 var thx_core_Nil = { __ename__ : ["thx","core","Nil"], __constructs__ : ["nil"] };
 thx_core_Nil.nil = ["nil",0];
+thx_core_Nil.nil.toString = $estr;
 thx_core_Nil.nil.__enum__ = thx_core_Nil;
 var thx_core_Nulls = function() { };
 thx_core_Nulls.__name__ = ["thx","core","Nulls"];
@@ -10125,8 +10366,8 @@ thx_stream_Stream.prototype = {
 	,__class__: thx_stream_Stream
 };
 var thx_stream_StreamValue = { __ename__ : ["thx","stream","StreamValue"], __constructs__ : ["Pulse","End"] };
-thx_stream_StreamValue.Pulse = function(value) { var $x = ["Pulse",0,value]; $x.__enum__ = thx_stream_StreamValue; return $x; };
-thx_stream_StreamValue.End = function(cancel) { var $x = ["End",1,cancel]; $x.__enum__ = thx_stream_StreamValue; return $x; };
+thx_stream_StreamValue.Pulse = function(value) { var $x = ["Pulse",0,value]; $x.__enum__ = thx_stream_StreamValue; $x.toString = $estr; return $x; };
+thx_stream_StreamValue.End = function(cancel) { var $x = ["End",1,cancel]; $x.__enum__ = thx_stream_StreamValue; $x.toString = $estr; return $x; };
 var thx_stream_Value = function(value,equals) {
 	var _g = this;
 	if(null == equals) this.equals = thx_core_Functions.equality; else this.equals = equals;
@@ -10433,6 +10674,11 @@ dots_Query.doc = document;
 fly_Game.ONE_DEGREE = Math.PI / 180;
 fly_Game.edibleFly = new fly_components_Edible(true,true,5);
 fly_Game.edibleFlower = new fly_components_Edible(false,false,1);
+fly_components_Explosion.maxStage = 30;
+fly_components_Explosion.peak = 20;
+fly_components_Explosion.radius = 40;
+fly_components_Detonation.instance = new fly_components_Detonation(fly_components_Explosion.radius);
+fly_components_Droplet.maxLife = 100;
 fly_systems_MazeCollision.E = 0.00001;
 haxe_ds_ObjectMap.count = 0;
 js_Boot.__toStr = {}.toString;
