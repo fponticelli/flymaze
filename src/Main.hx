@@ -29,7 +29,7 @@ class Main {
         s = 20,
         mini = MiniCanvas
             .create(w, h)
-            .fill(0x333333FF),
+            .fill(0x88CC00FF),
             //.display("flowers"),
         render = new RenderFlower(mini, 400, s),
         p = new Position(0, 0),
