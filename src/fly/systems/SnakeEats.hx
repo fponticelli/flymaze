@@ -7,10 +7,8 @@ import thx.math.random.Random;
 class SnakeEats implements ISystem {
   public var engine : Engine;
   var sqdistance : Float;
-  var gen : Random;
   public var entities : Iterator<{ position : Position, edible : Edible, entity : Entity }>;
-  public function new(gen : Random, distance : Float) {
-    this.gen = gen;
+  public function new(distance : Float) {
     this.sqdistance = distance * distance;
   }
 
@@ -28,7 +26,7 @@ class SnakeEats implements ISystem {
             new Position(position.x, position.y),
             new DelayedComponents(
               50,
-              [Droplet.create(gen)],
+              [Droplet.create()],
               [DelayedComponents]
             )
           ]));
