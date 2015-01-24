@@ -1,7 +1,6 @@
 package fly;
 
 import fly.systems.*;
-import amaze.Maze;
 import thx.core.Functions;
 import thx.core.Timer;
 using thx.core.Floats;
@@ -28,10 +27,11 @@ class Game {
         direction = new Direction(-Math.PI / 2 + 3 * ONE_DEGREE),
         velocity = new Velocity(2);
 
-    maze = new Maze(config.cols, config.rows, config.gen);
-    maze.generate(config.startRow, config.startCol);
-    maze.cells[config.startRow][config.startCol].top = true;
-    maze.cells[config.startRow-1][config.startCol].bottom = true;
+    var m = new amaze.Maze(config.cols, config.rows, config.gen);
+    m.generate(config.startRow, config.startCol);
+    m.cells[config.startRow][config.startCol].top = true;
+    m.cells[config.startRow-1][config.startCol].bottom = true;
+    maze = new Maze(m, 1);
 
     world = new World();
     engine = world.engine;
@@ -72,7 +72,7 @@ class Game {
     world.physics.add(new UpdatePosition());
     world.physics.add(new UpdateFly(config.width, config.height, config.gen));
     world.physics.add(new UpdateSnake());
-    world.physics.add(new SnakeEats(config.gen, 8));
+    world.physics.add(new SnakeEats(8));
 
     world.render.add(new RenderBackground(mini, config.backgroundColor));
     world.render.add(new RenderDroplet(mini));

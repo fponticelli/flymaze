@@ -1,6 +1,5 @@
 package fly.systems;
 
-import amaze.Maze;
 import edge.*;
 import fly.components.*;
 using thx.core.Floats;
@@ -18,11 +17,12 @@ class MazeCollision implements ISystem {
         dcol = Math.floor(dx / cellSize),
         drow = Math.floor(dy / cellSize),
         col  = Math.floor(p.x / cellSize),
-        row  = Math.floor(p.y / cellSize);
+        row  = Math.floor(p.y / cellSize),
+        cells = maze.maze.cells;
 
     if(dcol == col && drow == row) // no change in cell, nothing to do
       return;
-    var cell = maze.cells[row][col];
+    var cell = cells[row][col];
     if(dcol == col) {
       if(drow < row && !cell.top || drow > row && !cell.bottom)
         d.angle = -d.angle;
@@ -37,7 +37,7 @@ class MazeCollision implements ISystem {
           } else {
             d.angle = -d.angle;
           }
-        } else if(null != maze.cells[row-1][col] && !maze.cells[row-1][col].left) {
+        } else if(null != cells[row-1][col] && !cells[row-1][col].left) {
           d.angle = -d.angle + Math.PI;
         }
       } else {
@@ -47,7 +47,7 @@ class MazeCollision implements ISystem {
           } else {
             d.angle = -d.angle + Math.PI;
           }
-        } else if(null != maze.cells[row][col-1] && !maze.cells[row][col-1].top) {
+        } else if(null != cells[row][col-1] && !cells[row][col-1].top) {
           d.angle = -d.angle;
         }
       }
@@ -59,7 +59,7 @@ class MazeCollision implements ISystem {
           } else {
             d.angle = -d.angle;
           }
-        } else if(null != maze.cells[row+1][col] && !maze.cells[row+1][col].right) {
+        } else if(null != cells[row+1][col] && !cells[row+1][col].right) {
           d.angle = -d.angle + Math.PI;
         }
       } else {
@@ -69,7 +69,7 @@ class MazeCollision implements ISystem {
           } else {
             d.angle = -d.angle + Math.PI;
           }
-        } else if(null != maze.cells[row][col+1] && !maze.cells[row][col+1].bottom) {
+        } else if(null != cells[row][col+1] && !cells[row][col+1].bottom) {
           d.angle = -d.angle;
         }
       }
@@ -81,7 +81,7 @@ class MazeCollision implements ISystem {
           } else {
             d.angle = -d.angle;
           }
-        } else if(null != maze.cells[row+1][col] && !maze.cells[row+1][col].left) {
+        } else if(null != cells[row+1][col] && !cells[row+1][col].left) {
           d.angle = -d.angle + Math.PI;
         }
       } else {
@@ -91,7 +91,7 @@ class MazeCollision implements ISystem {
           } else {
             d.angle = -d.angle + Math.PI;
           }
-        } else if(null != maze.cells[row][col-1] && !maze.cells[row][col-1].bottom) {
+        } else if(null != cells[row][col-1] && !cells[row][col-1].bottom) {
           d.angle = -d.angle;
         }
       }
@@ -103,7 +103,7 @@ class MazeCollision implements ISystem {
           } else {
             d.angle = -d.angle;
           }
-        } else if(null != maze.cells[row-1][col] && !maze.cells[row-1][col].right) {
+        } else if(null != cells[row-1][col] && !cells[row-1][col].right) {
           d.angle = -d.angle + Math.PI;
         }
       } else {
@@ -113,7 +113,7 @@ class MazeCollision implements ISystem {
           } else {
             d.angle = -d.angle + Math.PI;
           }
-        } else if(null != maze.cells[row][col+1] && !maze.cells[row][col+1].top) {
+        } else if(null != cells[row][col+1] && !cells[row][col+1].top) {
           d.angle = -d.angle;
         }
       }
