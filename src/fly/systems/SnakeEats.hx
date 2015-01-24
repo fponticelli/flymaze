@@ -5,12 +5,11 @@ import fly.components.*;
 import thx.math.random.Random;
 
 class SnakeEats implements ISystem {
-  var engine : Engine;
+  public var engine : Engine;
   var sqdistance : Float;
   var gen : Random;
   public var entities : Iterator<{ position : Position, edible : Edible, entity : Entity }>;
-  public function new(engine : Engine, gen : Random, distance : Float) {
-    this.engine = engine;
+  public function new(gen : Random, distance : Float) {
     this.gen = gen;
     this.sqdistance = distance * distance;
   }
