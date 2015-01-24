@@ -5,7 +5,6 @@
 -lib thx.math
 -lib amaze
 -lib edge
--lib sui
 -lib minicanvas
 #-dce full
 #-D analyzer
