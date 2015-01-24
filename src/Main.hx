@@ -59,7 +59,7 @@ class Main {
         if(double)
             render.update(p, f);
     }
-    mini.fill(0xFFFFFF99);
+    mini.fill(0xFFFFFFCC);
 
     el.style.backgroundSize = '${w}px ${h}px';
     el.style.backgroundImage = 'url(${mini.canvas.toDataURL("image/png")})';
