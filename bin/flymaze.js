@@ -596,11 +596,15 @@ dots_Query.childrenOf = function(children,parent) {
 	});
 };
 var edge_Engine = function() {
+	this.emptyArgs = [];
 	this.mapInfo = new haxe_ds_ObjectMap();
 	this.mapEntities = new haxe_ds_ObjectMap();
 	this.listPhases = [];
 };
 edge_Engine.__name__ = ["edge","Engine"];
+edge_Engine.hasField = function(o,field) {
+	return thx_core_Arrays.contains(Type.getInstanceFields(Type.getClass(o)),field);
+};
 edge_Engine.prototype = {
 	mapInfo: null
 	,mapEntities: null
@@ -643,7 +647,8 @@ edge_Engine.prototype = {
 	}
 	,addSystem: function(phase,system) {
 		if(this.mapInfo.h.__keys__[system.__id__] != null) throw "System \"" + Std.string(system) + "\" already exists in Engine";
-		var info = { hasComponents : null != system.componentRequirements && system.componentRequirements.length > 0, hasEntity : Object.prototype.hasOwnProperty.call(system,"entity"), hasEntities : null != system.entityRequirements, update : Reflect.field(system,"update"), phase : phase, components : new haxe_ds_ObjectMap(), entities : new haxe_ds_ObjectMap()};
+		var info = { hasComponents : null != system.componentRequirements && system.componentRequirements.length > 0, hasEngine : edge_Engine.hasField(system,"engine"), hasEntity : edge_Engine.hasField(system,"entity"), hasBefore : edge_Engine.hasField(system,"before"), hasEntities : null != system.entityRequirements, update : Reflect.field(system,"update"), phase : phase, before : null, components : new haxe_ds_ObjectMap(), entities : new haxe_ds_ObjectMap()};
+		if(info.hasBefore) info.before = Reflect.field(system,"before");
 		this.mapInfo.set(system,info);
 		if(info.hasComponents) {
 			var $it0 = this.mapEntities.keys();
@@ -663,10 +668,13 @@ edge_Engine.prototype = {
 	,removeSystem: function(system) {
 		this.mapInfo.remove(system);
 	}
+	,emptyArgs: null
 	,updateSystem: function(system) {
 		var info = this.mapInfo.h[system.__id__];
-		if(!info.hasComponents) Reflect.callMethod(system,info.update,[]); else {
+		if(info.hasEngine) system.engine = this;
+		if(!info.hasComponents) Reflect.callMethod(system,info.update,this.emptyArgs); else {
 			if(info.hasEntities) Reflect.setField(system,"entities",info.entities.iterator());
+			if(info.hasBefore) Reflect.callMethod(system,info.update,this.emptyArgs);
 			var $it0 = info.components.keys();
 			while( $it0.hasNext() ) {
 				var entity = $it0.next();
@@ -1019,17 +1027,19 @@ fly_Config.prototype = {
 	,flyCircleRadius: null
 	,__class__: fly_Config
 };
-var fly_components_Edible = function(makeJump,makeDroplet) {
+var fly_components_Edible = function(makeJump,makeDroplet,score) {
 	this.makeJump = makeJump;
 	this.makeDroplet = makeDroplet;
+	this.score = score;
 };
 fly_components_Edible.__name__ = ["fly","components","Edible"];
 fly_components_Edible.__interfaces__ = [edge_IComponent];
 fly_components_Edible.prototype = {
 	makeJump: null
 	,makeDroplet: null
+	,score: null
 	,toString: function() {
-		return "Edible(makeJump=$makeJump,makeDroplet=$makeDroplet)";
+		return "Edible(makeJump=$makeJump,makeDroplet=$makeDroplet,score=$score)";
 	}
 	,__class__: fly_components_Edible
 };
@@ -1085,11 +1095,12 @@ var fly_Game = function(mini,config) {
 			}
 		}
 	}));
+	this.world.physics.add(new fly_systems_UpdateDelayedComponents());
 	this.world.physics.add(new fly_systems_MazeCollision(config.cellSize));
 	this.world.physics.add(new fly_systems_UpdatePosition());
 	this.world.physics.add(new fly_systems_UpdateFly(config.width,config.height,config.gen));
 	this.world.physics.add(new fly_systems_UpdateSnake());
-	this.world.physics.add(new fly_systems_SnakeEats(this.engine,config.gen,8));
+	this.world.physics.add(new fly_systems_SnakeEats(config.gen,8));
 	this.world.render.add(new fly_systems_RenderBackground(mini,config.backgroundColor));
 	this.world.render.add(new fly_systems_RenderDroplet(mini));
 	this.world.render.add(new fly_systems_RenderMaze(mini.ctx,config.cellSize));
@@ -1126,6 +1137,22 @@ fly_Game.prototype = {
 		this.world.stop();
 	}
 	,__class__: fly_Game
+};
+var fly_components_DelayedComponents = function(ticks,toAdd,toRemove) {
+	this.ticks = ticks;
+	if(null == toAdd) this.toAdd = []; else this.toAdd = toAdd;
+	if(null == toRemove) this.toRemove = []; else this.toRemove = toRemove;
+};
+fly_components_DelayedComponents.__name__ = ["fly","components","DelayedComponents"];
+fly_components_DelayedComponents.__interfaces__ = [edge_IComponent];
+fly_components_DelayedComponents.prototype = {
+	ticks: null
+	,toAdd: null
+	,toRemove: null
+	,toString: function() {
+		return "DelayedComponents(ticks=$ticks,toAdd=$toAdd,toRemove=$toRemove)";
+	}
+	,__class__: fly_components_DelayedComponents
 };
 var fly_components_Direction = function(angle) {
 	this.angle = angle;
@@ -1615,10 +1642,9 @@ fly_systems_RenderSnake.prototype = {
 	}
 	,__class__: fly_systems_RenderSnake
 };
-var fly_systems_SnakeEats = function(engine,gen,distance) {
+var fly_systems_SnakeEats = function(gen,distance) {
 	this.entityRequirements = [{ name : "position", cls : fly_components_Position},{ name : "edible", cls : fly_components_Edible}];
 	this.componentRequirements = [fly_components_Position,fly_components_Snake,fly_components_Score];
-	this.engine = engine;
 	this.gen = gen;
 	this.sqdistance = distance * distance;
 };
@@ -1640,8 +1666,8 @@ fly_systems_SnakeEats.prototype = {
 			if(dx * dx + dy * dy <= this.sqdistance) {
 				this.engine.removeEntity(o.entity);
 				if(o.edible.makeJump) snake.jumping.push(0);
-				if(o.edible.makeDroplet) this.engine.addEntity(new edge_Entity([new fly_components_Position(position.x,position.y),fly_components_Droplet.create(this.gen)]));
-				score.value++;
+				if(o.edible.makeDroplet) this.engine.addEntity(new edge_Entity([new fly_components_Position(position.x,position.y),new fly_components_DelayedComponents(50,[fly_components_Droplet.create(this.gen)],[fly_components_DelayedComponents])]));
+				score.value += o.edible.score;
 			}
 		}
 	}
@@ -1651,6 +1677,27 @@ fly_systems_SnakeEats.prototype = {
 		return "fly.systems.SnakeEats";
 	}
 	,__class__: fly_systems_SnakeEats
+};
+var fly_systems_UpdateDelayedComponents = function() {
+	this.entityRequirements = null;
+	this.componentRequirements = [fly_components_DelayedComponents];
+};
+fly_systems_UpdateDelayedComponents.__name__ = ["fly","systems","UpdateDelayedComponents"];
+fly_systems_UpdateDelayedComponents.__interfaces__ = [edge_ISystem];
+fly_systems_UpdateDelayedComponents.prototype = {
+	entity: null
+	,update: function(item) {
+		if(item.ticks <= 0) {
+			this.entity.removeTypes(item.toRemove);
+			this.entity.addMany(item.toAdd);
+		} else item.ticks--;
+	}
+	,componentRequirements: null
+	,entityRequirements: null
+	,toString: function() {
+		return "fly.systems.UpdateDelayedComponents";
+	}
+	,__class__: fly_systems_UpdateDelayedComponents
 };
 var fly_systems_UpdateFly = function(width,height,gen) {
 	this.entityRequirements = null;
@@ -10346,8 +10393,8 @@ if(typeof(scope.performance.now) == "undefined") {
 dots_Html.pattern = new EReg("[<]([^> ]+)","");
 dots_Query.doc = document;
 fly_Game.ONE_DEGREE = Math.PI / 180;
-fly_Game.edibleFly = new fly_components_Edible(true,true);
-fly_Game.edibleFlower = new fly_components_Edible(false,false);
+fly_Game.edibleFly = new fly_components_Edible(true,true,5);
+fly_Game.edibleFlower = new fly_components_Edible(false,false,1);
 fly_systems_MazeCollision.E = 0.00001;
 haxe_ds_ObjectMap.count = 0;
 js_Boot.__toStr = {}.toString;

@@ -67,6 +67,7 @@ class Game {
       case _: trace('key: $key');
     }));
 
+    world.physics.add(new UpdateDelayedComponents());
     world.physics.add(new MazeCollision(config.cellSize));
     world.physics.add(new UpdatePosition());
     world.physics.add(new UpdateFly(config.width, config.height, config.gen));

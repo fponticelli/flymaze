@@ -26,7 +26,11 @@ class SnakeEats implements ISystem {
         if(o.edible.makeDroplet)
           engine.addEntity(new Entity([
             new Position(position.x, position.y),
-            Droplet.create(gen)
+            new DelayedComponents(
+              50,
+              [Droplet.create(gen)],
+              [DelayedComponents]
+            )
           ]));
         score.value += o.edible.score;
       }
