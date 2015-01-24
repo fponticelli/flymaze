@@ -15,7 +15,7 @@ class RenderFlower implements ISystem {
     this.mini = mini;
     this.size = size;
     this.images = [];
-    var src = MiniCanvas.create(size, size, ScaleMode.NoScale); //.display("flowers");
+    var src = MiniCanvas.create(size, size); //.display("flowers");
     for(cell in 0...cells) {
       images.push(generate(src, size));
     }
@@ -23,7 +23,7 @@ class RenderFlower implements ISystem {
 
   public function update(position : Position, f : Flower) {
     var image = images[f.id % images.length];
-    mini.ctx.drawImage(image, position.x - size / 2, position.y - size / 2);
+    mini.ctx.drawImage(image, position.x - size / 2, position.y - size / 2, size, size);
   }
 
   static function generate(mini : MiniCanvas, size : Int) {
@@ -39,7 +39,10 @@ class RenderFlower implements ISystem {
         sa = Math.random() * Math.PI;
 
     // dot
-    var pcolor = HSL.create(180 + 240 * Math.random(), Math.random(), Math.random() * 0.3 + 0.5);
+    var angle = 180 + 200 * Math.random();
+    if(angle > 270)
+      angle += 70;
+    var pcolor = HSL.create(angle, Math.random(), Math.random() * 0.3 + 0.5);
     for(i in 0...n) {
       var a = sa + Math.PI * 2 * i / n;
       mini.dot(c + Math.cos(a) * r, c + Math.sin(a) * r, rp, pcolor);
