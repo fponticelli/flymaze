@@ -4,7 +4,7 @@ import edge.*;
 import fly.components.*;
 
 class UpdateSnake implements ISystem {
-  public function update(position : Position, snake : Snake) {
+  function update(position : Position, snake : Snake) {
     var last = snake.pos + 1;
     if(last >= snake.trail.length)
       last = 0;

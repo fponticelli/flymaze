@@ -6,7 +6,7 @@ import fly.components.Position;
 import fly.components.Velocity;
 
 class UpdatePosition implements ISystem {
-  public function update(position : Position, direction : Direction, velocity : Velocity) {
+  function update(position : Position, direction : Direction, velocity : Velocity) {
     position.x += direction.dx * velocity.value;
     position.y += direction.dy * velocity.value;
   }

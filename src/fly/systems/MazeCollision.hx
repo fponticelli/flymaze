@@ -11,7 +11,7 @@ class MazeCollision implements ISystem {
     this.cellSize = cellSize;
   }
 
-  public function update(p : Position, d : Direction, v : Velocity, maze : Maze) {
+  function update(p : Position, d : Direction, v : Velocity, maze : Maze) {
     var dx   = p.x + d.dx * v.value,
         dy   = p.y + d.dy * v.value,
         dcol = Math.floor(dx / cellSize),

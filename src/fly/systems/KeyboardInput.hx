@@ -16,7 +16,7 @@ class KeyboardInput implements ISystem {
     Browser.window.addEventListener("keyup", function(e) keys.remove(e.keyCode));
   }
 
-  public function update()
+  function update()
     if(keys.length > 0) {
       event.keys = keys;
       callback(event);

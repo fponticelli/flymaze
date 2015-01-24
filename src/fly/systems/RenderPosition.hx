@@ -9,7 +9,6 @@ class RenderPosition implements ISystem {
   public function new(mini : MiniCanvas)
     this.mini = mini;
 
-  public function update(position : Position) {
+  function update(position : Position)
     mini.dot(position.x, position.y, 9, 0x99BBCC66);
-  }
 }

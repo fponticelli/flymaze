@@ -12,7 +12,6 @@ class RenderBackground implements ISystem {
     this.color = color.toCSS3();
   }
 
-  public function update() {
+  function update()
     mini.fill(color);
-  }
 }

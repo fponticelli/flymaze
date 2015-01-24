@@ -19,7 +19,7 @@ class RenderMaze implements ISystem {
     this.cellSize = cellSize;
   }
 
-  public function update(maze : Maze) {
+  function update(maze : Maze) {
     if(id != maze.id) {
       id = maze.id;
       render(maze);

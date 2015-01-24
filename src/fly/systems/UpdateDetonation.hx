@@ -6,10 +6,10 @@ import minicanvas.MiniCanvas;
 using thx.core.Floats;
 
 class UpdateDetonation implements ISystem {
-  public var entity : Entity;
-  public var engine : Engine;
-  public var entities : Iterator<{ position : Position, edible : Edible, entity : Entity }>;
-  public function update(detonation : Detonation, position : Position) {
+  var entity : Entity;
+  var engine : Engine;
+  var entities : Iterator<{ position : Position, edible : Edible, entity : Entity }>;
+  function update(detonation : Detonation, position : Position) {
     var sqdistance = detonation.radius * detonation.radius,
         dx, dy;
     for(o in entities) {

@@ -9,7 +9,7 @@ class RenderDroplet implements ISystem {
   public function new(mini : MiniCanvas)
     this.mini = mini;
 
-  public function update(position : Position, droplet : Droplet) {
+  function update(position : Position, droplet : Droplet) {
     mini.dot(
       position.x+1,
       position.y+1,

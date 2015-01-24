@@ -10,7 +10,6 @@ class RenderExplosion implements ISystem {
   public function new(mini : MiniCanvas)
     this.mini = mini;
 
-  public function update(position : Position, explosion : Explosion) {
+  function update(position : Position, explosion : Explosion)
     explosion.draw(explosion.stage, position, mini);
-  }
 }

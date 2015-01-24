@@ -10,7 +10,7 @@ class RenderScore implements ISystem {
   public function new(mini : MiniCanvas)
     this.mini = mini;
 
-  public function update(score : Score) {
+  function update(score : Score) {
     mini.ctx.font = "16px 'Montserrat', sans-serif";
     mini.ctx.lineWidth = 4;
     mini.ctx.strokeStyle = "#FFFFFF";

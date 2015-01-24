@@ -21,7 +21,7 @@ class RenderFlower implements ISystem {
     }
   }
 
-  public function update(position : Position, f : Flower) {
+  function update(position : Position, f : Flower) {
     var image = images[f.id % images.length];
     mini.ctx.drawImage(image, position.x - size / 2, position.y - size / 2, size, size);
   }

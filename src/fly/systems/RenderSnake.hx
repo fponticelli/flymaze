@@ -11,7 +11,7 @@ class RenderSnake implements ISystem {
   public function new(mini : MiniCanvas)
     this.mini = mini;
 
-  public function update(position : Position, snake : Snake) {
+  function update(position : Position, snake : Snake) {
     var pos = 0,
         len = snake.trail.length;
     snake.map(function(a, b) {
