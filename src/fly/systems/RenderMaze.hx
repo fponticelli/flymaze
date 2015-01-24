@@ -22,20 +22,20 @@ class RenderMaze implements ISystem {
         ctx.lineCap = "square";
         ctx.strokeStyle = "#669933";
         ctx.beginPath();
-        drawCell(cell, row, col, cellSize);
+        drawCell(cell, row, col, cellSize, row == maze.cells.length - 1, col == cells.length - 1);
         ctx.stroke();
       }
     }
-    ctx.strokeRect(0.5, 0.5, maze.width * cellSize, maze.height * cellSize);
+    //ctx.strokeRect(0.5, 0.5, maze.width * cellSize, maze.height * cellSize);
     ctx.restore();
   }
 
-  function drawCell(cell : Cell, row : Int, col : Int, size : Float) {
-    if(!cell.right) {
+  function drawCell(cell : Cell, row : Int, col : Int, size : Float, lastRow : Bool, lastCol : Bool) {
+    if(!lastCol && !cell.right) {
       ctx.moveTo(0.5 + (1 + col) * size, 0.5 + row * size);
       ctx.lineTo(0.5 + (1 + col) * size, 0.5 + (row + 1) * size);
     }
-    if(!cell.bottom) {
+    if(!lastRow && !cell.bottom) {
       ctx.moveTo(0.5 + col * size, 0.5 + (1 + row) * size);
       ctx.lineTo(0.5 + (col + 1) * size, 0.5 + (1 + row) * size);
     }

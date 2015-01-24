@@ -136,6 +136,45 @@ Main.main = function() {
 	var mini = minicanvas_MiniCanvas.create(config.width,config.height).display("flymaze");
 	var game = new fly_Game(mini,config);
 	game.start();
+	Main.decorateBackground();
+};
+Main.decorateBackground = function() {
+	var w = 300;
+	var h = 300;
+	var s = 20;
+	var mini = minicanvas_MiniCanvas.create(w,h).fill(858993663);
+	var render = new fly_systems_RenderFlower(mini,400,s);
+	var p = new fly_components_Position(0,0);
+	var f = new fly_components_Flower(0);
+	var el = window.document.querySelector("figure.minicanvas");
+	var $double;
+	var _g = 0;
+	while(_g < 1500) {
+		var i = _g++;
+		$double = false;
+		p.x = w * Math.random();
+		p.y = h * Math.random();
+		f.id++;
+		render.update(p,f);
+		if(p.x < s) {
+			$double = true;
+			p.x += w;
+		} else if(p.x > w - s) {
+			$double = true;
+			p.x -= w;
+		}
+		if(p.y < s) {
+			$double = true;
+			p.y += h;
+		} else if(p.y > w - s) {
+			$double = true;
+			p.y -= h;
+		}
+		if($double) render.update(p,f);
+	}
+	mini.fill(-103);
+	el.style.backgroundSize = "" + w + "px " + h + "px";
+	el.style.backgroundImage = "url(" + mini.canvas.toDataURL("image/png") + ")";
 };
 Math.__name__ = ["Math"];
 var Reflect = function() { };
@@ -1559,19 +1598,18 @@ fly_systems_RenderMaze.prototype = {
 				this.ctx.lineCap = "square";
 				this.ctx.strokeStyle = "#669933";
 				this.ctx.beginPath();
-				this.drawCell(cell,row,col,this.cellSize);
+				this.drawCell(cell,row,col,this.cellSize,row == maze.cells.length - 1,col == cells.length - 1);
 				this.ctx.stroke();
 			}
 		}
-		this.ctx.strokeRect(0.5,0.5,maze.width * this.cellSize,maze.height * this.cellSize);
 		this.ctx.restore();
 	}
-	,drawCell: function(cell,row,col,size) {
-		if(!(0 != (cell & 2))) {
+	,drawCell: function(cell,row,col,size,lastRow,lastCol) {
+		if(!lastCol && !(0 != (cell & 2))) {
 			this.ctx.moveTo(0.5 + (1 + col) * size,0.5 + row * size);
 			this.ctx.lineTo(0.5 + (1 + col) * size,0.5 + (row + 1) * size);
 		}
-		if(!(0 != (cell & 4))) {
+		if(!lastRow && !(0 != (cell & 4))) {
 			this.ctx.moveTo(0.5 + col * size,0.5 + (1 + row) * size);
 			this.ctx.lineTo(0.5 + (col + 1) * size,0.5 + (1 + row) * size);
 		}
