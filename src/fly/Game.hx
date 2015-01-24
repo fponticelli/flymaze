@@ -92,8 +92,8 @@ class Game {
     });
   }
 
-  static var edibleFly = new Edible(true, true);
-  static var edibleFlower = new Edible(false, false);
+  static var edibleFly = new Edible(true, true, 5);
+  static var edibleFlower = new Edible(false, false, 1);
 
   function createFly(engine : Engine, config : Config) {
     var a = config.gen.float() * Math.PI * 2,

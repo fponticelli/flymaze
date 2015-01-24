@@ -29,7 +29,7 @@ class SnakeEats implements ISystem {
             new Position(position.x, position.y),
             Droplet.create(gen)
           ]));
-        score.value++;
+        score.value += o.edible.score;
       }
     }
   }
