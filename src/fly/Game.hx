@@ -73,7 +73,9 @@ class Game {
     world.physics.add(new UpdateFly(config.width, config.height, config.gen));
     world.physics.add(new UpdateSnake());
     world.physics.add(new SnakeEats(8));
+    world.physics.add(new UpdateDroplet());
     world.physics.add(new UpdateExplosion());
+    world.physics.add(new UpdateDetonation());
 
     world.render.add(new RenderBackground(mini, config.backgroundColor));
     world.render.add(new RenderDroplet(mini));
