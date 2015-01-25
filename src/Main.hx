@@ -66,7 +66,8 @@ class Main {
     // TODO display screen
     background();
     write("Game Over!", 48, Config.width / 2, Config.height / 2);
-    write("final score " +  info.score.number(0) + ' (lvl ${info.level})', 24, Config.width / 2, Config.height / 4 * 3);
+    write("Final Score " + info.score.number(0) + ' (level ${info.level})', 24, Config.width / 2, Config.height / 4 * 3);
+    write("(press bar to start a new game)", 16, Config.width / 2, Config.height / 4 * 3.5);
     Timer.delay(function() {
       mini.onKeyUp(function(e) {
         if(e.keyCode != 32) return;
