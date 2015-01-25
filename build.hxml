@@ -2,6 +2,7 @@
 -cp src
 -main Main
 -lib thx.core
+-lib thx.format
 -lib thx.math
 -lib amaze
 -lib edge
