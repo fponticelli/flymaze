@@ -6,4 +6,5 @@ class Edible implements edge.IComponent {
   var makeJump : Bool;
   var makeDroplet : Bool;
   var score : Int;
+  var countToPassLevel : Bool;
 }
