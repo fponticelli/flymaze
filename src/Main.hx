@@ -6,6 +6,7 @@ import fly.components.Position;
 import fly.components.Flower;
 import fly.systems.RenderFlower;
 import thx.core.Timer;
+using thx.format.NumberFormat;
 
 class Main {
   static var mini : MiniCanvas;
@@ -19,6 +20,9 @@ class Main {
 
   static function startScreen() {
     // TODO display spash screen
+    background();
+    write("FlyMaze", 48, Config.width / 2, Config.height / 2);
+    write("(press bar to start)", 16, Config.width / 2, Config.height / 4 * 3);
     Timer.delay(function() {
       mini.onKeyUp(function(e) {
         if(e.keyCode != 32) return;
@@ -26,7 +30,7 @@ class Main {
         var info = new GameInfo(0, 0, 0, 0);
         playLevel(info);
       });
-    }, 1000);
+    }, 250);
   }
 
   static function playLevel(info : GameInfo) {
@@ -45,19 +49,24 @@ class Main {
 
   static function intermediateScreen(info : GameInfo) {
     // TODO display screen
-    mini.clear();
+    background();
+    write("Level " + info.level + " Complete", 48, Config.width / 2, Config.height / 2);
+    write("current score " + info.score.number(0), 24, Config.width / 2, Config.height / 4 * 3);
+    write("(press bar to continue)", 16, Config.width / 2, Config.height / 4 * 3.5);
     Timer.delay(function() {
       mini.onKeyUp(function(e) {
         if(e.keyCode != 32) return;
         mini.offKeyUp();
         playLevel(info);
       });
-    }, 1000);
+    }, 250);
   }
 
   static function gameOver(info : GameInfo) {
     // TODO display screen
-    mini.clear();
+    background();
+    write("Game Over ", 48, Config.width / 2, Config.height / 2);
+    write("final score " +  info.score.number(0) + ' (lvl ${info.level})', 24, Config.width / 2, Config.height / 8 * 10);
     Timer.delay(function() {
       mini.onKeyUp(function(e) {
         if(e.keyCode != 32) return;
@@ -65,9 +74,10 @@ class Main {
         var info = new GameInfo(0, 0, 0, 0);
         playLevel(info);
       });
-    }, 1000);
+    }, 250);
   }
 
+  static var flowers : RenderFlower;
   public static function decorateBackground() {
     var w = 300,
         h = 300,
@@ -76,37 +86,60 @@ class Main {
             .create(w, h)
             .fill(0x88CC00FF),
             //.display("flowers"),
-        render = new RenderFlower(mini, 400, s),
         p = new Position(0, 0),
         f = new Flower(0),
         el = js.Browser.document.querySelector("figure.minicanvas");
     var double;
+    flowers = new RenderFlower(mini, 400, s);
     for(i in 0...1500) {
-        double = false;
-        p.x = w * Math.random();
-        p.y = h * Math.random();
-        f.id++;
-        render.update(p, f);
-        if(p.x < s) {
-            double = true;
-            p.x += w;
-        } else if (p.x > w - s) {
-            double = true;
-            p.x -= w;
-        }
-        if(p.y < s) {
-            double = true;
-            p.y += h;
-        } else if (p.y > w - s) {
-            double = true;
-            p.y -= h;
-        }
-        if(double)
-            render.update(p, f);
+      double = false;
+      p.x = w * Math.random();
+      p.y = h * Math.random();
+      f.id++;
+      flowers.update(p, f);
+      if(p.x < s) {
+        double = true;
+        p.x += w;
+      } else if (p.x > w - s) {
+        double = true;
+        p.x -= w;
+      }
+      if(p.y < s) {
+        double = true;
+        p.y += h;
+      } else if (p.y > w - s) {
+        double = true;
+        p.y -= h;
+      }
+      if(double)
+        flowers.update(p, f);
     }
     mini.fill(0xFFFFFFCC);
 
     el.style.backgroundSize = '${w}px ${h}px';
     el.style.backgroundImage = 'url(${mini.canvas.toDataURL("image/png")})';
+  }
+
+  static function write(text : String, size : Float, x : Float, y : Float) {
+    mini.ctx.font = size + "px 'Montserrat', sans-serif";
+    mini.ctx.lineWidth = 4;
+    mini.ctx.textAlign = "center";
+    mini.ctx.strokeStyle = "#FFFFFF";
+    mini.ctx.fillStyle = "#000000";
+    mini.ctx.strokeText(text, x, y);
+    mini.ctx.fillText(text, x, y);
+  }
+
+  static function background() {
+    mini.clear();
+    var p = new Position(0, 0),
+        f = new Flower(0);
+    flowers.mini = mini;
+    for(i in 0...1500) {
+      p.x = Math.random() * Config.width;
+      p.y = Math.random() * Config.height;
+      f.id = i;
+      flowers.update(p, f);
+    }
   }
 }
