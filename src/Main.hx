@@ -1,17 +1,66 @@
+import fly.components.GameInfo;
 import fly.Config;
 
 import fly.Game;
 import fly.components.Position;
 import fly.components.Flower;
 import fly.systems.RenderFlower;
+import thx.core.Timer;
 
 class Main {
+  static var mini : MiniCanvas;
   public static function main() {
-    var config = new Config(),
-        mini = MiniCanvas.create(config.width, config.height).display("flymaze"),
-        game = new fly.Game(mini, config);
-    game.start();
+    mini = MiniCanvas
+      .create(Config.width, Config.height)
+      .display("flymaze");
     decorateBackground();
+    startScreen();
+  }
+
+  static function startScreen() {
+    // TODO display spash screen
+    Timer.delay(function() {
+      mini.onKeyUp(function(e) {
+        mini.offKeyUp();
+        var info = new GameInfo(0, 0, 0, 0);
+        playLevel(info);
+      });
+    }, 1000);
+  }
+
+  static function playLevel(info : GameInfo) {
+    info.level++;
+    var config = new Config(info.level);
+    info.timeLeft = config.timePerLevel;
+    info.toPassLevel = config.flies;
+    var game = new Game(mini, config, info, function(nextLevel) {
+          if(nextLevel)
+            intermediateScreen(info);
+          else
+            gameOver(info);
+        });
+    game.start();
+  }
+
+  static function intermediateScreen(info : GameInfo) {
+    // TODO display screen
+    Timer.delay(function() {
+      mini.onKeyUp(function(e) {
+        mini.offKeyUp();
+        playLevel(info);
+      });
+    }, 1000);
+  }
+
+  static function gameOver(info : GameInfo) {
+    // TODO display screen
+    Timer.delay(function() {
+      mini.onKeyUp(function(e) {
+        mini.offKeyUp();
+        var info = new GameInfo(0, 0, 0, 0);
+        playLevel(info);
+      });
+    }, 1000);
   }
 
   public static function decorateBackground() {

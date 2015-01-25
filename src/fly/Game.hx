@@ -20,19 +20,27 @@ class Game {
 
   static var ONE_DEGREE = Math.PI / 180;
 
-  public function new(mini : MiniCanvas, config : Config) {
+  public function new(mini : MiniCanvas, config : Config, gameInfo : GameInfo, endLevel : Bool -> Void) {
     var p = new Position(
           (config.startCol + 0.5) * config.cellSize,
           (config.startRow + 1) * config.cellSize - 2),
         direction = new Direction(-Math.PI / 2),
         velocity = new Velocity(2.2),
-        gameInfo = new GameInfo(0);
-
-    var m = new amaze.Maze(config.cols, config.rows, config.gen);
+        m = new amaze.Maze(config.cols, config.rows, config.gen);
     m.generate(config.startRow, config.startCol);
     m.cells[config.startRow][config.startCol].top = true;
     m.cells[config.startRow-1][config.startCol].bottom = true;
     maze = new Maze(m, 1);
+
+    function keyUp(e) {
+      if(e.keyCode == 32 || e.keyCode == 80) {
+        if(world.running)
+          stop();
+        else {
+          start();
+        }
+      }
+    }
 
     world = new World();
     engine = world.engine;
@@ -47,10 +55,10 @@ class Game {
 
     engine.add(snakeEntity);
 
-    for(i in 0...200)
+    for(i in 0...config.flies)
       createFly(engine, config);
 
-    for(i in 0...1500)
+    for(i in 0...config.flowers)
       createFlower(engine, config);
 
     var steering = ONE_DEGREE * 10;
@@ -60,19 +68,25 @@ class Game {
         direction.angle -= steering;
       case 39, 68: // right
         direction.angle += steering;
-      case 38, 87: // accellerate
-        velocity.value = (velocity.value + 0.01).min(10);
-      case 40, 83: // decellerate
-        velocity.value = (velocity.value - 0.01).max(0.02);
+//      case 38, 87: // accellerate
+//        velocity.value = (velocity.value + 0.01).min(10);
+//      case 40, 83: // decellerate
+//        velocity.value = (velocity.value - 0.01).max(0.02);
       case _: trace('key: $key');
+    }));
+
+    world.physics.add(new UpdateGameInfo(gameInfo, function(nextLevel) {
+      js.Browser.window.removeEventListener("keyup", keyUp);
+      world.clear();
+      endLevel(nextLevel);
     }));
 
     world.physics.add(new UpdateDelayedComponents());
     world.physics.add(new MazeCollision(config.cellSize));
     world.physics.add(new UpdatePosition());
-    world.physics.add(new UpdateFly(config.width, config.height, config.gen));
+    world.physics.add(new UpdateFly(Config.width, Config.height, config.gen));
     world.physics.add(new UpdateSnake());
-    world.physics.add(new SnakeEats(gameInfo, 8));
+    world.physics.add(new SnakeEats(gameInfo, 10));
     world.physics.add(new UpdateDroplet());
     world.physics.add(new UpdateExplosion());
     world.physics.add(new UpdateDetonation(gameInfo, 10));
@@ -86,33 +100,25 @@ class Game {
     world.render.add(new RenderExplosion(mini));
     world.render.add(new RenderGameInfo(gameInfo, mini));
 
-    js.Browser.window.addEventListener("keyup", function(e) {
-      if(e.keyCode == 32) {
-        if(world.running)
-          stop();
-        else {
-          start();
-        }
-      }
-    });
+    js.Browser.window.addEventListener("keyup", keyUp);
   }
 
-  static var edibleFly = new Edible(true, true, 50);
-  static var edibleFlower = new Edible(true, true, 10);
+  static var edibleFly = new Edible(true, true, 50, true);
+  static var edibleFlower = new Edible(true, true, 10, false);
 
   function createFly(engine : Engine, config : Config) {
     var a = config.gen.float() * Math.PI * 2,
         p = new Position(
-          config.gen.float() * config.width, //Math.cos(a) * config.gen.float() * config.flyCircleRadius + config.width / 2,
-          config.gen.float() * config.height //Math.sin(a) * config.gen.float() * config.flyCircleRadius + config.height / 2
+          config.gen.float() * Config.width, //Math.cos(a) * config.gen.float() * config.flyCircleRadius + config.width / 2,
+          config.gen.float() * Config.height //Math.sin(a) * config.gen.float() * config.flyCircleRadius + config.height / 2
         );
     engine.add(new Entity([p, Fly.create(config.gen), edibleFly]));
   }
 
   function createFlower(engine : Engine, config : Config) {
     var p = new Position(
-          config.width * config.gen.float(),
-          config.height * config.gen.float()
+          Config.width * config.gen.float(),
+          Config.height * config.gen.float()
         );
     engine.add(new Entity([p, new Flower(config.gen.int()), edibleFlower]));
   }
