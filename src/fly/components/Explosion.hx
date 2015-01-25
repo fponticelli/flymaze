@@ -13,7 +13,7 @@ class Explosion implements edge.IComponent {
 
   public static var maxStage = 30;
   public static var peak = 20;
-  public static var radius = 70;
+  public static var radius = 50;
   public static function create() {
     var offset = 20,
         size = (radius + Math.ceil(offset)) * 2,
@@ -35,7 +35,7 @@ class Explosion implements edge.IComponent {
                   1 - (stage - peak) / (maxStage - peak) :
                   1 - (peak - stage) / peak
                 ),
-              w = radius * 2 * s;
+              w = size * s;
           m.ctx.drawImage(mini.canvas, pos.x - w / 2, pos.y - w / 2, w, w);
         });
   }
