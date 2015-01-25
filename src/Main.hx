@@ -21,6 +21,7 @@ class Main {
     // TODO display spash screen
     Timer.delay(function() {
       mini.onKeyUp(function(e) {
+        if(e.keyCode != 32) return;
         mini.offKeyUp();
         var info = new GameInfo(0, 0, 0, 0);
         playLevel(info);
@@ -44,8 +45,10 @@ class Main {
 
   static function intermediateScreen(info : GameInfo) {
     // TODO display screen
+    mini.clear();
     Timer.delay(function() {
       mini.onKeyUp(function(e) {
+        if(e.keyCode != 32) return;
         mini.offKeyUp();
         playLevel(info);
       });
@@ -54,8 +57,10 @@ class Main {
 
   static function gameOver(info : GameInfo) {
     // TODO display screen
+    mini.clear();
     Timer.delay(function() {
       mini.onKeyUp(function(e) {
+        if(e.keyCode != 32) return;
         mini.offKeyUp();
         var info = new GameInfo(0, 0, 0, 0);
         playLevel(info);

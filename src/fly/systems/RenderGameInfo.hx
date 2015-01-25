@@ -15,7 +15,7 @@ class RenderGameInfo implements ISystem {
   }
 
   function update() {
-    mini.ctx.font = "16px 'Montserrat', sans-serif";
+    mini.ctx.font = "14px 'Montserrat', sans-serif";
     mini.ctx.lineWidth = 4;
     mini.ctx.strokeStyle = "#FFFFFF";
     mini.ctx.fillStyle = "#000000";
