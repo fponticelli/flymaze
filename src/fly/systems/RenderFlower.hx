@@ -8,7 +8,7 @@ using thx.core.Floats;
 import thx.color.*;
 
 class RenderFlower implements ISystem {
-  var mini : MiniCanvas;
+  public var mini : MiniCanvas;
   var size : Int;
   var images : Array<Image>;
   public function new(mini : MiniCanvas, cells : Int, size : Int) {
