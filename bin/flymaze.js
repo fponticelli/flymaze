@@ -99,9 +99,9 @@ Main.playLevel = function(info) {
 };
 Main.intermediateScreen = function(info) {
 	Main.background();
-	Main.write("Level " + info.level + " Complete",48,fly_Config.width / 2,fly_Config.height / 2);
+	Main.write("Level " + info.level + " Completed!",48,fly_Config.width / 2,fly_Config.height / 2);
 	Main.write("current score " + thx_format_NumberFormat.number(info.score,0),24,fly_Config.width / 2,fly_Config.height / 4 * 3);
-	Main.write("(press bar to continue)",16,fly_Config.width / 2,fly_Config.height / 4 * 3.5);
+	Main.write("(press bar to continue to the next level)",16,fly_Config.width / 2,fly_Config.height / 4 * 3.5);
 	thx_core_Timer.delay(function() {
 		Main.mini.onKeyUp(function(e) {
 			if(e.keyCode != 32) return;
