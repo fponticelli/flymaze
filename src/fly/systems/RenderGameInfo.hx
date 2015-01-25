@@ -4,6 +4,7 @@ import edge.*;
 import fly.components.*;
 import minicanvas.MiniCanvas;
 using thx.core.Floats;
+using thx.format.NumberFormat;
 
 class RenderGameInfo implements ISystem {
   var mini : MiniCanvas;
@@ -18,7 +19,12 @@ class RenderGameInfo implements ISystem {
     mini.ctx.lineWidth = 4;
     mini.ctx.strokeStyle = "#FFFFFF";
     mini.ctx.fillStyle = "#000000";
-    var messages = ['score: ${gameInfo.score}'];
+    var messages = [
+      'score ${gameInfo.score.number(0)}',
+      'time ${gameInfo.timeLeft.number(1)}',
+      'flies ${gameInfo.flies.number(0)}',
+      'level ${gameInfo.level.number(0)}',
+    ];
     for(i in 0...messages.length) {
       var message = messages[i];
       mini.ctx.strokeText(message, 10, (1 + i) * 20);
