@@ -25,6 +25,8 @@ class UpdateDetonation implements ISystem {
       if(dx * dx + dy * dy <= sqdistance) {
         engine.remove(o.entity);
         gameInfo.score += Math.round(o.edible.score / scoreDivisor);
+        if(o.edible.countToPassLevel)
+          gameInfo.toPassLevel--;
         //engine.add(new Entity([o.position, Droplet.create()]));
       }
     }

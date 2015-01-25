@@ -33,6 +33,8 @@ class SnakeEats implements ISystem {
             )
           ]));
         gameInfo.score += o.edible.score;
+        if(o.edible.countToPassLevel)
+          gameInfo.toPassLevel--;
       }
     }
   }
