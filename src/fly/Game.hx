@@ -26,7 +26,7 @@ class Game {
           (config.startRow + 1) * config.cellSize - 2),
         direction = new Direction(-Math.PI / 2),
         velocity = new Velocity(2.2),
-        score = new Score(0);
+        gameInfo = new GameInfo(0);
 
     var m = new amaze.Maze(config.cols, config.rows, config.gen);
     m.generate(config.startRow, config.startCol);
@@ -42,8 +42,7 @@ class Game {
           direction,
           velocity,
           snake,
-          maze,
-          score
+          maze
         ]);
 
     engine.add(snakeEntity);
@@ -54,7 +53,7 @@ class Game {
     for(i in 0...1500)
       createFlower(engine, config);
 
-    var steering = ONE_DEGREE * 6;
+    var steering = ONE_DEGREE * 10;
 
     world.frame.add(new KeyboardInput(function(e) for(key in e.keys) switch key {
       case 37, 65: // left
@@ -73,10 +72,10 @@ class Game {
     world.physics.add(new UpdatePosition());
     world.physics.add(new UpdateFly(config.width, config.height, config.gen));
     world.physics.add(new UpdateSnake());
-    world.physics.add(new SnakeEats(8));
+    world.physics.add(new SnakeEats(gameInfo, 8));
     world.physics.add(new UpdateDroplet());
     world.physics.add(new UpdateExplosion());
-    world.physics.add(new UpdateDetonation(score, 10));
+    world.physics.add(new UpdateDetonation(gameInfo, 10));
 
     world.render.add(new RenderBackground(mini, config.backgroundColor));
     world.render.add(new RenderDroplet(mini));
@@ -85,7 +84,7 @@ class Game {
     world.render.add(new RenderSnake(mini));
     world.render.add(new RenderFly(mini));
     world.render.add(new RenderExplosion(mini));
-    world.render.add(new RenderScore(mini));
+    world.render.add(new RenderGameInfo(gameInfo, mini));
 
     js.Browser.window.addEventListener("keyup", function(e) {
       if(e.keyCode == 32) {

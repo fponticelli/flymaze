@@ -8,11 +8,13 @@ class SnakeEats implements ISystem {
   var engine : Engine;
   var sqdistance : Float;
   var entities : Iterator<{ position : Position, edible : Edible, entity : Entity }>;
-  public function new(distance : Float) {
+  var gameInfo : GameInfo;
+  public function new(gameInfo : GameInfo, distance : Float) {
     this.sqdistance = distance * distance;
+    this.gameInfo = gameInfo;
   }
 
-  function update(position : Position, snake : Snake, score : Score) {
+  function update(position : Position, snake : Snake) {
     var dx, dy;
     for(o in entities) {
       dx = position.x - o.position.x;
@@ -30,7 +32,7 @@ class SnakeEats implements ISystem {
               [DelayedComponents]
             )
           ]));
-        score.value += o.edible.score;
+        gameInfo.score += o.edible.score;
       }
     }
   }
