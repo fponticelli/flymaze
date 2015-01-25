@@ -65,8 +65,8 @@ class Main {
   static function gameOver(info : GameInfo) {
     // TODO display screen
     background();
-    write("Game Over ", 48, Config.width / 2, Config.height / 2);
-    write("final score " +  info.score.number(0) + ' (lvl ${info.level})', 24, Config.width / 2, Config.height / 8 * 10);
+    write("Game Over!", 48, Config.width / 2, Config.height / 2);
+    write("final score " +  info.score.number(0) + ' (lvl ${info.level})', 24, Config.width / 2, Config.height / 4 * 3);
     Timer.delay(function() {
       mini.onKeyUp(function(e) {
         if(e.keyCode != 32) return;

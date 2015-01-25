@@ -112,8 +112,8 @@ Main.intermediateScreen = function(info) {
 };
 Main.gameOver = function(info) {
 	Main.background();
-	Main.write("Game Over ",48,fly_Config.width / 2,fly_Config.height / 2);
-	Main.write("final score " + thx_format_NumberFormat.number(info.score,0) + (" (lvl " + info.level + ")"),24,fly_Config.width / 2,fly_Config.height / 8 * 10);
+	Main.write("Game Over!",48,fly_Config.width / 2,fly_Config.height / 2);
+	Main.write("final score " + thx_format_NumberFormat.number(info.score,0) + (" (lvl " + info.level + ")"),24,fly_Config.width / 2,fly_Config.height / 4 * 3);
 	thx_core_Timer.delay(function() {
 		Main.mini.onKeyUp(function(e) {
 			if(e.keyCode != 32) return;
