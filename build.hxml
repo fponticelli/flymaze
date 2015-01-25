@@ -7,6 +7,6 @@
 -lib amaze
 -lib edge
 -lib minicanvas
-#-dce full
+-dce full
 #-D analyzer
 -D js-flatten
