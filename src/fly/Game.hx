@@ -72,7 +72,7 @@ class Game {
 //        velocity.value = (velocity.value + 0.01).min(10);
 //      case 40, 83: // decellerate
 //        velocity.value = (velocity.value - 0.01).max(0.02);
-      case _: trace('key: $key');
+//      case _: trace('key: $key');
     }));
 
     world.physics.add(new UpdateGameInfo(gameInfo, function(nextLevel) {
