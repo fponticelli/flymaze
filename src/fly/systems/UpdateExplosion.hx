@@ -9,8 +9,10 @@ class UpdateExplosion implements ISystem {
   var entity : Entity;
   var engine : Engine;
   function update(explosion : Explosion) {
-    if(explosion.stage == Explosion.maxStage)
+    if(explosion.stage == Explosion.maxStage) {
       entity.add(Detonation.instance);
+      engine.add(new Entity([Audio.explosion]));
+    }
     explosion.stage--;
     if(explosion.stage <= 0)
       engine.remove(entity);

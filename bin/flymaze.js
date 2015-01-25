@@ -421,8 +421,8 @@ edge_Engine.prototype = {
 		if(info == null) return;
 		if(info.hasEngine) system.engine = this;
 		if(info.hasDelta) system.timeDelta = t;
-		if(!info.hasComponents) Reflect.callMethod(system,info.update,this.emptyArgs); else {
-			if(info.hasEntities) Reflect.setField(system,"entities",info.entities.iterator());
+		if(info.hasEntities) Reflect.setField(system,"entities",info.entities.iterator());
+		if(info.hasComponents) {
 			if(info.hasBefore) Reflect.callMethod(system,info.update,this.emptyArgs);
 			var $it0 = info.components.keys();
 			while( $it0.hasNext() ) {
@@ -431,7 +431,7 @@ edge_Engine.prototype = {
 				if(info.hasEntity) system.entity = entity;
 				Reflect.callMethod(system,info.update,components);
 			}
-		}
+		} else Reflect.callMethod(system,info.update,this.emptyArgs);
 	}
 	,matchSystems: function(entity) {
 		var $it0 = this.mapInfo.keys();
@@ -817,6 +817,8 @@ var fly_Game = function(mini,config,gameInfo,endLevel) {
 	this.world.render.add(new fly_systems_RenderFly(mini));
 	this.world.render.add(new fly_systems_RenderExplosion(mini));
 	this.world.render.add(new fly_systems_RenderGameInfo(gameInfo,mini));
+	this.world.render.add(new fly_systems_PlayAudio());
+	this.world.render.add(new fly_systems_BackgroundBuzz());
 	window.addEventListener("keyup",keyUp);
 };
 fly_Game.__name__ = ["fly","Game"];
@@ -840,6 +842,21 @@ fly_Game.prototype = {
 		this.world.stop();
 	}
 	,__class__: fly_Game
+};
+var fly_components_Audio = function(name) {
+	this.name = name;
+};
+fly_components_Audio.__name__ = ["fly","components","Audio"];
+fly_components_Audio.__interfaces__ = [edge_IComponent];
+fly_components_Audio.get_explosion = function() {
+	return fly_components_Audio.explosions[fly_components_Audio.explosion_id++ % fly_components_Audio.explosions.length];
+};
+fly_components_Audio.get_boing = function() {
+	return fly_components_Audio.boings[fly_components_Audio.boing_id++ % fly_components_Audio.boings.length];
+};
+fly_components_Audio.prototype = {
+	name: null
+	,__class__: fly_components_Audio
 };
 var fly_components_DelayedComponents = function(ticks,toAdd,toRemove) {
 	this.ticks = ticks;
@@ -1035,6 +1052,32 @@ fly_components_Velocity.prototype = {
 	value: null
 	,__class__: fly_components_Velocity
 };
+var fly_systems_BackgroundBuzz = function() {
+	this.entityRequirements = [{ name : "audio", cls : fly_components_Audio}];
+	this.componentRequirements = [];
+	this.delay = 300;
+	this.counter = 0;
+};
+fly_systems_BackgroundBuzz.__name__ = ["fly","systems","BackgroundBuzz"];
+fly_systems_BackgroundBuzz.__interfaces__ = [edge_ISystem];
+fly_systems_BackgroundBuzz.prototype = {
+	engine: null
+	,counter: null
+	,delay: null
+	,entities: null
+	,update: function() {
+		if(this.entities.hasNext()) this.counter = 0; else {
+			this.counter++;
+			if(this.counter >= this.delay) {
+				this.engine.add(new edge_Entity([fly_components_Audio.buzzing]));
+				this.counter = 0;
+			}
+		}
+	}
+	,componentRequirements: null
+	,entityRequirements: null
+	,__class__: fly_systems_BackgroundBuzz
+};
 var fly_systems_KeyboardInput = function(callback) {
 	this.entityRequirements = null;
 	this.componentRequirements = [];
@@ -1083,6 +1126,7 @@ fly_systems_MazeCollision.__name__ = ["fly","systems","MazeCollision"];
 fly_systems_MazeCollision.__interfaces__ = [edge_ISystem];
 fly_systems_MazeCollision.prototype = {
 	cellSize: null
+	,engine: null
 	,update: function(p,d,v,maze) {
 		var dx = p.x + d.get_dx() * v.value;
 		var dy = p.y + d.get_dy() * v.value;
@@ -1094,42 +1138,80 @@ fly_systems_MazeCollision.prototype = {
 		if(dcol == col && drow == row) return;
 		var cell = cells[row][col];
 		if(dcol == col) {
-			if(drow < row && !(0 != (cell & 1)) || drow > row && !(0 != (cell & 4))) d.angle = -d.angle;
+			if(drow < row && !(0 != (cell & 1)) || drow > row && !(0 != (cell & 4))) {
+				d.angle = -d.angle;
+				this.addSound();
+			}
 		} else if(drow == row) {
-			if(dcol < col && !(0 != (cell & 8)) || dcol > col && !(0 != (cell & 2))) d.angle = -d.angle + Math.PI;
+			if(dcol < col && !(0 != (cell & 8)) || dcol > col && !(0 != (cell & 2))) {
+				d.angle = -d.angle + Math.PI;
+				this.addSound();
+			}
 		} else if(dcol < col && drow < row) {
 			if(this.pos(col * this.cellSize,row * this.cellSize,p.x,p.y,dx,dy) > 0) {
 				if(!(0 != (cell & 1))) {
 					if(!(0 != (cell & 8))) d.angle += Math.PI; else d.angle = -d.angle;
-				} else if(null != cells[row - 1][col] && !(0 != (cells[row - 1][col] & 8))) d.angle = -d.angle + Math.PI;
+					this.addSound();
+				} else if(null != cells[row - 1][col] && !(0 != (cells[row - 1][col] & 8))) {
+					d.angle = -d.angle + Math.PI;
+					this.addSound();
+				}
 			} else if(!(0 != (cell & 8))) {
 				if(!(0 != (cell & 1))) d.angle += Math.PI; else d.angle = -d.angle + Math.PI;
-			} else if(null != cells[row][col - 1] && !(0 != (cells[row][col - 1] & 1))) d.angle = -d.angle;
+				this.addSound();
+			} else if(null != cells[row][col - 1] && !(0 != (cells[row][col - 1] & 1))) {
+				d.angle = -d.angle;
+				this.addSound();
+			}
 		} else if(dcol > col && drow > row) {
 			if(this.pos(col * this.cellSize,row * this.cellSize,p.x,p.y,dx,dy) > 0) {
 				if(!(0 != (cell & 4))) {
 					if(!(0 != (cell & 2))) d.angle += Math.PI; else d.angle = -d.angle;
-				} else if(null != cells[row + 1][col] && !(0 != (cells[row + 1][col] & 2))) d.angle = -d.angle + Math.PI;
+					this.addSound();
+				} else if(null != cells[row + 1][col] && !(0 != (cells[row + 1][col] & 2))) {
+					d.angle = -d.angle + Math.PI;
+					this.addSound();
+				}
 			} else if(!(0 != (cell & 2))) {
 				if(!(0 != (cell & 4))) d.angle += Math.PI; else d.angle = -d.angle + Math.PI;
-			} else if(null != cells[row][col + 1] && !(0 != (cells[row][col + 1] & 4))) d.angle = -d.angle;
+				this.addSound();
+			} else if(null != cells[row][col + 1] && !(0 != (cells[row][col + 1] & 4))) {
+				d.angle = -d.angle;
+				this.addSound();
+			}
 		} else if(dcol < col && drow > row) {
 			if(this.pos(col * this.cellSize,row * this.cellSize,p.x,p.y,dx,dy) > 0) {
 				if(!(0 != (cell & 4))) {
 					if(!(0 != (cell & 8))) d.angle += Math.PI; else d.angle = -d.angle;
-				} else if(null != cells[row + 1][col] && !(0 != (cells[row + 1][col] & 8))) d.angle = -d.angle + Math.PI;
+					this.addSound();
+				} else if(null != cells[row + 1][col] && !(0 != (cells[row + 1][col] & 8))) {
+					d.angle = -d.angle + Math.PI;
+					this.addSound();
+				}
 			} else if(!(0 != (cell & 8))) {
 				if(!(0 != (cell & 4))) d.angle += Math.PI; else d.angle = -d.angle + Math.PI;
-			} else if(null != cells[row][col - 1] && !(0 != (cells[row][col - 1] & 4))) d.angle = -d.angle;
+				this.addSound();
+			} else if(null != cells[row][col - 1] && !(0 != (cells[row][col - 1] & 4))) {
+				d.angle = -d.angle;
+				this.addSound();
+			}
 		} else if(dcol > col && drow < row) {
 			if(this.pos(col * this.cellSize,row * this.cellSize,p.x,p.y,dx,dy) > 0) {
 				if(!(0 != (cell & 1))) {
 					if(!(0 != (cell & 2))) d.angle += Math.PI; else d.angle = -d.angle;
+					this.addSound();
 				} else if(null != cells[row - 1][col] && !(0 != (cells[row - 1][col] & 2))) d.angle = -d.angle + Math.PI;
 			} else if(!(0 != (cell & 2))) {
 				if(!(0 != (cell & 1))) d.angle += Math.PI; else d.angle = -d.angle + Math.PI;
-			} else if(null != cells[row][col + 1] && !(0 != (cells[row][col + 1] & 1))) d.angle = -d.angle;
+				this.addSound();
+			} else if(null != cells[row][col + 1] && !(0 != (cells[row][col + 1] & 1))) {
+				d.angle = -d.angle;
+				this.addSound();
+			}
 		}
+	}
+	,addSound: function() {
+		this.engine.add(new edge_Entity([fly_components_Audio.get_boing()]));
 	}
 	,pos: function(x,y,ax,ay,bx,by) {
 		if((bx - ax) * (y - ay) - (by - ay) * (x - ax) < 0) return -1; else return 1;
@@ -1137,6 +1219,130 @@ fly_systems_MazeCollision.prototype = {
 	,componentRequirements: null
 	,entityRequirements: null
 	,__class__: fly_systems_MazeCollision
+};
+var js_Boot = function() { };
+js_Boot.__name__ = ["js","Boot"];
+js_Boot.getClass = function(o) {
+	if((o instanceof Array) && o.__enum__ == null) return Array; else {
+		var cl = o.__class__;
+		if(cl != null) return cl;
+		var name = js_Boot.__nativeClassName(o);
+		if(name != null) return js_Boot.__resolveNativeClass(name);
+		return null;
+	}
+};
+js_Boot.__string_rec = function(o,s) {
+	if(o == null) return "null";
+	if(s.length >= 5) return "<...>";
+	var t = typeof(o);
+	if(t == "function" && (o.__name__ || o.__ename__)) t = "object";
+	switch(t) {
+	case "object":
+		if(o instanceof Array) {
+			if(o.__enum__) {
+				if(o.length == 2) return o[0];
+				var str2 = o[0] + "(";
+				s += "\t";
+				var _g1 = 2;
+				var _g = o.length;
+				while(_g1 < _g) {
+					var i1 = _g1++;
+					if(i1 != 2) str2 += "," + js_Boot.__string_rec(o[i1],s); else str2 += js_Boot.__string_rec(o[i1],s);
+				}
+				return str2 + ")";
+			}
+			var l = o.length;
+			var i;
+			var str1 = "[";
+			s += "\t";
+			var _g2 = 0;
+			while(_g2 < l) {
+				var i2 = _g2++;
+				str1 += (i2 > 0?",":"") + js_Boot.__string_rec(o[i2],s);
+			}
+			str1 += "]";
+			return str1;
+		}
+		var tostr;
+		try {
+			tostr = o.toString;
+		} catch( e ) {
+			return "???";
+		}
+		if(tostr != null && tostr != Object.toString && typeof(tostr) == "function") {
+			var s2 = o.toString();
+			if(s2 != "[object Object]") return s2;
+		}
+		var k = null;
+		var str = "{\n";
+		s += "\t";
+		var hasp = o.hasOwnProperty != null;
+		for( var k in o ) {
+		if(hasp && !o.hasOwnProperty(k)) {
+			continue;
+		}
+		if(k == "prototype" || k == "__class__" || k == "__super__" || k == "__interfaces__" || k == "__properties__") {
+			continue;
+		}
+		if(str.length != 2) str += ", \n";
+		str += s + k + " : " + js_Boot.__string_rec(o[k],s);
+		}
+		s = s.substring(1);
+		str += "\n" + s + "}";
+		return str;
+	case "function":
+		return "<function>";
+	case "string":
+		return o;
+	default:
+		return String(o);
+	}
+};
+js_Boot.__nativeClassName = function(o) {
+	var name = js_Boot.__toStr.call(o).slice(8,-1);
+	if(name == "Object" || name == "Function" || name == "Math" || name == "JSON") return null;
+	return name;
+};
+js_Boot.__resolveNativeClass = function(name) {
+	if(typeof window != "undefined") return window[name]; else return global[name];
+};
+var fly_systems_PlayAudio = function() {
+	this.entityRequirements = null;
+	this.componentRequirements = [fly_components_Audio];
+};
+fly_systems_PlayAudio.__name__ = ["fly","systems","PlayAudio"];
+fly_systems_PlayAudio.__interfaces__ = [edge_ISystem];
+fly_systems_PlayAudio.loadSound = function(name,url) {
+	var request = new XMLHttpRequest();
+	request.open("GET",url,true);
+	request.responseType = "arraybuffer";
+	request.onload = function(_) {
+		fly_systems_PlayAudio.context.decodeAudioData(request.response,function(buffer) {
+			fly_systems_PlayAudio.sounds.set(name,buffer);
+			return false;
+		},function(e) {
+			console.log("Error: " + Std.string(e));
+			return false;
+		});
+	};
+	request.send();
+};
+fly_systems_PlayAudio.playSound = function(name) {
+	var source = fly_systems_PlayAudio.context.createBufferSource();
+	source.buffer = fly_systems_PlayAudio.sounds.get(name);
+	source.connect(fly_systems_PlayAudio.context.destination,0,0);
+	source.start(0);
+};
+fly_systems_PlayAudio.prototype = {
+	entity: null
+	,engine: null
+	,update: function(audio) {
+		fly_systems_PlayAudio.playSound(audio.name);
+		this.engine.remove(this.entity);
+	}
+	,componentRequirements: null
+	,entityRequirements: null
+	,__class__: fly_systems_PlayAudio
 };
 var fly_systems_RenderBackground = function(mini,color) {
 	this.entityRequirements = null;
@@ -1448,8 +1654,12 @@ fly_systems_SnakeEats.prototype = {
 				this.engine.remove(o.entity);
 				if(o.edible.makeJump) snake.jumping.push(0);
 				if(o.edible.makeDroplet) this.engine.add(new edge_Entity([new fly_components_Position(position.x,position.y),new fly_components_DelayedComponents(50,[fly_components_Droplet.create()],[fly_components_DelayedComponents])]));
+				this.engine.add(new edge_Entity([new fly_components_DelayedComponents(50,[fly_components_Audio.poop],[])]));
 				this.gameInfo.score += o.edible.score;
-				if(o.edible.countToPassLevel) this.gameInfo.toPassLevel--;
+				if(o.edible.countToPassLevel) {
+					this.gameInfo.toPassLevel--;
+					this.engine.add(new edge_Entity([fly_components_Audio.eatFly]));
+				} else this.engine.add(new edge_Entity([fly_components_Audio.eatFlower]));
 			}
 		}
 	}
@@ -1539,7 +1749,10 @@ fly_systems_UpdateExplosion.prototype = {
 	entity: null
 	,engine: null
 	,update: function(explosion) {
-		if(explosion.stage == fly_components_Explosion.maxStage) this.entity.add(fly_components_Detonation.instance);
+		if(explosion.stage == fly_components_Explosion.maxStage) {
+			this.entity.add(fly_components_Detonation.instance);
+			this.engine.add(new edge_Entity([fly_components_Audio.get_explosion()]));
+		}
 		explosion.stage--;
 		if(explosion.stage <= 0) this.engine.remove(this.entity);
 	}
@@ -1758,92 +1971,6 @@ haxe_ds_StringMap.prototype = {
 		return new haxe_ds__$StringMap_StringMapIterator(this,this.arrayKeys());
 	}
 	,__class__: haxe_ds_StringMap
-};
-var js_Boot = function() { };
-js_Boot.__name__ = ["js","Boot"];
-js_Boot.getClass = function(o) {
-	if((o instanceof Array) && o.__enum__ == null) return Array; else {
-		var cl = o.__class__;
-		if(cl != null) return cl;
-		var name = js_Boot.__nativeClassName(o);
-		if(name != null) return js_Boot.__resolveNativeClass(name);
-		return null;
-	}
-};
-js_Boot.__string_rec = function(o,s) {
-	if(o == null) return "null";
-	if(s.length >= 5) return "<...>";
-	var t = typeof(o);
-	if(t == "function" && (o.__name__ || o.__ename__)) t = "object";
-	switch(t) {
-	case "object":
-		if(o instanceof Array) {
-			if(o.__enum__) {
-				if(o.length == 2) return o[0];
-				var str2 = o[0] + "(";
-				s += "\t";
-				var _g1 = 2;
-				var _g = o.length;
-				while(_g1 < _g) {
-					var i1 = _g1++;
-					if(i1 != 2) str2 += "," + js_Boot.__string_rec(o[i1],s); else str2 += js_Boot.__string_rec(o[i1],s);
-				}
-				return str2 + ")";
-			}
-			var l = o.length;
-			var i;
-			var str1 = "[";
-			s += "\t";
-			var _g2 = 0;
-			while(_g2 < l) {
-				var i2 = _g2++;
-				str1 += (i2 > 0?",":"") + js_Boot.__string_rec(o[i2],s);
-			}
-			str1 += "]";
-			return str1;
-		}
-		var tostr;
-		try {
-			tostr = o.toString;
-		} catch( e ) {
-			return "???";
-		}
-		if(tostr != null && tostr != Object.toString && typeof(tostr) == "function") {
-			var s2 = o.toString();
-			if(s2 != "[object Object]") return s2;
-		}
-		var k = null;
-		var str = "{\n";
-		s += "\t";
-		var hasp = o.hasOwnProperty != null;
-		for( var k in o ) {
-		if(hasp && !o.hasOwnProperty(k)) {
-			continue;
-		}
-		if(k == "prototype" || k == "__class__" || k == "__super__" || k == "__interfaces__" || k == "__properties__") {
-			continue;
-		}
-		if(str.length != 2) str += ", \n";
-		str += s + k + " : " + js_Boot.__string_rec(o[k],s);
-		}
-		s = s.substring(1);
-		str += "\n" + s + "}";
-		return str;
-	case "function":
-		return "<function>";
-	case "string":
-		return o;
-	default:
-		return String(o);
-	}
-};
-js_Boot.__nativeClassName = function(o) {
-	var name = js_Boot.__toStr.call(o).slice(8,-1);
-	if(name == "Object" || name == "Function" || name == "Math" || name == "JSON") return null;
-	return name;
-};
-js_Boot.__resolveNativeClass = function(name) {
-	if(typeof window != "undefined") return window[name]; else return global[name];
 };
 var minicanvas_MiniCanvas = function(width,height,scaleMode) {
 	this.scaleMode = scaleMode;
@@ -2908,6 +3035,15 @@ if(Array.prototype.map == null) Array.prototype.map = function(f) {
 	}
 	return a;
 };
+fly_systems_PlayAudio.loadSound("exp1","sound/Buff.mp3");
+fly_systems_PlayAudio.loadSound("exp2","sound/Buffs.mp3");
+fly_systems_PlayAudio.loadSound("exp3","sound/Burf.mp3");
+fly_systems_PlayAudio.loadSound("boing1","sound/Boin.mp3");
+fly_systems_PlayAudio.loadSound("boing2","sound/Boing.mp3");
+fly_systems_PlayAudio.loadSound("buzz","sound/Bzzz.mp3");
+fly_systems_PlayAudio.loadSound("gulp","sound/Gulp.mp3");
+fly_systems_PlayAudio.loadSound("crunch","sound/Crunch.mp3");
+fly_systems_PlayAudio.loadSound("poop","sound/Poop.mp3");
 var __map_reserved = {}
 
       // Production steps of ECMA-262, Edition 5, 15.4.4.21
@@ -2983,13 +3119,26 @@ fly_Config.columns = [0,3,6,6,9,9,9,9,12,12,12,12,12,12,15,15,15,15,15,15,15,18]
 fly_Game.ONE_DEGREE = Math.PI / 180;
 fly_Game.edibleFly = new fly_components_Edible(true,true,50,true);
 fly_Game.edibleFlower = new fly_components_Edible(true,true,10,false);
+fly_components_Audio.buzzing = new fly_components_Audio("buzz");
+fly_components_Audio.eatFly = new fly_components_Audio("gulp");
+fly_components_Audio.eatFlower = new fly_components_Audio("crunch");
+fly_components_Audio.poop = new fly_components_Audio("poop");
+fly_components_Audio.explosions = [new fly_components_Audio("exp1"),new fly_components_Audio("exp2"),new fly_components_Audio("exp3")];
+fly_components_Audio.explosion_id = 0;
+fly_components_Audio.boings = [new fly_components_Audio("boing1"),new fly_components_Audio("boing2")];
+fly_components_Audio.boing_id = 0;
 fly_components_Explosion.maxStage = 30;
 fly_components_Explosion.peak = 20;
 fly_components_Explosion.radius = 50;
 fly_components_Detonation.instance = new fly_components_Detonation(fly_components_Explosion.radius);
 fly_components_Droplet.maxLife = 300;
-haxe_ds_ObjectMap.count = 0;
 js_Boot.__toStr = {}.toString;
+fly_systems_PlayAudio.sounds = new haxe_ds_StringMap();
+fly_systems_PlayAudio.context = (function() {
+    window.AudioContext = window.AudioContext || window.webkitAudioContext;
+    return new AudioContext();
+  })();
+haxe_ds_ObjectMap.count = 0;
 minicanvas_MiniCanvas.displayGenerationTime = false;
 minicanvas_BrowserCanvas._backingStoreRatio = 0;
 minicanvas_BrowserCanvas.attachKeyEventsToCanvas = false;

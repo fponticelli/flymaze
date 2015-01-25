@@ -7,6 +7,7 @@ using thx.core.Floats;
 class MazeCollision implements ISystem {
   static inline var E = 0.00001;
   var cellSize : Float;
+  var engine : Engine;
   public function new(cellSize : Float) {
     this.cellSize = cellSize;
   }
@@ -24,11 +25,15 @@ class MazeCollision implements ISystem {
       return;
     var cell = cells[row][col];
     if(dcol == col) {
-      if(drow < row && !cell.top || drow > row && !cell.bottom)
+      if(drow < row && !cell.top || drow > row && !cell.bottom) {
         d.angle = -d.angle;
+        addSound();
+      }
     } else if(drow == row) {
-      if(dcol < col && !cell.left || dcol > col && !cell.right)
+      if(dcol < col && !cell.left || dcol > col && !cell.right) {
         d.angle = -d.angle + Math.PI;
+        addSound();
+      }
     } else if(dcol < col && drow < row) {
       if(pos(col * cellSize, row * cellSize, p.x, p.y, dx, dy) > 0) {
         if(!cell.top) {
@@ -37,8 +42,10 @@ class MazeCollision implements ISystem {
           } else {
             d.angle = -d.angle;
           }
+          addSound();
         } else if(null != cells[row-1][col] && !cells[row-1][col].left) {
           d.angle = -d.angle + Math.PI;
+          addSound();
         }
       } else {
         if(!cell.left) {
@@ -47,8 +54,10 @@ class MazeCollision implements ISystem {
           } else {
             d.angle = -d.angle + Math.PI;
           }
+          addSound();
         } else if(null != cells[row][col-1] && !cells[row][col-1].top) {
           d.angle = -d.angle;
+          addSound();
         }
       }
     } else if(dcol > col && drow > row) {
@@ -59,8 +68,10 @@ class MazeCollision implements ISystem {
           } else {
             d.angle = -d.angle;
           }
+          addSound();
         } else if(null != cells[row+1][col] && !cells[row+1][col].right) {
           d.angle = -d.angle + Math.PI;
+          addSound();
         }
       } else {
         if(!cell.right) {
@@ -69,8 +80,10 @@ class MazeCollision implements ISystem {
           } else {
             d.angle = -d.angle + Math.PI;
           }
+          addSound();
         } else if(null != cells[row][col+1] && !cells[row][col+1].bottom) {
           d.angle = -d.angle;
+          addSound();
         }
       }
     } else if(dcol < col && drow > row) {
@@ -81,8 +94,10 @@ class MazeCollision implements ISystem {
           } else {
             d.angle = -d.angle;
           }
+          addSound();
         } else if(null != cells[row+1][col] && !cells[row+1][col].left) {
           d.angle = -d.angle + Math.PI;
+          addSound();
         }
       } else {
         if(!cell.left) {
@@ -91,8 +106,10 @@ class MazeCollision implements ISystem {
           } else {
             d.angle = -d.angle + Math.PI;
           }
+          addSound();
         } else if(null != cells[row][col-1] && !cells[row][col-1].bottom) {
           d.angle = -d.angle;
+          addSound();
         }
       }
     } else if(dcol > col && drow < row) {
@@ -103,6 +120,7 @@ class MazeCollision implements ISystem {
           } else {
             d.angle = -d.angle;
           }
+          addSound();
         } else if(null != cells[row-1][col] && !cells[row-1][col].right) {
           d.angle = -d.angle + Math.PI;
         }
@@ -113,12 +131,17 @@ class MazeCollision implements ISystem {
           } else {
             d.angle = -d.angle + Math.PI;
           }
+          addSound();
         } else if(null != cells[row][col+1] && !cells[row][col+1].top) {
           d.angle = -d.angle;
+          addSound();
         }
       }
     }
   }
+
+  function addSound()
+    engine.add(new Entity([Audio.boing]));
 
   function pos(x : Float, y : Float, ax : Float, ay : Float, bx : Float, by : Float)
     return ((bx - ax) * (y - ay) - (by - ay) * (x - ax)).sign();

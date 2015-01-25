@@ -100,6 +100,9 @@ class Game {
     world.render.add(new RenderExplosion(mini));
     world.render.add(new RenderGameInfo(gameInfo, mini));
 
+    world.render.add(new PlayAudio());
+    world.render.add(new BackgroundBuzz());
+
     js.Browser.window.addEventListener("keyup", keyUp);
   }
 

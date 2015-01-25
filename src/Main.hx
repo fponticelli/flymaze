@@ -14,12 +14,12 @@ class Main {
     mini = MiniCanvas
       .create(Config.width, Config.height)
       .display("flymaze");
+
     decorateBackground();
     startScreen();
   }
 
   static function startScreen() {
-    // TODO display spash screen
     background();
     write("FlyMaze", 48, Config.width / 2, Config.height / 2);
     write("(press bar to start)", 16, Config.width / 2, Config.height / 4 * 3);
@@ -48,7 +48,6 @@ class Main {
   }
 
   static function intermediateScreen(info : GameInfo) {
-    // TODO display screen
     background();
     write("Level " + info.level + " Completed!", 48, Config.width / 2, Config.height / 2);
     write("current score " + info.score.number(0), 24, Config.width / 2, Config.height / 4 * 3);
@@ -63,7 +62,6 @@ class Main {
   }
 
   static function gameOver(info : GameInfo) {
-    // TODO display screen
     background();
     write("Game Over!", 48, Config.width / 2, Config.height / 2);
     write("Final Score " + info.score.number(0) + ' (level ${info.level})', 24, Config.width / 2, Config.height / 4 * 3);

@@ -32,9 +32,20 @@ class SnakeEats implements ISystem {
               [DelayedComponents]
             )
           ]));
+          engine.add(new Entity([
+            new DelayedComponents(
+              50,
+              [Audio.poop],
+              []
+            )
+          ]));
         gameInfo.score += o.edible.score;
-        if(o.edible.countToPassLevel)
+        if(o.edible.countToPassLevel) {
           gameInfo.toPassLevel--;
+          engine.add(new Entity([Audio.eatFly]));
+        } else {
+          engine.add(new Entity([Audio.eatFlower]));
+        }
       }
     }
   }
