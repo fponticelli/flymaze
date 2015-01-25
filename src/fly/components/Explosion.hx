@@ -18,7 +18,7 @@ class Explosion implements edge.IComponent {
     var offset = 20,
         size = (radius + Math.ceil(offset)) * 2,
         mini = MiniCanvas.create(size, size),
-        a = Math.random() * Math.PI;
+        a = Math.random() * Math.PI * 2;
     mini.ctx.translate(size / 2, size / 2);
     mini.ctx.rotate(a);
     mini.dot(-offset / 2, -offset / 2, radius, 0xFFCC3399);
