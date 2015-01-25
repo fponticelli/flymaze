@@ -1,5 +1,4 @@
 (function (console) { "use strict";
-var $estr = function() { return js_Boot.__string_rec(this,''); };
 function $extend(from, fields) {
 	function Inherit() {} Inherit.prototype = from; var proto = new Inherit();
 	for (var name in fields) proto[name] = fields[name];
@@ -73,14 +72,6 @@ EReg.prototype = {
 };
 var HxOverrides = function() { };
 HxOverrides.__name__ = ["HxOverrides"];
-HxOverrides.dateStr = function(date) {
-	var m = date.getMonth() + 1;
-	var d = date.getDate();
-	var h = date.getHours();
-	var mi = date.getMinutes();
-	var s = date.getSeconds();
-	return date.getFullYear() + "-" + (m < 10?"0" + m:"" + m) + "-" + (d < 10?"0" + d:"" + d) + " " + (h < 10?"0" + h:"" + h) + ":" + (mi < 10?"0" + mi:"" + mi) + ":" + (s < 10?"0" + s:"" + s);
-};
 HxOverrides.cca = function(s,index) {
 	var x = s.charCodeAt(index);
 	if(x != x) return undefined;
@@ -133,22 +124,69 @@ Lambda.has = function(it,elt) {
 var Main = function() { };
 Main.__name__ = ["Main"];
 Main.main = function() {
-	var config = new fly_Config();
-	var mini = minicanvas_MiniCanvas.create(config.width,config.height).display("flymaze");
-	var game = new fly_Game(mini,config);
-	game.start();
+	Main.mini = minicanvas_MiniCanvas.create(fly_Config.width,fly_Config.height).display("flymaze");
 	Main.decorateBackground();
+	Main.startScreen();
+};
+Main.startScreen = function() {
+	Main.background();
+	Main.write("FlyMaze",48,fly_Config.width / 2,fly_Config.height / 2);
+	Main.write("(press bar to start)",16,fly_Config.width / 2,fly_Config.height / 4 * 3);
+	thx_core_Timer.delay(function() {
+		Main.mini.onKeyUp(function(e) {
+			if(e.keyCode != 32) return;
+			Main.mini.offKeyUp();
+			var info = new fly_components_GameInfo(0,0,0,0);
+			Main.playLevel(info);
+		});
+	},250);
+};
+Main.playLevel = function(info) {
+	info.level++;
+	var config = new fly_Config(info.level);
+	info.timeLeft = config.timePerLevel;
+	info.toPassLevel = config.flies;
+	var game = new fly_Game(Main.mini,config,info,function(nextLevel) {
+		if(nextLevel) Main.intermediateScreen(info); else Main.gameOver(info);
+	});
+	game.start();
+};
+Main.intermediateScreen = function(info) {
+	Main.background();
+	Main.write("Level " + info.level + " Complete",48,fly_Config.width / 2,fly_Config.height / 2);
+	Main.write("current score " + thx_format_NumberFormat.number(info.score,0),24,fly_Config.width / 2,fly_Config.height / 4 * 3);
+	Main.write("(press bar to continue)",16,fly_Config.width / 2,fly_Config.height / 4 * 3.5);
+	thx_core_Timer.delay(function() {
+		Main.mini.onKeyUp(function(e) {
+			if(e.keyCode != 32) return;
+			Main.mini.offKeyUp();
+			Main.playLevel(info);
+		});
+	},250);
+};
+Main.gameOver = function(info) {
+	Main.background();
+	Main.write("Game Over ",48,fly_Config.width / 2,fly_Config.height / 2);
+	Main.write("final score " + thx_format_NumberFormat.number(info.score,0) + (" (lvl " + info.level + ")"),24,fly_Config.width / 2,fly_Config.height / 8 * 10);
+	thx_core_Timer.delay(function() {
+		Main.mini.onKeyUp(function(e) {
+			if(e.keyCode != 32) return;
+			Main.mini.offKeyUp();
+			var info1 = new fly_components_GameInfo(0,0,0,0);
+			Main.playLevel(info1);
+		});
+	},250);
 };
 Main.decorateBackground = function() {
 	var w = 300;
 	var h = 300;
 	var s = 20;
 	var mini = minicanvas_MiniCanvas.create(w,h).fill(-1999896321);
-	var render = new fly_systems_RenderFlower(mini,400,s);
 	var p = new fly_components_Position(0,0);
 	var f = new fly_components_Flower(0);
 	var el = window.document.querySelector("figure.minicanvas");
 	var $double;
+	Main.flowers = new fly_systems_RenderFlower(mini,400,s);
 	var _g = 0;
 	while(_g < 1500) {
 		var i = _g++;
@@ -156,7 +194,7 @@ Main.decorateBackground = function() {
 		p.x = w * Math.random();
 		p.y = h * Math.random();
 		f.id++;
-		render.update(p,f);
+		Main.flowers.update(p,f);
 		if(p.x < s) {
 			$double = true;
 			p.x += w;
@@ -171,18 +209,38 @@ Main.decorateBackground = function() {
 			$double = true;
 			p.y -= h;
 		}
-		if($double) render.update(p,f);
+		if($double) Main.flowers.update(p,f);
 	}
 	mini.fill(-52);
 	el.style.backgroundSize = "" + w + "px " + h + "px";
 	el.style.backgroundImage = "url(" + mini.canvas.toDataURL("image/png") + ")";
 };
+Main.write = function(text,size,x,y) {
+	Main.mini.ctx.font = size + "px 'Montserrat', sans-serif";
+	Main.mini.ctx.lineWidth = 4;
+	Main.mini.ctx.textAlign = "center";
+	Main.mini.ctx.strokeStyle = "#FFFFFF";
+	Main.mini.ctx.fillStyle = "#000000";
+	Main.mini.ctx.strokeText(text,x,y);
+	Main.mini.ctx.fillText(text,x,y);
+};
+Main.background = function() {
+	Main.mini.clear();
+	var p = new fly_components_Position(0,0);
+	var f = new fly_components_Flower(0);
+	Main.flowers.mini = Main.mini;
+	var _g = 0;
+	while(_g < 1500) {
+		var i = _g++;
+		p.x = Math.random() * fly_Config.width;
+		p.y = Math.random() * fly_Config.height;
+		f.id = i;
+		Main.flowers.update(p,f);
+	}
+};
 Math.__name__ = ["Math"];
 var Reflect = function() { };
 Reflect.__name__ = ["Reflect"];
-Reflect.hasField = function(o,field) {
-	return Object.prototype.hasOwnProperty.call(o,field);
-};
 Reflect.field = function(o,field) {
 	try {
 		return o[field];
@@ -228,6 +286,9 @@ Std.parseInt = function(x) {
 	if(isNaN(v)) return null;
 	return v;
 };
+Std.parseFloat = function(x) {
+	return parseFloat(x);
+};
 Std.random = function(x) {
 	if(x <= 0) return 0; else return Math.floor(Math.random() * x);
 };
@@ -244,10 +305,6 @@ StringBuf.prototype = {
 };
 var StringTools = function() { };
 StringTools.__name__ = ["StringTools"];
-StringTools.htmlEscape = function(s,quotes) {
-	s = s.split("&").join("&amp;").split("<").join("&lt;").split(">").join("&gt;");
-	if(quotes) return s.split("\"").join("&quot;").split("'").join("&#039;"); else return s;
-};
 StringTools.startsWith = function(s,start) {
 	return s.length >= start.length && HxOverrides.substr(s,0,start.length) == start;
 };
@@ -280,6 +337,11 @@ StringTools.lpad = function(s,c,l) {
 	while(s.length < l) s = c + s;
 	return s;
 };
+StringTools.rpad = function(s,c,l) {
+	if(c.length <= 0) return s;
+	while(s.length < l) s = s + c;
+	return s;
+};
 StringTools.replace = function(s,sub,by) {
 	return s.split(sub).join(by);
 };
@@ -295,27 +357,20 @@ StringTools.hex = function(n,digits) {
 };
 var ValueType = { __ename__ : ["ValueType"], __constructs__ : ["TNull","TInt","TFloat","TBool","TObject","TFunction","TClass","TEnum","TUnknown"] };
 ValueType.TNull = ["TNull",0];
-ValueType.TNull.toString = $estr;
 ValueType.TNull.__enum__ = ValueType;
 ValueType.TInt = ["TInt",1];
-ValueType.TInt.toString = $estr;
 ValueType.TInt.__enum__ = ValueType;
 ValueType.TFloat = ["TFloat",2];
-ValueType.TFloat.toString = $estr;
 ValueType.TFloat.__enum__ = ValueType;
 ValueType.TBool = ["TBool",3];
-ValueType.TBool.toString = $estr;
 ValueType.TBool.__enum__ = ValueType;
 ValueType.TObject = ["TObject",4];
-ValueType.TObject.toString = $estr;
 ValueType.TObject.__enum__ = ValueType;
 ValueType.TFunction = ["TFunction",5];
-ValueType.TFunction.toString = $estr;
 ValueType.TFunction.__enum__ = ValueType;
-ValueType.TClass = function(c) { var $x = ["TClass",6,c]; $x.__enum__ = ValueType; $x.toString = $estr; return $x; };
-ValueType.TEnum = function(e) { var $x = ["TEnum",7,e]; $x.__enum__ = ValueType; $x.toString = $estr; return $x; };
+ValueType.TClass = function(c) { var $x = ["TClass",6,c]; $x.__enum__ = ValueType; return $x; };
+ValueType.TEnum = function(e) { var $x = ["TEnum",7,e]; $x.__enum__ = ValueType; return $x; };
 ValueType.TUnknown = ["TUnknown",8];
-ValueType.TUnknown.toString = $estr;
 ValueType.TUnknown.__enum__ = ValueType;
 var Type = function() { };
 Type.__name__ = ["Type"];
@@ -520,128 +575,6 @@ amaze_Maze.prototype = {
 	}
 	,__class__: amaze_Maze
 };
-var dots_Detect = function() { };
-dots_Detect.__name__ = ["dots","Detect"];
-dots_Detect.supportsInput = function(type) {
-	var i;
-	var _this = window.document;
-	i = _this.createElement("input");
-	i.setAttribute("type",type);
-	return i.type == type;
-};
-dots_Detect.supportsInputPlaceholder = function() {
-	var i;
-	var _this = window.document;
-	i = _this.createElement("input");
-	return Object.prototype.hasOwnProperty.call(i,"placeholder");
-};
-dots_Detect.supportsInputAutofocus = function() {
-	var i;
-	var _this = window.document;
-	i = _this.createElement("input");
-	return Object.prototype.hasOwnProperty.call(i,"autofocus");
-};
-dots_Detect.supportsCanvas = function() {
-	return null != ($_=((function($this) {
-		var $r;
-		var _this = window.document;
-		$r = _this.createElement("canvas");
-		return $r;
-	}(this))),$bind($_,$_.getContext));
-};
-dots_Detect.supportsVideo = function() {
-	return null != ($_=((function($this) {
-		var $r;
-		var _this = window.document;
-		$r = _this.createElement("video");
-		return $r;
-	}(this))),$bind($_,$_.canPlayType));
-};
-dots_Detect.supportsLocalStorage = function() {
-	try {
-		return 'localStorage' in window && window['localStorage'] !== null;
-	} catch( e ) {
-		return false;
-	}
-};
-dots_Detect.supportsWebWorkers = function() {
-	return !(!window.Worker);
-};
-dots_Detect.supportsOffline = function() {
-	return null != window.applicationCache;
-};
-dots_Detect.supportsGeolocation = function() {
-	return Reflect.hasField(window.navigator,"geolocation");
-};
-dots_Detect.supportsMicrodata = function() {
-	return Reflect.hasField(window.document,"getItems");
-};
-dots_Detect.supportsHistory = function() {
-	return !!(window.history && history.pushState);
-};
-var dots_Dom = function() { };
-dots_Dom.__name__ = ["dots","Dom"];
-dots_Dom.addCss = function(css,container) {
-	if(null == container) container = window.document.head;
-	var style;
-	var _this = window.document;
-	style = _this.createElement("style");
-	style.type = "text/css";
-	style.appendChild(window.document.createTextNode(css));
-	container.appendChild(style);
-};
-var dots_Html = function() { };
-dots_Html.__name__ = ["dots","Html"];
-dots_Html.parseNodes = function(html) {
-	if(!dots_Html.pattern.match(html)) throw "Invalid pattern \"" + html + "\"";
-	var el;
-	var _g = dots_Html.pattern.matched(1).toLowerCase();
-	switch(_g) {
-	case "tbody":case "thead":
-		el = window.document.createElement("table");
-		break;
-	case "td":case "th":
-		el = window.document.createElement("tr");
-		break;
-	case "tr":
-		el = window.document.createElement("tbody");
-		break;
-	default:
-		el = window.document.createElement("div");
-	}
-	el.innerHTML = html;
-	return el.childNodes;
-};
-dots_Html.parseArray = function(html) {
-	return dots_Html.nodeListToArray(dots_Html.parseNodes(html));
-};
-dots_Html.parse = function(html) {
-	return dots_Html.parseNodes(html)[0];
-};
-dots_Html.nodeListToArray = function(list) {
-	return Array.prototype.slice.call(list,0);
-};
-var dots_Query = function() { };
-dots_Query.__name__ = ["dots","Query"];
-dots_Query.first = function(selector,ctx) {
-	return (ctx != null?ctx:dots_Query.doc).querySelector(selector);
-};
-dots_Query.list = function(selector,ctx) {
-	return (ctx != null?ctx:dots_Query.doc).querySelectorAll(selector);
-};
-dots_Query.all = function(selector,ctx) {
-	return dots_Html.nodeListToArray(dots_Query.list(selector,ctx));
-};
-dots_Query.getElementIndex = function(el) {
-	var index = 0;
-	while(null != (el = el.previousElementSibling)) index++;
-	return index;
-};
-dots_Query.childrenOf = function(children,parent) {
-	return children.filter(function(child) {
-		return child.parentElement == parent;
-	});
-};
 var edge_Engine = function() {
 	this.emptyArgs = [];
 	this.mapInfo = new haxe_ds_ObjectMap();
@@ -701,7 +634,7 @@ edge_Engine.prototype = {
 	}
 	,addSystem: function(phase,system) {
 		if(this.mapInfo.h.__keys__[system.__id__] != null) throw "System \"" + Std.string(system) + "\" already exists in Engine";
-		var info = { hasComponents : null != system.componentRequirements && system.componentRequirements.length > 0, hasEngine : edge_Engine.hasField(system,"engine"), hasEntity : edge_Engine.hasField(system,"entity"), hasBefore : edge_Engine.hasField(system,"before"), hasEntities : null != system.entityRequirements, update : Reflect.field(system,"update"), phase : phase, before : null, components : new haxe_ds_ObjectMap(), entities : new haxe_ds_ObjectMap()};
+		var info = { hasComponents : null != system.componentRequirements && system.componentRequirements.length > 0, hasDelta : edge_Engine.hasField(system,"timeDelta"), hasEngine : edge_Engine.hasField(system,"engine"), hasEntity : edge_Engine.hasField(system,"entity"), hasBefore : edge_Engine.hasField(system,"before"), hasEntities : null != system.entityRequirements, update : Reflect.field(system,"update"), phase : phase, before : null, components : new haxe_ds_ObjectMap(), entities : new haxe_ds_ObjectMap()};
 		if(info.hasBefore) info.before = Reflect.field(system,"before");
 		this.mapInfo.set(system,info);
 		if(info.hasComponents) {
@@ -723,9 +656,10 @@ edge_Engine.prototype = {
 		this.mapInfo.remove(system);
 	}
 	,emptyArgs: null
-	,updateSystem: function(system) {
+	,updateSystem: function(system,t) {
 		var info = this.mapInfo.h[system.__id__];
 		if(info.hasEngine) system.engine = this;
+		if(info.hasDelta) system.timeDelta = t;
 		if(!info.hasComponents) Reflect.callMethod(system,info.update,this.emptyArgs); else {
 			if(info.hasEntities) Reflect.setField(system,"entities",info.entities.iterator());
 			if(info.hasBefore) Reflect.callMethod(system,info.update,this.emptyArgs);
@@ -903,6 +837,13 @@ edge_Phase.prototype = {
 			this.last = node;
 		}
 	}
+	,clear: function() {
+		var $it0 = this.systems();
+		while( $it0.hasNext() ) {
+			var system = $it0.next();
+			this.remove(system);
+		}
+	}
 	,insertBefore: function(ref,system) {
 		var noderef = this.mapSystem.h[ref.__id__];
 		if(null == noderef) throw "Phase.insertBefore: unable to find " + Std.string(ref) + " system";
@@ -964,12 +905,12 @@ edge_Phase.prototype = {
 	,systems: function() {
 		return new edge_NodeSystemIterator(this.first);
 	}
-	,update: function() {
+	,update: function(t) {
 		if(null == this.engine) return;
 		var $it0 = this.systems();
 		while( $it0.hasNext() ) {
 			var system = $it0.next();
-			this.engine.updateSystem(system);
+			this.engine.updateSystem(system,t);
 		}
 	}
 	,createNode: function(system) {
@@ -1039,52 +980,64 @@ edge_World.prototype = {
 		this.cancel = this.schedule($bind(this,this.run));
 	}
 	,run: function(t) {
-		this.frame.update();
-		t += this.remainder;
-		while(t > this.delta) {
-			t -= this.delta;
-			this.physics.update();
+		this.frame.update(t);
+		var dt = t + this.remainder;
+		while(dt > this.delta) {
+			dt -= this.delta;
+			this.physics.update(this.delta);
 		}
-		this.remainder = t;
-		this.render.update();
+		this.remainder = dt;
+		this.render.update(t);
 	}
 	,stop: function() {
 		if(!this.running) return;
 		this.running = false;
 		this.cancel();
 	}
+	,clear: function() {
+		var $it0 = this.engine.phases();
+		while( $it0.hasNext() ) {
+			var phase = $it0.next();
+			phase.clear();
+		}
+		this.engine.clear();
+	}
 	,__class__: edge_World
 };
-var fly_Config = function() {
-	this.width = 642;
-	this.height = 514;
-	this.cols = 10;
-	this.cellSize = this.width / this.cols | 0;
-	this.rows = this.height / this.cellSize | 0;
+var fly_Config = function(level) {
+	if(level >= fly_Config.columns.length) this.cols = fly_Config.columns[fly_Config.columns.length - 1]; else this.cols = fly_Config.columns[level];
+	this.cellSize = Math.floor(fly_Config.width / this.cols);
+	this.rows = Math.floor(fly_Config.height / this.cellSize);
 	this.startCol = 0;
 	this.startRow = this.rows - 1;
 	this.backgroundColor = 12245640;
 	this.flyCircleRadius = 60;
-	this.gen = new thx_math_random_PseudoRandom(5);
+	this.flies = 200;
+	this.flowers = 1500;
+	this.timePerLevel = 120;
+	this.gen = new thx_math_random_PseudoRandom(level * 2);
 };
 fly_Config.__name__ = ["fly","Config"];
 fly_Config.prototype = {
-	width: null
-	,height: null
-	,cols: null
+	cols: null
 	,rows: null
 	,startCol: null
 	,startRow: null
+	,flies: null
+	,flowers: null
+	,timePerLevel: null
 	,backgroundColor: null
 	,gen: null
 	,cellSize: null
 	,flyCircleRadius: null
+	,pseudoRandom: null
 	,__class__: fly_Config
 };
-var fly_components_Edible = function(makeJump,makeDroplet,score) {
+var fly_components_Edible = function(makeJump,makeDroplet,score,countToPassLevel) {
 	this.makeJump = makeJump;
 	this.makeDroplet = makeDroplet;
 	this.score = score;
+	this.countToPassLevel = countToPassLevel;
 };
 fly_components_Edible.__name__ = ["fly","components","Edible"];
 fly_components_Edible.__interfaces__ = [edge_IComponent];
@@ -1092,17 +1045,18 @@ fly_components_Edible.prototype = {
 	makeJump: null
 	,makeDroplet: null
 	,score: null
+	,countToPassLevel: null
 	,toString: function() {
-		return "Edible(makeJump=$makeJump,makeDroplet=$makeDroplet,score=$score)";
+		return "Edible(makeJump=$makeJump,makeDroplet=$makeDroplet,score=$score,countToPassLevel=$countToPassLevel)";
 	}
 	,__class__: fly_components_Edible
 };
-var fly_Game = function(mini,config) {
+var fly_Game = function(mini,config,gameInfo,endLevel) {
 	this.running = false;
 	var _g = this;
 	var p = new fly_components_Position((config.startCol + 0.5) * config.cellSize,(config.startRow + 1) * config.cellSize - 2);
-	var direction = new fly_components_Direction(-Math.PI / 2 + 3 * fly_Game.ONE_DEGREE);
-	var velocity = new fly_components_Velocity(2);
+	var direction = new fly_components_Direction(-Math.PI / 2);
+	var velocity = new fly_components_Velocity(2.2);
 	var m = new amaze_Maze(config.cols,config.rows,config.gen);
 	m.generate(config.startRow,config.startCol);
 	m.cells[config.startRow][config.startCol] = m.cells[config.startRow][config.startCol] | 1;
@@ -1110,28 +1064,35 @@ var fly_Game = function(mini,config) {
 	m.cells[config.startRow - 1][config.startCol] = m.cells[config.startRow - 1][config.startCol] | 4;
 	true;
 	this.maze = new fly_components_Maze(m,1);
+	var keyUp = function(e) {
+		if(e.keyCode == 32 || e.keyCode == 80) {
+			if(_g.world.running) _g.stop(); else _g.start();
+		}
+	};
 	this.world = new edge_World();
 	this.engine = this.world.engine;
 	var snake = new fly_components_Snake(60,p);
-	var snakeEntity = new edge_Entity([p,direction,velocity,snake,this.maze,new fly_components_Score(0)]);
+	var snakeEntity = new edge_Entity([p,direction,velocity,snake,this.maze]);
 	this.engine.add(snakeEntity);
 	var _g1 = 0;
-	while(_g1 < 200) {
+	var _g2 = config.flies;
+	while(_g1 < _g2) {
 		var i = _g1++;
 		this.createFly(this.engine,config);
 	}
-	var _g2 = 0;
-	while(_g2 < 1500) {
-		var i1 = _g2++;
+	var _g11 = 0;
+	var _g3 = config.flowers;
+	while(_g11 < _g3) {
+		var i1 = _g11++;
 		this.createFlower(this.engine,config);
 	}
-	var steering = fly_Game.ONE_DEGREE * 5;
-	this.world.frame.add(new fly_systems_KeyboardInput(function(e) {
-		var _g3 = 0;
-		var _g11 = e.keys;
-		while(_g3 < _g11.length) {
-			var key = _g11[_g3];
-			++_g3;
+	var steering = fly_Game.ONE_DEGREE * 10;
+	this.world.frame.add(new fly_systems_KeyboardInput(function(e1) {
+		var _g4 = 0;
+		var _g12 = e1.keys;
+		while(_g4 < _g12.length) {
+			var key = _g12[_g4];
+			++_g4;
 			switch(key) {
 			case 37:case 65:
 				direction.angle -= steering;
@@ -1139,39 +1100,34 @@ var fly_Game = function(mini,config) {
 			case 39:case 68:
 				direction.angle += steering;
 				break;
-			case 38:case 87:
-				velocity.value = Math.min(velocity.value + 0.01,10);
-				break;
-			case 40:case 83:
-				velocity.value = Math.max(velocity.value - 0.01,0.02);
-				break;
 			default:
-				haxe_Log.trace("key: " + key,{ fileName : "Game.hx", lineNumber : 67, className : "fly.Game", methodName : "new"});
+				console.log("key: " + key);
 			}
 		}
+	}));
+	this.world.physics.add(new fly_systems_UpdateGameInfo(gameInfo,function(nextLevel) {
+		window.removeEventListener("keyup",keyUp);
+		_g.world.clear();
+		endLevel(nextLevel);
 	}));
 	this.world.physics.add(new fly_systems_UpdateDelayedComponents());
 	this.world.physics.add(new fly_systems_MazeCollision(config.cellSize));
 	this.world.physics.add(new fly_systems_UpdatePosition());
-	this.world.physics.add(new fly_systems_UpdateFly(config.width,config.height,config.gen));
+	this.world.physics.add(new fly_systems_UpdateFly(fly_Config.width,fly_Config.height,config.gen));
 	this.world.physics.add(new fly_systems_UpdateSnake());
-	this.world.physics.add(new fly_systems_SnakeEats(8));
+	this.world.physics.add(new fly_systems_SnakeEats(gameInfo,10));
 	this.world.physics.add(new fly_systems_UpdateDroplet());
 	this.world.physics.add(new fly_systems_UpdateExplosion());
-	this.world.physics.add(new fly_systems_UpdateDetonation());
+	this.world.physics.add(new fly_systems_UpdateDetonation(gameInfo,10));
 	this.world.render.add(new fly_systems_RenderBackground(mini,config.backgroundColor));
 	this.world.render.add(new fly_systems_RenderDroplet(mini));
 	this.world.render.add(new fly_systems_RenderMaze(mini.ctx,config.cellSize));
-	this.world.render.add(new fly_systems_RenderFlower(mini,200,22));
+	this.world.render.add(new fly_systems_RenderFlower(mini,200,20));
 	this.world.render.add(new fly_systems_RenderSnake(mini));
 	this.world.render.add(new fly_systems_RenderFly(mini));
 	this.world.render.add(new fly_systems_RenderExplosion(mini));
-	this.world.render.add(new fly_systems_RenderScore(mini));
-	window.addEventListener("keyup",function(e1) {
-		if(e1.keyCode == 32) {
-			if(_g.world.running) _g.stop(); else _g.start();
-		}
-	});
+	this.world.render.add(new fly_systems_RenderGameInfo(gameInfo,mini));
+	window.addEventListener("keyup",keyUp);
 };
 fly_Game.__name__ = ["fly","Game"];
 fly_Game.prototype = {
@@ -1182,11 +1138,11 @@ fly_Game.prototype = {
 	,running: null
 	,createFly: function(engine,config) {
 		var a = config.gen["float"]() * Math.PI * 2;
-		var p = new fly_components_Position(Math.cos(a) * config.gen["float"]() * config.flyCircleRadius + config.width / 2,Math.sin(a) * config.gen["float"]() * config.flyCircleRadius + config.height / 2);
+		var p = new fly_components_Position(config.gen["float"]() * fly_Config.width,config.gen["float"]() * fly_Config.height);
 		engine.add(new edge_Entity([p,fly_components_Fly.create(config.gen),fly_Game.edibleFly]));
 	}
 	,createFlower: function(engine,config) {
-		var p = new fly_components_Position(config.width * config.gen["float"](),config.height * config.gen["float"]());
+		var p = new fly_components_Position(fly_Config.width * config.gen["float"](),fly_Config.height * config.gen["float"]());
 		engine.add(new edge_Entity([p,new fly_components_Flower(config.gen["int"]()),fly_Game.edibleFlower]));
 	}
 	,start: function() {
@@ -1223,7 +1179,7 @@ fly_components_Explosion.create = function() {
 	var offset = 20;
 	var size = (fly_components_Explosion.radius + Math.ceil(offset)) * 2;
 	var mini = minicanvas_MiniCanvas.create(size,size);
-	var a = Math.random() * Math.PI;
+	var a = Math.random() * Math.PI * 2;
 	mini.ctx.translate(size / 2,size / 2);
 	mini.ctx.rotate(a);
 	mini.dot(-offset / 2,-offset / 2,fly_components_Explosion.radius,-3394663);
@@ -1235,7 +1191,7 @@ fly_components_Explosion.create = function() {
 	return new fly_components_Explosion(fly_components_Explosion.maxStage,function(stage,pos,m) {
 		var s;
 		if(stage > fly_components_Explosion.peak) s = 1 - (stage - fly_components_Explosion.peak) / (fly_components_Explosion.maxStage - fly_components_Explosion.peak); else s = 1 - (fly_components_Explosion.peak - stage) / fly_components_Explosion.peak;
-		var w = fly_components_Explosion.radius * 2 * s;
+		var w = size * s;
 		m.ctx.drawImage(mini.canvas,pos.x - w / 2,pos.y - w / 2,w,w);
 	});
 };
@@ -1325,6 +1281,24 @@ fly_components_Fly.prototype = {
 	}
 	,__class__: fly_components_Fly
 };
+var fly_components_GameInfo = function(score,toPassLevel,timeLeft,level) {
+	this.score = score;
+	this.toPassLevel = toPassLevel;
+	this.timeLeft = timeLeft;
+	this.level = level;
+};
+fly_components_GameInfo.__name__ = ["fly","components","GameInfo"];
+fly_components_GameInfo.__interfaces__ = [edge_IComponent];
+fly_components_GameInfo.prototype = {
+	score: null
+	,toPassLevel: null
+	,timeLeft: null
+	,level: null
+	,toString: function() {
+		return "GameInfo(score=$score,toPassLevel=$toPassLevel,timeLeft=$timeLeft,level=$level)";
+	}
+	,__class__: fly_components_GameInfo
+};
 var fly_components_Maze = function(maze,id) {
 	this.maze = maze;
 	this.id = id;
@@ -1352,18 +1326,6 @@ fly_components_Position.prototype = {
 		return "Position(x=$x,y=$y)";
 	}
 	,__class__: fly_components_Position
-};
-var fly_components_Score = function(value) {
-	this.value = value;
-};
-fly_components_Score.__name__ = ["fly","components","Score"];
-fly_components_Score.__interfaces__ = [edge_IComponent];
-fly_components_Score.prototype = {
-	value: null
-	,toString: function() {
-		return "Score(value=$value)";
-	}
-	,__class__: fly_components_Score
 };
 var fly_components_Snake = function(length,start,trailWidth,headWidth) {
 	if(headWidth == null) headWidth = 4;
@@ -1675,6 +1637,40 @@ fly_systems_RenderFly.prototype = {
 	}
 	,__class__: fly_systems_RenderFly
 };
+var fly_systems_RenderGameInfo = function(gameInfo,mini) {
+	this.entityRequirements = null;
+	this.componentRequirements = [];
+	this.mini = mini;
+	this.gameInfo = gameInfo;
+};
+fly_systems_RenderGameInfo.__name__ = ["fly","systems","RenderGameInfo"];
+fly_systems_RenderGameInfo.__interfaces__ = [edge_ISystem];
+fly_systems_RenderGameInfo.prototype = {
+	mini: null
+	,gameInfo: null
+	,update: function() {
+		this.mini.ctx.font = "14px 'Montserrat', sans-serif";
+		this.mini.ctx.textAlign = "left";
+		this.mini.ctx.lineWidth = 4;
+		this.mini.ctx.strokeStyle = "#FFFFFF";
+		this.mini.ctx.fillStyle = "#000000";
+		var messages = ["score " + thx_format_NumberFormat.number(this.gameInfo.score,0),"time " + thx_format_NumberFormat.number(this.gameInfo.timeLeft,1),"flies " + thx_format_NumberFormat.number(this.gameInfo.toPassLevel,0),"level " + thx_format_NumberFormat.number(this.gameInfo.level,0)];
+		var _g1 = 0;
+		var _g = messages.length;
+		while(_g1 < _g) {
+			var i = _g1++;
+			var message = messages[i];
+			this.mini.ctx.strokeText(message,10,(1 + i) * 20);
+			this.mini.ctx.fillText(message,10,(1 + i) * 20);
+		}
+	}
+	,componentRequirements: null
+	,entityRequirements: null
+	,toString: function() {
+		return "fly.systems.RenderGameInfo";
+	}
+	,__class__: fly_systems_RenderGameInfo
+};
 var fly_systems_RenderMaze = function(ctx,cellSize) {
 	this.entityRequirements = null;
 	this.componentRequirements = [fly_components_Maze];
@@ -1772,30 +1768,6 @@ fly_systems_RenderMaze.prototype = {
 	}
 	,__class__: fly_systems_RenderMaze
 };
-var fly_systems_RenderScore = function(mini) {
-	this.entityRequirements = null;
-	this.componentRequirements = [fly_components_Score];
-	this.mini = mini;
-};
-fly_systems_RenderScore.__name__ = ["fly","systems","RenderScore"];
-fly_systems_RenderScore.__interfaces__ = [edge_ISystem];
-fly_systems_RenderScore.prototype = {
-	mini: null
-	,update: function(score) {
-		this.mini.ctx.font = "16px 'Montserrat', sans-serif";
-		this.mini.ctx.lineWidth = 4;
-		this.mini.ctx.strokeStyle = "#FFFFFF";
-		this.mini.ctx.strokeText("" + score.value,10,20);
-		this.mini.ctx.fillStyle = "#000000";
-		this.mini.ctx.fillText("" + score.value,10,20);
-	}
-	,componentRequirements: null
-	,entityRequirements: null
-	,toString: function() {
-		return "fly.systems.RenderScore";
-	}
-	,__class__: fly_systems_RenderScore
-};
 var fly_systems_RenderSnake = function(mini) {
 	this.entityRequirements = null;
 	this.componentRequirements = [fly_components_Position,fly_components_Snake];
@@ -1834,10 +1806,11 @@ fly_systems_RenderSnake.prototype = {
 	}
 	,__class__: fly_systems_RenderSnake
 };
-var fly_systems_SnakeEats = function(distance) {
+var fly_systems_SnakeEats = function(gameInfo,distance) {
 	this.entityRequirements = [{ name : "position", cls : fly_components_Position},{ name : "edible", cls : fly_components_Edible}];
-	this.componentRequirements = [fly_components_Position,fly_components_Snake,fly_components_Score];
+	this.componentRequirements = [fly_components_Position,fly_components_Snake];
 	this.sqdistance = distance * distance;
+	this.gameInfo = gameInfo;
 };
 fly_systems_SnakeEats.__name__ = ["fly","systems","SnakeEats"];
 fly_systems_SnakeEats.__interfaces__ = [edge_ISystem];
@@ -1845,7 +1818,8 @@ fly_systems_SnakeEats.prototype = {
 	engine: null
 	,sqdistance: null
 	,entities: null
-	,update: function(position,snake,score) {
+	,gameInfo: null
+	,update: function(position,snake) {
 		var dx;
 		var dy;
 		var $it0 = this.entities;
@@ -1857,7 +1831,8 @@ fly_systems_SnakeEats.prototype = {
 				this.engine.remove(o.entity);
 				if(o.edible.makeJump) snake.jumping.push(0);
 				if(o.edible.makeDroplet) this.engine.add(new edge_Entity([new fly_components_Position(position.x,position.y),new fly_components_DelayedComponents(50,[fly_components_Droplet.create()],[fly_components_DelayedComponents])]));
-				score.value += o.edible.score;
+				this.gameInfo.score += o.edible.score;
+				if(o.edible.countToPassLevel) this.gameInfo.toPassLevel--;
 			}
 		}
 	}
@@ -1889,9 +1864,11 @@ fly_systems_UpdateDelayedComponents.prototype = {
 	}
 	,__class__: fly_systems_UpdateDelayedComponents
 };
-var fly_systems_UpdateDetonation = function() {
+var fly_systems_UpdateDetonation = function(gameInfo,scoreDivisor) {
 	this.entityRequirements = [{ name : "position", cls : fly_components_Position},{ name : "edible", cls : fly_components_Edible}];
 	this.componentRequirements = [fly_components_Detonation,fly_components_Position];
+	this.gameInfo = gameInfo;
+	this.scoreDivisor = scoreDivisor;
 };
 fly_systems_UpdateDetonation.__name__ = ["fly","systems","UpdateDetonation"];
 fly_systems_UpdateDetonation.__interfaces__ = [edge_ISystem];
@@ -1899,6 +1876,8 @@ fly_systems_UpdateDetonation.prototype = {
 	entity: null
 	,engine: null
 	,entities: null
+	,gameInfo: null
+	,scoreDivisor: null
 	,update: function(detonation,position) {
 		var sqdistance = detonation.radius * detonation.radius;
 		var dx;
@@ -1908,7 +1887,11 @@ fly_systems_UpdateDetonation.prototype = {
 			var o = $it0.next();
 			dx = position.x - o.position.x;
 			dy = position.y - o.position.y;
-			if(dx * dx + dy * dy <= sqdistance) this.engine.remove(o.entity);
+			if(dx * dx + dy * dy <= sqdistance) {
+				this.engine.remove(o.entity);
+				this.gameInfo.score += Math.round(o.edible.score / this.scoreDivisor);
+				if(o.edible.countToPassLevel) this.gameInfo.toPassLevel--;
+			}
 		}
 		this.entity.remove(detonation);
 	}
@@ -1988,6 +1971,36 @@ fly_systems_UpdateFly.prototype = {
 	}
 	,__class__: fly_systems_UpdateFly
 };
+var fly_systems_UpdateGameInfo = function(gameInfo,endLevel) {
+	this.entityRequirements = null;
+	this.componentRequirements = [];
+	this.gameInfo = gameInfo;
+	this.endLevel = endLevel;
+};
+fly_systems_UpdateGameInfo.__name__ = ["fly","systems","UpdateGameInfo"];
+fly_systems_UpdateGameInfo.__interfaces__ = [edge_ISystem];
+fly_systems_UpdateGameInfo.prototype = {
+	gameInfo: null
+	,timeDelta: null
+	,endLevel: null
+	,update: function() {
+		this.gameInfo.timeLeft -= this.timeDelta / 1000;
+		if(this.gameInfo.toPassLevel <= 0) {
+			this.gameInfo.score += Math.ceil(this.gameInfo.timeLeft * 10);
+			this.endLevel(true);
+		}
+		if(this.gameInfo.timeLeft <= 0) {
+			this.gameInfo.timeLeft = 0;
+			this.endLevel(false);
+		}
+	}
+	,componentRequirements: null
+	,entityRequirements: null
+	,toString: function() {
+		return "fly.systems.UpdateGameInfo";
+	}
+	,__class__: fly_systems_UpdateGameInfo
+};
 var fly_systems_UpdatePosition = function() {
 	this.entityRequirements = null;
 	this.componentRequirements = [fly_components_Position,fly_components_Direction,fly_components_Velocity];
@@ -2022,11 +2035,10 @@ fly_systems_UpdateSnake.prototype = {
 		snake.trail[snake.pos].y = position.y;
 		snake.pos++;
 		if(snake.pos >= snake.trail.length) snake.pos = 0;
-		var i = snake.jumping.length - 1;
-		while(i >= 0) {
+		var i = snake.jumping.length;
+		while(--i >= 0) {
 			snake.jumping[i]++;
 			if(snake.jumping[i] == snake.trail.length) snake.jumping.pop();
-			i--;
 		}
 	}
 	,componentRequirements: null
@@ -2038,12 +2050,11 @@ fly_systems_UpdateSnake.prototype = {
 };
 var haxe_StackItem = { __ename__ : ["haxe","StackItem"], __constructs__ : ["CFunction","Module","FilePos","Method","LocalFunction"] };
 haxe_StackItem.CFunction = ["CFunction",0];
-haxe_StackItem.CFunction.toString = $estr;
 haxe_StackItem.CFunction.__enum__ = haxe_StackItem;
-haxe_StackItem.Module = function(m) { var $x = ["Module",1,m]; $x.__enum__ = haxe_StackItem; $x.toString = $estr; return $x; };
-haxe_StackItem.FilePos = function(s,file,line) { var $x = ["FilePos",2,s,file,line]; $x.__enum__ = haxe_StackItem; $x.toString = $estr; return $x; };
-haxe_StackItem.Method = function(classname,method) { var $x = ["Method",3,classname,method]; $x.__enum__ = haxe_StackItem; $x.toString = $estr; return $x; };
-haxe_StackItem.LocalFunction = function(v) { var $x = ["LocalFunction",4,v]; $x.__enum__ = haxe_StackItem; $x.toString = $estr; return $x; };
+haxe_StackItem.Module = function(m) { var $x = ["Module",1,m]; $x.__enum__ = haxe_StackItem; return $x; };
+haxe_StackItem.FilePos = function(s,file,line) { var $x = ["FilePos",2,s,file,line]; $x.__enum__ = haxe_StackItem; return $x; };
+haxe_StackItem.Method = function(classname,method) { var $x = ["Method",3,classname,method]; $x.__enum__ = haxe_StackItem; return $x; };
+haxe_StackItem.LocalFunction = function(v) { var $x = ["LocalFunction",4,v]; $x.__enum__ = haxe_StackItem; return $x; };
 var haxe_CallStack = function() { };
 haxe_CallStack.__name__ = ["haxe","CallStack"];
 haxe_CallStack.callStack = function() {
@@ -2140,47 +2151,8 @@ haxe_CallStack.makeStack = function(s) {
 var haxe_IMap = function() { };
 haxe_IMap.__name__ = ["haxe","IMap"];
 haxe_IMap.prototype = {
-	get: null
-	,set: null
-	,exists: null
-	,remove: null
-	,keys: null
+	remove: null
 	,__class__: haxe_IMap
-};
-var haxe_Log = function() { };
-haxe_Log.__name__ = ["haxe","Log"];
-haxe_Log.trace = function(v,infos) {
-	js_Boot.__trace(v,infos);
-};
-var haxe_ds_IntMap = function() {
-	this.h = { };
-};
-haxe_ds_IntMap.__name__ = ["haxe","ds","IntMap"];
-haxe_ds_IntMap.__interfaces__ = [haxe_IMap];
-haxe_ds_IntMap.prototype = {
-	h: null
-	,set: function(key,value) {
-		this.h[key] = value;
-	}
-	,get: function(key) {
-		return this.h[key];
-	}
-	,exists: function(key) {
-		return this.h.hasOwnProperty(key);
-	}
-	,remove: function(key) {
-		if(!this.h.hasOwnProperty(key)) return false;
-		delete(this.h[key]);
-		return true;
-	}
-	,keys: function() {
-		var a = [];
-		for( var key in this.h ) {
-		if(this.h.hasOwnProperty(key)) a.push(key | 0);
-		}
-		return HxOverrides.iter(a);
-	}
-	,__class__: haxe_ds_IntMap
 };
 var haxe_ds_ObjectMap = function() {
 	this.h = { };
@@ -2194,12 +2166,6 @@ haxe_ds_ObjectMap.prototype = {
 		var id = key.__id__ || (key.__id__ = ++haxe_ds_ObjectMap.count);
 		this.h[id] = value;
 		this.h.__keys__[id] = key;
-	}
-	,get: function(key) {
-		return this.h[key.__id__];
-	}
-	,exists: function(key) {
-		return this.h.__keys__[key.__id__] != null;
 	}
 	,remove: function(key) {
 		var id = key.__id__;
@@ -2225,11 +2191,6 @@ haxe_ds_ObjectMap.prototype = {
 	}
 	,__class__: haxe_ds_ObjectMap
 };
-var haxe_ds_Option = { __ename__ : ["haxe","ds","Option"], __constructs__ : ["Some","None"] };
-haxe_ds_Option.Some = function(v) { var $x = ["Some",0,v]; $x.__enum__ = haxe_ds_Option; $x.toString = $estr; return $x; };
-haxe_ds_Option.None = ["None",1];
-haxe_ds_Option.None.toString = $estr;
-haxe_ds_Option.None.__enum__ = haxe_ds_Option;
 var haxe_ds__$StringMap_StringMapIterator = function(map,keys) {
 	this.map = map;
 	this.keys = keys;
@@ -2292,10 +2253,6 @@ haxe_ds_StringMap.prototype = {
 			return true;
 		}
 	}
-	,keys: function() {
-		var _this = this.arrayKeys();
-		return HxOverrides.iter(_this);
-	}
 	,arrayKeys: function() {
 		var out = [];
 		for( var key in this.h ) {
@@ -2315,25 +2272,6 @@ haxe_ds_StringMap.prototype = {
 };
 var js_Boot = function() { };
 js_Boot.__name__ = ["js","Boot"];
-js_Boot.__unhtml = function(s) {
-	return s.split("&").join("&amp;").split("<").join("&lt;").split(">").join("&gt;");
-};
-js_Boot.__trace = function(v,i) {
-	var msg;
-	if(i != null) msg = i.fileName + ":" + i.lineNumber + ": "; else msg = "";
-	msg += js_Boot.__string_rec(v,"");
-	if(i != null && i.customParams != null) {
-		var _g = 0;
-		var _g1 = i.customParams;
-		while(_g < _g1.length) {
-			var v1 = _g1[_g];
-			++_g;
-			msg += "," + js_Boot.__string_rec(v1,"");
-		}
-	}
-	var d;
-	if(typeof(document) != "undefined" && (d = document.getElementById("haxe:trace")) != null) d.innerHTML += js_Boot.__unhtml(msg) + "<br/>"; else if(typeof console != "undefined" && console.log != null) console.log(msg);
-};
 js_Boot.getClass = function(o) {
 	if((o instanceof Array) && o.__enum__ == null) return Array; else {
 		var cl = o.__class__;
@@ -2494,7 +2432,7 @@ minicanvas_MiniCanvas.prototype = {
 	,events: null
 	,display: function(name) {
 		this.deltaTime = performance.now() - this.startTime;
-		if(!minicanvas_MiniCanvas.displayGenerationTime) haxe_Log.trace("generated \"" + name + "\" in " + thx_core_Floats.roundTo(this.deltaTime,2) + "ms",{ fileName : "MiniCanvas.hx", lineNumber : 53, className : "minicanvas.MiniCanvas", methodName : "display"});
+		if(!minicanvas_MiniCanvas.displayGenerationTime) console.log("generated \"" + name + "\" in " + thx_core_Floats.roundTo(this.deltaTime,2) + "ms");
 		this.nativeDisplay(name);
 		return this;
 	}
@@ -2981,12 +2919,10 @@ minicanvas_MiniCanvas.prototype = {
 };
 var minicanvas_ScaleMode = { __ename__ : ["minicanvas","ScaleMode"], __constructs__ : ["NoScale","Auto","Scaled"] };
 minicanvas_ScaleMode.NoScale = ["NoScale",0];
-minicanvas_ScaleMode.NoScale.toString = $estr;
 minicanvas_ScaleMode.NoScale.__enum__ = minicanvas_ScaleMode;
 minicanvas_ScaleMode.Auto = ["Auto",1];
-minicanvas_ScaleMode.Auto.toString = $estr;
 minicanvas_ScaleMode.Auto.__enum__ = minicanvas_ScaleMode;
-minicanvas_ScaleMode.Scaled = function(v) { var $x = ["Scaled",2,v]; $x.__enum__ = minicanvas_ScaleMode; $x.toString = $estr; return $x; };
+minicanvas_ScaleMode.Scaled = function(v) { var $x = ["Scaled",2,v]; $x.__enum__ = minicanvas_ScaleMode; return $x; };
 var minicanvas_BrowserCanvas = function(width,height,scaleMode) {
 	this.isNode = false;
 	this.isBrowser = true;
@@ -3337,1539 +3273,6 @@ minicanvas_node_PNGEncoder.prototype = {
 	}
 	,__class__: minicanvas_node_PNGEncoder
 };
-var sui_Sui = function() {
-	this.grid = new sui_components_Grid();
-	this.el = this.grid.el;
-};
-sui_Sui.__name__ = ["sui","Sui"];
-sui_Sui.createArray = function(defaultValue,defaultElementValue,createControl,options) {
-	return new sui_controls_ArrayControl((function($this) {
-		var $r;
-		var t;
-		{
-			var _0 = defaultValue;
-			if(null == _0) t = null; else t = _0;
-		}
-		$r = t != null?t:[];
-		return $r;
-	}(this)),defaultElementValue,createControl,options);
-};
-sui_Sui.createBool = function(defaultValue,options) {
-	if(defaultValue == null) defaultValue = false;
-	return new sui_controls_BoolControl(defaultValue,options);
-};
-sui_Sui.createColor = function(defaultValue,options) {
-	if(defaultValue == null) defaultValue = "#AA0000";
-	return new sui_controls_ColorControl(defaultValue,options);
-};
-sui_Sui.createDate = function(defaultValue,options) {
-	if(null == defaultValue) defaultValue = new Date();
-	{
-		var _g;
-		var t;
-		var _0 = options;
-		var _1;
-		if(null == _0) t = null; else if(null == (_1 = _0.listonly)) t = null; else t = _1;
-		if(t != null) _g = t; else _g = false;
-		var _g1;
-		var t1;
-		var _01 = options;
-		var _11;
-		if(null == _01) t1 = null; else if(null == (_11 = _01.kind)) t1 = null; else t1 = _11;
-		if(t1 != null) _g1 = t1; else _g1 = sui_controls_DateKind.DateOnly;
-		if(_g != null) switch(_g) {
-		case true:
-			return new sui_controls_DateSelectControl(defaultValue,options);
-		default:
-			switch(_g1[1]) {
-			case 1:
-				return new sui_controls_DateTimeControl(defaultValue,options);
-			default:
-				return new sui_controls_DateControl(defaultValue,options);
-			}
-		} else switch(_g1[1]) {
-		case 1:
-			return new sui_controls_DateTimeControl(defaultValue,options);
-		default:
-			return new sui_controls_DateControl(defaultValue,options);
-		}
-	}
-};
-sui_Sui.collapsible = function(label,collapsed,attachTo,position) {
-	if(collapsed == null) collapsed = false;
-	var sui1 = new sui_Sui();
-	var folder = sui1.folder((function($this) {
-		var $r;
-		var t;
-		{
-			var _0 = label;
-			if(null == _0) t = null; else t = _0;
-		}
-		$r = t != null?t:"";
-		return $r;
-	}(this)),{ collapsible : true, collapsed : collapsed});
-	sui1.attach(attachTo,position);
-	return folder;
-};
-sui_Sui.createFloat = function(defaultValue,options) {
-	if(defaultValue == null) defaultValue = 0.0;
-	{
-		var _g;
-		var t;
-		var _0 = options;
-		var _1;
-		if(null == _0) t = null; else if(null == (_1 = _0.listonly)) t = null; else t = _1;
-		if(t != null) _g = t; else _g = false;
-		var _g1;
-		var t1;
-		var _01 = options;
-		var _11;
-		if(null == _01) t1 = null; else if(null == (_11 = _01.kind)) t1 = null; else t1 = _11;
-		if(t1 != null) _g1 = t1; else _g1 = sui_controls_FloatKind.FloatNumber;
-		if(_g != null) switch(_g) {
-		case true:
-			return new sui_controls_NumberSelectControl(defaultValue,options);
-		default:
-			switch(_g1[1]) {
-			case 1:
-				return new sui_controls_TimeControl(defaultValue,options);
-			default:
-				if(null != options && options.min != null && options.max != null) return new sui_controls_FloatRangeControl(defaultValue,options); else return new sui_controls_FloatControl(defaultValue,options);
-			}
-		} else switch(_g1[1]) {
-		case 1:
-			return new sui_controls_TimeControl(defaultValue,options);
-		default:
-			if(null != options && options.min != null && options.max != null) return new sui_controls_FloatRangeControl(defaultValue,options); else return new sui_controls_FloatControl(defaultValue,options);
-		}
-	}
-};
-sui_Sui.createInt = function(defaultValue,options) {
-	if(defaultValue == null) defaultValue = 0;
-	if((function($this) {
-		var $r;
-		var t;
-		{
-			var _0 = options;
-			var _1;
-			if(null == _0) t = null; else if(null == (_1 = _0.listonly)) t = null; else t = _1;
-		}
-		$r = t != null?t:false;
-		return $r;
-	}(this))) return new sui_controls_NumberSelectControl(defaultValue,options); else if(null != options && options.min != null && options.max != null) return new sui_controls_IntRangeControl(defaultValue,options); else return new sui_controls_IntControl(defaultValue,options);
-};
-sui_Sui.createIntMap = function(defaultValue,createKeyControl,createValueControl,options) {
-	return new sui_controls_MapControl(defaultValue,function() {
-		return new haxe_ds_IntMap();
-	},createKeyControl,createValueControl,options);
-};
-sui_Sui.createLabel = function(defaultValue,label,callback) {
-	if(defaultValue == null) defaultValue = "";
-	return new sui_controls_LabelControl(defaultValue);
-};
-sui_Sui.createObjectMap = function(defaultValue,createKeyControl,createValueControl,options) {
-	return new sui_controls_MapControl(defaultValue,function() {
-		return new haxe_ds_ObjectMap();
-	},createKeyControl,createValueControl,options);
-};
-sui_Sui.createStringMap = function(defaultValue,createKeyControl,createValueControl,options) {
-	return new sui_controls_MapControl(defaultValue,function() {
-		return new haxe_ds_StringMap();
-	},createKeyControl,createValueControl,options);
-};
-sui_Sui.createText = function(defaultValue,options) {
-	if(defaultValue == null) defaultValue = "";
-	{
-		var _g;
-		var t;
-		var _0 = options;
-		var _1;
-		if(null == _0) t = null; else if(null == (_1 = _0.listonly)) t = null; else t = _1;
-		if(t != null) _g = t; else _g = false;
-		var _g1;
-		var t1;
-		var _01 = options;
-		var _11;
-		if(null == _01) t1 = null; else if(null == (_11 = _01.kind)) t1 = null; else t1 = _11;
-		if(t1 != null) _g1 = t1; else _g1 = sui_controls_TextKind.PlainText;
-		if(_g != null) switch(_g) {
-		case true:
-			return new sui_controls_TextSelectControl(defaultValue,options);
-		default:
-			switch(_g1[1]) {
-			case 0:
-				return new sui_controls_EmailControl(defaultValue,options);
-			case 1:
-				return new sui_controls_PasswordControl(defaultValue,options);
-			case 3:
-				return new sui_controls_TelControl(defaultValue,options);
-			case 2:
-				return new sui_controls_SearchControl(defaultValue,options);
-			case 5:
-				return new sui_controls_UrlControl(defaultValue,options);
-			default:
-				return new sui_controls_TextControl(defaultValue,options);
-			}
-		} else switch(_g1[1]) {
-		case 0:
-			return new sui_controls_EmailControl(defaultValue,options);
-		case 1:
-			return new sui_controls_PasswordControl(defaultValue,options);
-		case 3:
-			return new sui_controls_TelControl(defaultValue,options);
-		case 2:
-			return new sui_controls_SearchControl(defaultValue,options);
-		case 5:
-			return new sui_controls_UrlControl(defaultValue,options);
-		default:
-			return new sui_controls_TextControl(defaultValue,options);
-		}
-	}
-};
-sui_Sui.createTrigger = function(actionLabel,options) {
-	return new sui_controls_TriggerControl(actionLabel,options);
-};
-sui_Sui.prototype = {
-	el: null
-	,grid: null
-	,array: function(label,defaultValue,defaultElementValue,createControl,options,callback) {
-		return this.control(label,sui_Sui.createArray(defaultValue,defaultElementValue,createControl,options),callback);
-	}
-	,bool: function(label,defaultValue,options,callback) {
-		if(defaultValue == null) defaultValue = false;
-		return this.control(label,sui_Sui.createBool(defaultValue,options),callback);
-	}
-	,color: function(label,defaultValue,options,callback) {
-		if(defaultValue == null) defaultValue = "#AA0000";
-		return this.control(label,sui_Sui.createColor(defaultValue,options),callback);
-	}
-	,date: function(label,defaultValue,options,callback) {
-		return this.control(label,sui_Sui.createDate(defaultValue,options),callback);
-	}
-	,'float': function(label,defaultValue,options,callback) {
-		if(defaultValue == null) defaultValue = 0.0;
-		return this.control(label,sui_Sui.createFloat(defaultValue,options),callback);
-	}
-	,folder: function(label,options) {
-		var collapsible;
-		var t;
-		var _0 = options;
-		var _1;
-		if(null == _0) t = null; else if(null == (_1 = _0.collapsible)) t = null; else t = _1;
-		if(t != null) collapsible = t; else collapsible = true;
-		var collapsed;
-		var t1;
-		var _01 = options;
-		var _11;
-		if(null == _01) t1 = null; else if(null == (_11 = _01.collapsed)) t1 = null; else t1 = _11;
-		if(t1 != null) collapsed = t1; else collapsed = false;
-		var sui1 = new sui_Sui();
-		var header = { el : dots_Html.parseNodes("<header class=\"sui-folder\">\n<i class=\"sui-trigger-toggle sui-icon sui-icon-collapse\"></i>\n" + label + "</header>")[0]};
-		var trigger = dots_Query.first(".sui-trigger-toggle",header.el);
-		if(collapsible) {
-			header.el.classList.add("sui-collapsible");
-			if(collapsed) sui1.grid.el.style.display = "none";
-			var collapse = thx_stream_EmitterBools.negate(thx_stream_dom_Dom.streamEvent(header.el,"click",false).map(function(_) {
-				return collapsed = !collapsed;
-			}));
-			collapse.subscribe(thx_core_Functions1.join(thx_stream_dom_Dom.subscribeToggleVisibility(sui1.grid.el),thx_stream_dom_Dom.subscribeSwapClass(trigger,"sui-icon-collapse","sui-icon-expand")));
-		} else trigger.style.display = "none";
-		sui1.grid.el.classList.add("sui-grid-inner");
-		this.grid.add(sui_components_CellContent.VerticalPair(header,sui1.grid));
-		return sui1;
-	}
-	,'int': function(label,defaultValue,options,callback) {
-		if(defaultValue == null) defaultValue = 0;
-		return this.control(label,sui_Sui.createInt(defaultValue,options),callback);
-	}
-	,intMap: function(label,defaultValue,createValueControl,options,callback) {
-		return this.control(label,sui_Sui.createIntMap(defaultValue,function(v) {
-			return sui_Sui.createInt(v);
-		},createValueControl,options),callback);
-	}
-	,label: function(defaultValue,label,callback) {
-		if(defaultValue == null) defaultValue = "";
-		return this.control(label,sui_Sui.createLabel(defaultValue),callback);
-	}
-	,objectMap: function(label,defaultValue,createKeyControl,createValueControl,options,callback) {
-		return this.control(label,sui_Sui.createObjectMap(defaultValue,createKeyControl,createValueControl,options),callback);
-	}
-	,stringMap: function(label,defaultValue,createValueControl,options,callback) {
-		return this.control(label,sui_Sui.createStringMap(defaultValue,function(v) {
-			return sui_Sui.createText(v);
-		},createValueControl,options),callback);
-	}
-	,text: function(label,defaultValue,options,callback) {
-		if(defaultValue == null) defaultValue = "";
-		return this.control(label,sui_Sui.createText(defaultValue,options),callback);
-	}
-	,trigger: function(actionLabel,label,options,callback) {
-		return this.control(label,new sui_controls_TriggerControl(actionLabel,options),function(_) {
-			callback();
-		});
-	}
-	,control: function(label,control,callback) {
-		this.grid.add(null == label?sui_components_CellContent.Single(control):sui_components_CellContent.HorizontalPair(new sui_controls_LabelControl(label),control));
-		control.streams.value.subscribe(callback);
-		return control;
-	}
-	,attach: function(el,anchor) {
-		if(null == el) el = window.document.body;
-		this.el.classList.add((function($this) {
-			var $r;
-			var t;
-			{
-				var _0 = anchor;
-				if(null == _0) t = null; else t = _0;
-			}
-			$r = t != null?t:el == window.document.body?"sui-top-right":"sui-append";
-			return $r;
-		}(this)));
-		el.appendChild(this.el);
-	}
-	,__class__: sui_Sui
-};
-var sui_components_Grid = function() {
-	this.el = dots_Html.parseNodes("<table class=\"sui-grid\"></table>")[0];
-};
-sui_components_Grid.__name__ = ["sui","components","Grid"];
-sui_components_Grid.prototype = {
-	el: null
-	,add: function(cell) {
-		var _g = this;
-		switch(cell[1]) {
-		case 0:
-			var control = cell[2];
-			var container = dots_Html.parseNodes("<tr class=\"sui-single\"><td colspan=\"2\"></td></tr>")[0];
-			dots_Query.first("td",container).appendChild(control.el);
-			this.el.appendChild(container);
-			break;
-		case 2:
-			var right = cell[3];
-			var left = cell[2];
-			var container1 = dots_Html.parseNodes("<tr class=\"sui-horizontal\"><td class=\"sui-left\"></td><td class=\"sui-right\"></td></tr>")[0];
-			dots_Query.first(".sui-left",container1).appendChild(left.el);
-			dots_Query.first(".sui-right",container1).appendChild(right.el);
-			this.el.appendChild(container1);
-			break;
-		case 1:
-			var bottom = cell[3];
-			var top = cell[2];
-			var containers = dots_Html.nodeListToArray(dots_Html.parseNodes("<tr class=\"sui-vertical sui-top\"><td colspan=\"2\"></td></tr><tr class=\"sui-vertical sui-bottom\"><td colspan=\"2\"></td></tr>"));
-			dots_Query.first("td",containers[0]).appendChild(top.el);
-			dots_Query.first("td",containers[1]).appendChild(bottom.el);
-			containers.map(function(_) {
-				return _g.el.appendChild(_);
-			});
-			break;
-		}
-	}
-	,__class__: sui_components_Grid
-};
-var sui_components_CellContent = { __ename__ : ["sui","components","CellContent"], __constructs__ : ["Single","VerticalPair","HorizontalPair"] };
-sui_components_CellContent.Single = function(control) { var $x = ["Single",0,control]; $x.__enum__ = sui_components_CellContent; $x.toString = $estr; return $x; };
-sui_components_CellContent.VerticalPair = function(top,bottom) { var $x = ["VerticalPair",1,top,bottom]; $x.__enum__ = sui_components_CellContent; $x.toString = $estr; return $x; };
-sui_components_CellContent.HorizontalPair = function(left,right) { var $x = ["HorizontalPair",2,left,right]; $x.__enum__ = sui_components_CellContent; $x.toString = $estr; return $x; };
-var sui_controls_IControl = function() { };
-sui_controls_IControl.__name__ = ["sui","controls","IControl"];
-sui_controls_IControl.prototype = {
-	el: null
-	,defaultValue: null
-	,streams: null
-	,set: null
-	,get: null
-	,isEnabled: null
-	,isFocused: null
-	,disable: null
-	,enable: null
-	,focus: null
-	,blur: null
-	,reset: null
-	,__class__: sui_controls_IControl
-};
-var sui_controls_ArrayControl = function(defaultValue,defaultElementValue,createElementControl,options) {
-	var _g = this;
-	var template = "<div class=\"sui-control sui-control-single sui-type-array\">\n<ul class=\"sui-array\"></ul>\n<div class=\"sui-array-add\"><i class=\"sui-icon sui-icon-add\"></i></div>\n</div>";
-	var t;
-	var _0 = options;
-	if(null == _0) t = null; else t = _0;
-	if(t != null) options = t; else options = { };
-	this.defaultValue = defaultValue;
-	this.defaultElementValue = defaultElementValue;
-	this.createElementControl = createElementControl;
-	this.elements = [];
-	this.length = 0;
-	this.values = new sui_controls_ControlValues(defaultValue);
-	this.streams = new sui_controls_ControlStreams(this.values.value,this.values.focused.debounce(0),this.values.enabled);
-	this.el = dots_Html.parseNodes(template)[0];
-	this.ul = dots_Query.first("ul",this.el);
-	this.addButton = dots_Query.first(".sui-icon-add",this.el);
-	thx_stream_dom_Dom.streamEvent(this.addButton,"click",false).subscribe(function(_) {
-		_g.addControl(defaultElementValue);
-	});
-	this.values.enabled.subscribe(function(v) {
-		if(v) _g.el.classList.add("sui-disabled"); else _g.el.classList.remove("sui-disabled");
-	});
-	this.values.focused.subscribe(function(v1) {
-		if(v1) _g.el.classList.add("sui-focused"); else _g.el.classList.remove("sui-focused");
-	});
-	thx_stream_EmitterBools.negate(this.values.enabled).subscribe(thx_stream_dom_Dom.subscribeToggleClass(this.el,"sui-disabled"));
-	this.values.enabled.subscribe(function(v2) {
-		_g.elements.map(function(_1) {
-			if(v2) _1.control.enable(); else _1.control.disable();
-			return;
-		});
-	});
-	this.setValue(defaultValue);
-	this.reset();
-	if(options.autofocus) this.focus();
-	if(options.disabled) this.disable();
-};
-sui_controls_ArrayControl.__name__ = ["sui","controls","ArrayControl"];
-sui_controls_ArrayControl.__interfaces__ = [sui_controls_IControl];
-sui_controls_ArrayControl.prototype = {
-	el: null
-	,ul: null
-	,addButton: null
-	,defaultValue: null
-	,defaultElementValue: null
-	,streams: null
-	,createElementControl: null
-	,length: null
-	,values: null
-	,elements: null
-	,addControl: function(value) {
-		var _g = this;
-		var o = { control : this.createElementControl(value), el : dots_Html.parseNodes("<li class=\"sui-array-item\">\n    <div class=\"sui-move\"><i class=\"sui-icon-mini sui-icon-up\"></i><i class=\"sui-icon-mini sui-icon-down\"></i></div>\n    <div class=\"sui-control-container\"></div>\n    <div class=\"sui-remove\"><i class=\"sui-icon sui-icon-remove\"></i></div>\n</li>")[0], index : this.length++};
-		this.ul.appendChild(o.el);
-		var removeElement = dots_Query.first(".sui-icon-remove",o.el);
-		var upElement = dots_Query.first(".sui-icon-up",o.el);
-		var downElement = dots_Query.first(".sui-icon-down",o.el);
-		var controlContainer = dots_Query.first(".sui-control-container",o.el);
-		controlContainer.appendChild(o.control.el);
-		thx_stream_dom_Dom.streamEvent(removeElement,"click",false).subscribe(function(_) {
-			_g.ul.removeChild(o.el);
-			_g.elements.splice(o.index,1);
-			var _g2 = o.index;
-			var _g1 = _g.elements.length;
-			while(_g2 < _g1) {
-				var i = _g2++;
-				_g.elements[i].index--;
-			}
-			_g.length--;
-			_g.updateValue();
-		});
-		this.elements.push(o);
-		o.control.streams.value.subscribe(function(_1) {
-			_g.updateValue();
-		});
-		o.control.streams.focused.subscribe(thx_stream_dom_Dom.subscribeToggleClass(o.el,"sui-focus"));
-		o.control.streams.focused.feed(this.values.focused);
-		thx_stream_dom_Dom.streamEvent(upElement,"click",false).subscribe(function(_2) {
-			var pos = o.index;
-			var prev = _g.elements[pos - 1];
-			_g.elements[pos] = prev;
-			_g.elements[pos - 1] = o;
-			prev.index = pos;
-			o.index = pos - 1;
-			_g.ul.insertBefore(o.el,prev.el);
-			_g.updateValue();
-		});
-		thx_stream_dom_Dom.streamEvent(downElement,"click",false).subscribe(function(_3) {
-			var pos1 = o.index;
-			var next = _g.elements[pos1 + 1];
-			_g.elements[pos1] = next;
-			_g.elements[pos1 + 1] = o;
-			next.index = pos1;
-			o.index = pos1 + 1;
-			_g.ul.insertBefore(next.el,o.el);
-			_g.updateValue();
-		});
-	}
-	,setValue: function(v) {
-		var _g = this;
-		v.map(function(_) {
-			_g.addControl(_);
-			return;
-		});
-	}
-	,getValue: function() {
-		return this.elements.map(function(_) {
-			return _.control.get();
-		});
-	}
-	,updateValue: function() {
-		this.values.value.set(this.getValue());
-	}
-	,set: function(v) {
-		this.clear();
-		this.setValue(v);
-		this.values.value.set(v);
-	}
-	,get: function() {
-		return this.values.value.get();
-	}
-	,isEnabled: function() {
-		return this.values.enabled.get();
-	}
-	,isFocused: function() {
-		return this.values.focused.get();
-	}
-	,disable: function() {
-		this.values.enabled.set(false);
-	}
-	,enable: function() {
-		this.values.enabled.set(true);
-	}
-	,focus: function() {
-		if(this.elements.length > 0) thx_core_Arrays.last(this.elements).control.focus();
-	}
-	,blur: function() {
-		var el = window.document.activeElement;
-		(function(_) {
-			if(null == _) null; else el.blur();
-			return;
-		})(thx_core_Arrays.first(this.elements.filter(function(_1) {
-			return _1.control.el == el;
-		})));
-	}
-	,reset: function() {
-		this.set(this.defaultValue);
-	}
-	,clear: function() {
-		var _g = this;
-		this.length = 0;
-		this.elements.map(function(item) {
-			_g.ul.removeChild(item.el);
-		});
-		this.elements = [];
-	}
-	,__class__: sui_controls_ArrayControl
-};
-var sui_controls_SingleInputControl = function(defaultValue,event,name,type,options) {
-	var _g = this;
-	var template = "<div class=\"sui-control sui-control-single sui-type-" + name + "\"><input type=\"" + type + "\"/></div>";
-	if(null == options) options = { };
-	if(null == options.allownull) options.allownull = true;
-	this.defaultValue = defaultValue;
-	this.values = new sui_controls_ControlValues(defaultValue);
-	this.streams = new sui_controls_ControlStreams(this.values.value,this.values.focused,this.values.enabled);
-	this.el = dots_Html.parseNodes(template)[0];
-	this.input = dots_Query.first("input",this.el);
-	this.values.enabled.subscribe(function(v) {
-		if(v) {
-			_g.el.classList.add("sui-disabled");
-			_g.input.removeAttribute("disabled");
-		} else {
-			_g.el.classList.remove("sui-disabled");
-			_g.input.setAttribute("disabled","disabled");
-		}
-	});
-	this.values.focused.subscribe(function(v1) {
-		if(v1) _g.el.classList.add("sui-focused"); else _g.el.classList.remove("sui-focused");
-	});
-	this.setInput(defaultValue);
-	thx_stream_dom_Dom.streamFocus(this.input).feed(this.values.focused);
-	thx_stream_dom_Dom.streamEvent(this.input,event).map(function(_) {
-		return _g.getInput();
-	}).feed(this.values.value);
-	if(!options.allownull) this.input.setAttribute("required","required");
-	if(options.autofocus) this.focus();
-	if(options.disabled) this.disable();
-};
-sui_controls_SingleInputControl.__name__ = ["sui","controls","SingleInputControl"];
-sui_controls_SingleInputControl.__interfaces__ = [sui_controls_IControl];
-sui_controls_SingleInputControl.prototype = {
-	el: null
-	,input: null
-	,defaultValue: null
-	,streams: null
-	,values: null
-	,setInput: function(v) {
-		throw new thx_core_error_AbstractMethod({ fileName : "SingleInputControl.hx", lineNumber : 64, className : "sui.controls.SingleInputControl", methodName : "setInput"});
-	}
-	,getInput: function() {
-		throw new thx_core_error_AbstractMethod({ fileName : "SingleInputControl.hx", lineNumber : 67, className : "sui.controls.SingleInputControl", methodName : "getInput"});
-	}
-	,set: function(v) {
-		this.setInput(v);
-		this.values.value.set(v);
-	}
-	,get: function() {
-		return this.values.value.get();
-	}
-	,isEnabled: function() {
-		return this.values.enabled.get();
-	}
-	,isFocused: function() {
-		return this.values.focused.get();
-	}
-	,disable: function() {
-		this.values.enabled.set(false);
-	}
-	,enable: function() {
-		this.values.enabled.set(true);
-	}
-	,focus: function() {
-		this.input.focus();
-	}
-	,blur: function() {
-		this.input.blur();
-	}
-	,reset: function() {
-		this.set(this.defaultValue);
-	}
-	,__class__: sui_controls_SingleInputControl
-};
-var sui_controls_BaseDateControl = function(value,name,type,dateToString,options) {
-	if(null == options) options = { };
-	this.dateToString = dateToString;
-	sui_controls_SingleInputControl.call(this,value,"input",name,type,options);
-	if(null != options.autocomplete) this.input.setAttribute("autocomplete",options.autocomplete?"on":"off");
-	if(null != options.min) this.input.setAttribute("min",dateToString(options.min));
-	if(null != options.max) this.input.setAttribute("max",dateToString(options.max));
-	if(null != options.list) new sui_controls_DataList(this.el,options.list.map(function(o) {
-		return { label : o.label, value : dateToString(o.value)};
-	})).applyTo(this.input); else if(null != options.values) new sui_controls_DataList(this.el,options.values.map(function(o1) {
-		return { label : HxOverrides.dateStr(o1), value : dateToString(o1)};
-	})).applyTo(this.input);
-};
-sui_controls_BaseDateControl.__name__ = ["sui","controls","BaseDateControl"];
-sui_controls_BaseDateControl.toRFCDate = function(date) {
-	var y = date.getFullYear();
-	var m = StringTools.lpad("" + (date.getMonth() + 1),"0",2);
-	var d = StringTools.lpad("" + date.getDate(),"0",2);
-	return "" + y + "-" + m + "-" + d;
-};
-sui_controls_BaseDateControl.toRFCDateTime = function(date) {
-	var d = sui_controls_BaseDateControl.toRFCDate(date);
-	var hh = StringTools.lpad("" + date.getHours(),"0",2);
-	var mm = StringTools.lpad("" + date.getMinutes(),"0",2);
-	var ss = StringTools.lpad("" + date.getSeconds(),"0",2);
-	return "" + d + "T" + hh + ":" + mm + ":" + ss;
-};
-sui_controls_BaseDateControl.toRFCDateTimeNoSeconds = function(date) {
-	var d = sui_controls_BaseDateControl.toRFCDate(date);
-	var hh = StringTools.lpad("" + date.getHours(),"0",2);
-	var mm = StringTools.lpad("" + date.getMinutes(),"0",2);
-	return "" + d + "T" + hh + ":" + mm + ":00";
-};
-sui_controls_BaseDateControl.fromRFC = function(date) {
-	var dp = date.split("T")[0];
-	var dt;
-	var t1;
-	var _0 = date;
-	var _1;
-	var _2;
-	if(null == _0) t1 = null; else if(null == (_1 = _0.split("T"))) t1 = null; else if(null == (_2 = _1[1])) t1 = null; else t1 = _2;
-	if(t1 != null) dt = t1; else dt = "00:00:00";
-	var p = dp.split("-");
-	var y = Std.parseInt(p[0]);
-	var m = Std.parseInt(p[1]) - 1;
-	var d = Std.parseInt(p[2]);
-	var t = dt.split(":");
-	var hh = Std.parseInt(t[0]);
-	var mm = Std.parseInt(t[1]);
-	var ss = Std.parseInt(t[2]);
-	return new Date(y,m,d,hh,mm,ss);
-};
-sui_controls_BaseDateControl.__super__ = sui_controls_SingleInputControl;
-sui_controls_BaseDateControl.prototype = $extend(sui_controls_SingleInputControl.prototype,{
-	dateToString: null
-	,setInput: function(v) {
-		this.input.value = this.dateToString(v);
-	}
-	,getInput: function() {
-		if(thx_core_Strings.isEmpty(this.input.value)) return null; else return sui_controls_BaseDateControl.fromRFC(this.input.value);
-	}
-	,__class__: sui_controls_BaseDateControl
-});
-var sui_controls_BaseTextControl = function(value,name,type,options) {
-	if(null == options) options = { };
-	sui_controls_SingleInputControl.call(this,value,"input",name,type,options);
-	if(null != options.maxlength) this.input.setAttribute("maxlength","" + options.maxlength);
-	if(null != options.autocomplete) this.input.setAttribute("autocomplete",options.autocomplete?"on":"off");
-	if(null != options.pattern) this.input.setAttribute("pattern","" + options.pattern);
-	if(null != options.placeholder) this.input.setAttribute("placeholder","" + options.placeholder);
-	if(null != options.list) new sui_controls_DataList(this.el,options.list).applyTo(this.input); else if(null != options.values) sui_controls_DataList.fromArray(this.el,options.values).applyTo(this.input);
-};
-sui_controls_BaseTextControl.__name__ = ["sui","controls","BaseTextControl"];
-sui_controls_BaseTextControl.__super__ = sui_controls_SingleInputControl;
-sui_controls_BaseTextControl.prototype = $extend(sui_controls_SingleInputControl.prototype,{
-	setInput: function(v) {
-		this.input.value = v;
-	}
-	,getInput: function() {
-		return this.input.value;
-	}
-	,__class__: sui_controls_BaseTextControl
-});
-var sui_controls_BoolControl = function(value,options) {
-	sui_controls_SingleInputControl.call(this,value,"change","bool","checkbox",options);
-};
-sui_controls_BoolControl.__name__ = ["sui","controls","BoolControl"];
-sui_controls_BoolControl.__super__ = sui_controls_SingleInputControl;
-sui_controls_BoolControl.prototype = $extend(sui_controls_SingleInputControl.prototype,{
-	setInput: function(v) {
-		this.input.checked = v;
-	}
-	,getInput: function() {
-		return this.input.checked;
-	}
-	,__class__: sui_controls_BoolControl
-});
-var sui_controls_DoubleInputControl = function(defaultValue,name,event1,type1,event2,type2,filter,options) {
-	var _g = this;
-	var template = "<div class=\"sui-control sui-control-double sui-type-" + name + "\"><input class=\"input1\" type=\"" + type1 + "\"/><input class=\"input2\" type=\"" + type2 + "\"/></div>";
-	if(null == options) options = { };
-	if(null == options.allownull) options.allownull = true;
-	this.defaultValue = defaultValue;
-	this.values = new sui_controls_ControlValues(defaultValue);
-	this.streams = new sui_controls_ControlStreams(this.values.value,this.values.focused,this.values.enabled);
-	this.el = dots_Html.parseNodes(template)[0];
-	this.input1 = dots_Query.first(".input1",this.el);
-	this.input2 = dots_Query.first(".input2",this.el);
-	this.values.enabled.subscribe(function(v) {
-		if(v) {
-			_g.el.classList.add("sui-disabled");
-			_g.input1.removeAttribute("disabled");
-			_g.input2.removeAttribute("disabled");
-		} else {
-			_g.el.classList.remove("sui-disabled");
-			_g.input1.setAttribute("disabled","disabled");
-			_g.input2.setAttribute("disabled","disabled");
-		}
-	});
-	this.values.focused.subscribe(function(v1) {
-		if(v1) _g.el.classList.add("sui-focused"); else _g.el.classList.remove("sui-focused");
-	});
-	thx_stream_dom_Dom.streamFocus(this.input1).merge(thx_stream_dom_Dom.streamFocus(this.input2)).feed(this.values.focused);
-	thx_stream_dom_Dom.streamEvent(this.input1,event1).map(function(_) {
-		return _g.getInput1();
-	}).subscribe(function(v2) {
-		_g.setInput2(v2);
-		_g.values.value.set(v2);
-	});
-	thx_stream_dom_Dom.streamEvent(this.input2,event2).map(function(_1) {
-		return _g.getInput2();
-	}).filter(filter).subscribe(function(v3) {
-		_g.setInput1(v3);
-		_g.values.value.set(v3);
-	});
-	if(!options.allownull) {
-		this.input1.setAttribute("required","required");
-		this.input2.setAttribute("required","required");
-	}
-	if(options.autofocus) this.focus();
-	if(options.disabled) this.disable();
-	if(!dots_Detect.supportsInput(type1)) this.input1.style.display = "none";
-};
-sui_controls_DoubleInputControl.__name__ = ["sui","controls","DoubleInputControl"];
-sui_controls_DoubleInputControl.__interfaces__ = [sui_controls_IControl];
-sui_controls_DoubleInputControl.prototype = {
-	el: null
-	,input1: null
-	,input2: null
-	,defaultValue: null
-	,streams: null
-	,values: null
-	,setInputs: function(v) {
-		this.setInput1(v);
-		this.setInput2(v);
-	}
-	,setInput1: function(v) {
-		throw new thx_core_error_AbstractMethod({ fileName : "DoubleInputControl.hx", lineNumber : 89, className : "sui.controls.DoubleInputControl", methodName : "setInput1"});
-	}
-	,setInput2: function(v) {
-		throw new thx_core_error_AbstractMethod({ fileName : "DoubleInputControl.hx", lineNumber : 92, className : "sui.controls.DoubleInputControl", methodName : "setInput2"});
-	}
-	,getInput1: function() {
-		throw new thx_core_error_AbstractMethod({ fileName : "DoubleInputControl.hx", lineNumber : 95, className : "sui.controls.DoubleInputControl", methodName : "getInput1"});
-	}
-	,getInput2: function() {
-		throw new thx_core_error_AbstractMethod({ fileName : "DoubleInputControl.hx", lineNumber : 98, className : "sui.controls.DoubleInputControl", methodName : "getInput2"});
-	}
-	,set: function(v) {
-		this.setInputs(v);
-		this.values.value.set(v);
-	}
-	,get: function() {
-		return this.values.value.get();
-	}
-	,isEnabled: function() {
-		return this.values.enabled.get();
-	}
-	,isFocused: function() {
-		return this.values.focused.get();
-	}
-	,disable: function() {
-		this.values.enabled.set(false);
-	}
-	,enable: function() {
-		this.values.enabled.set(true);
-	}
-	,focus: function() {
-		this.input2.focus();
-	}
-	,blur: function() {
-		var el = window.document.activeElement;
-		if(el == this.input1 || el == this.input2) el.blur();
-	}
-	,reset: function() {
-		this.set(this.defaultValue);
-	}
-	,__class__: sui_controls_DoubleInputControl
-};
-var sui_controls_ColorControl = function(value,options) {
-	if(null == options) options = { };
-	sui_controls_DoubleInputControl.call(this,value,"color","input","color","input","text",($_=sui_controls_ColorControl.PATTERN,$bind($_,$_.match)),options);
-	if(null != options.autocomplete) this.input2.setAttribute("autocomplete",options.autocomplete?"on":"off");
-	if(null != options.list) new sui_controls_DataList(this.el,options.list).applyTo(this.input1).applyTo(this.input2); else if(null != options.values) sui_controls_DataList.fromArray(this.el,options.values).applyTo(this.input1).applyTo(this.input2);
-	this.setInputs(value);
-};
-sui_controls_ColorControl.__name__ = ["sui","controls","ColorControl"];
-sui_controls_ColorControl.__super__ = sui_controls_DoubleInputControl;
-sui_controls_ColorControl.prototype = $extend(sui_controls_DoubleInputControl.prototype,{
-	setInput1: function(v) {
-		this.input1.value = v;
-	}
-	,setInput2: function(v) {
-		this.input2.value = v;
-	}
-	,getInput1: function() {
-		return this.input1.value;
-	}
-	,getInput2: function() {
-		return this.input2.value;
-	}
-	,__class__: sui_controls_ColorControl
-});
-var sui_controls_ControlStreams = function(value,focused,enabled) {
-	this.value = value;
-	this.focused = focused;
-	this.enabled = enabled;
-};
-sui_controls_ControlStreams.__name__ = ["sui","controls","ControlStreams"];
-sui_controls_ControlStreams.prototype = {
-	value: null
-	,focused: null
-	,enabled: null
-	,__class__: sui_controls_ControlStreams
-};
-var sui_controls_ControlValues = function(defaultValue) {
-	this.value = new thx_stream_Value(defaultValue);
-	this.focused = new thx_stream_Value(false);
-	this.enabled = new thx_stream_Value(true);
-};
-sui_controls_ControlValues.__name__ = ["sui","controls","ControlValues"];
-sui_controls_ControlValues.prototype = {
-	value: null
-	,focused: null
-	,enabled: null
-	,__class__: sui_controls_ControlValues
-};
-var sui_controls_DataList = function(container,values) {
-	this.id = "sui-dl-" + ++sui_controls_DataList.nid;
-	var datalist = dots_Html.parse("<datalist id=\"" + this.id + "\" style=\"display:none\">" + values.map(sui_controls_DataList.toOption).join("") + "</datalist>");
-	container.appendChild(datalist);
-};
-sui_controls_DataList.__name__ = ["sui","controls","DataList"];
-sui_controls_DataList.fromArray = function(container,values) {
-	return new sui_controls_DataList(container,values.map(function(v) {
-		return { value : v, label : v};
-	}));
-};
-sui_controls_DataList.toOption = function(o) {
-	return "<option value=\"" + StringTools.htmlEscape(o.value) + "\">" + o.label + "</option>";
-};
-sui_controls_DataList.prototype = {
-	id: null
-	,applyTo: function(el) {
-		el.setAttribute("list",this.id);
-		return this;
-	}
-	,__class__: sui_controls_DataList
-};
-var sui_controls_DateControl = function(value,options) {
-	sui_controls_BaseDateControl.call(this,value,"date","date",sui_controls_BaseDateControl.toRFCDate,options);
-};
-sui_controls_DateControl.__name__ = ["sui","controls","DateControl"];
-sui_controls_DateControl.__super__ = sui_controls_BaseDateControl;
-sui_controls_DateControl.prototype = $extend(sui_controls_BaseDateControl.prototype,{
-	__class__: sui_controls_DateControl
-});
-var sui_controls_SelectControl = function(defaultValue,name,options) {
-	this.count = 0;
-	var _g = this;
-	var template = "<div class=\"sui-control sui-control-single sui-type-" + name + "\"><select></select></div>";
-	if(null == options) throw " A select control requires an option object with values or list set";
-	if(null == options.values && null == options.list) throw " A select control requires either the values or list option";
-	if(null == options.allownull) options.allownull = false;
-	this.defaultValue = defaultValue;
-	this.values = new sui_controls_ControlValues(defaultValue);
-	this.streams = new sui_controls_ControlStreams(this.values.value,this.values.focused,this.values.enabled);
-	this.el = dots_Html.parseNodes(template)[0];
-	this.select = dots_Query.first("select",this.el);
-	this.values.enabled.subscribe(function(v) {
-		if(v) {
-			_g.el.classList.add("sui-disabled");
-			_g.select.removeAttribute("disabled");
-		} else {
-			_g.el.classList.remove("sui-disabled");
-			_g.select.setAttribute("disabled","disabled");
-		}
-	});
-	this.values.focused.subscribe(function(v1) {
-		if(v1) _g.el.classList.add("sui-focused"); else _g.el.classList.remove("sui-focused");
-	});
-	this.options = [];
-	(options.allownull?[{ label : (function($this) {
-		var $r;
-		var t;
-		{
-			var _0 = options;
-			var _1;
-			if(null == _0) t = null; else if(null == (_1 = _0.labelfornull)) t = null; else t = _1;
-		}
-		$r = t != null?t:"- none -";
-		return $r;
-	}(this)), value : null}]:[]).concat((function($this) {
-		var $r;
-		var t1;
-		{
-			var _01 = options;
-			var _11;
-			if(null == _01) t1 = null; else if(null == (_11 = _01.list)) t1 = null; else t1 = _11;
-		}
-		$r = t1 != null?t1:options.values.map(function(_) {
-			return { value : _, label : Std.string(_)};
-		});
-		return $r;
-	}(this))).map(function(_2) {
-		return _g.addOption(_2.label,_2.value);
-	});
-	this.setInput(defaultValue);
-	thx_stream_dom_Dom.streamFocus(this.select).feed(this.values.focused);
-	thx_stream_dom_Dom.streamEvent(this.select,"change").map(function(_3) {
-		return _g.getInput();
-	}).feed(this.values.value);
-	if(options.autofocus) this.focus();
-	if(options.disabled) this.disable();
-};
-sui_controls_SelectControl.__name__ = ["sui","controls","SelectControl"];
-sui_controls_SelectControl.__interfaces__ = [sui_controls_IControl];
-sui_controls_SelectControl.prototype = {
-	el: null
-	,select: null
-	,defaultValue: null
-	,streams: null
-	,options: null
-	,values: null
-	,count: null
-	,addOption: function(label,value) {
-		var index = this.count++;
-		var option = dots_Html.parseNodes("<option>" + label + "</option>")[0];
-		this.options[index] = value;
-		this.select.appendChild(option);
-		return option;
-	}
-	,setInput: function(v) {
-		var index = HxOverrides.indexOf(this.options,v,0);
-		if(index < 0) throw "value \"" + Std.string(v) + "\" is not included in this select control";
-		this.select.selectedIndex = index;
-	}
-	,getInput: function() {
-		return this.options[this.select.selectedIndex];
-	}
-	,set: function(v) {
-		this.setInput(v);
-		this.values.value.set(v);
-	}
-	,get: function() {
-		return this.values.value.get();
-	}
-	,isEnabled: function() {
-		return this.values.enabled.get();
-	}
-	,isFocused: function() {
-		return this.values.focused.get();
-	}
-	,disable: function() {
-		this.values.enabled.set(false);
-	}
-	,enable: function() {
-		this.values.enabled.set(true);
-	}
-	,focus: function() {
-		this.select.focus();
-	}
-	,blur: function() {
-		this.select.blur();
-	}
-	,reset: function() {
-		this.set(this.defaultValue);
-	}
-	,__class__: sui_controls_SelectControl
-};
-var sui_controls_DateSelectControl = function(defaultValue,options) {
-	sui_controls_SelectControl.call(this,defaultValue,"select-date",options);
-};
-sui_controls_DateSelectControl.__name__ = ["sui","controls","DateSelectControl"];
-sui_controls_DateSelectControl.__super__ = sui_controls_SelectControl;
-sui_controls_DateSelectControl.prototype = $extend(sui_controls_SelectControl.prototype,{
-	__class__: sui_controls_DateSelectControl
-});
-var sui_controls_DateTimeControl = function(value,options) {
-	sui_controls_BaseDateControl.call(this,value,"date-time","datetime-local",sui_controls_BaseDateControl.toRFCDateTimeNoSeconds,options);
-};
-sui_controls_DateTimeControl.__name__ = ["sui","controls","DateTimeControl"];
-sui_controls_DateTimeControl.__super__ = sui_controls_BaseDateControl;
-sui_controls_DateTimeControl.prototype = $extend(sui_controls_BaseDateControl.prototype,{
-	__class__: sui_controls_DateTimeControl
-});
-var sui_controls_EmailControl = function(value,options) {
-	if(null == options) options = { };
-	if(null == options.placeholder) options.placeholder = "name@example.com";
-	sui_controls_BaseTextControl.call(this,value,"email","email",options);
-};
-sui_controls_EmailControl.__name__ = ["sui","controls","EmailControl"];
-sui_controls_EmailControl.__super__ = sui_controls_BaseTextControl;
-sui_controls_EmailControl.prototype = $extend(sui_controls_BaseTextControl.prototype,{
-	__class__: sui_controls_EmailControl
-});
-var sui_controls_NumberControl = function(value,name,options) {
-	if(null == options) options = { };
-	sui_controls_SingleInputControl.call(this,value,"input",name,"number",options);
-	if(null != options.autocomplete) this.input.setAttribute("autocomplete",options.autocomplete?"on":"off");
-	if(null != options.min) this.input.setAttribute("min","" + Std.string(options.min));
-	if(null != options.max) this.input.setAttribute("max","" + Std.string(options.max));
-	if(null != options.step) this.input.setAttribute("step","" + Std.string(options.step));
-	if(null != options.placeholder) this.input.setAttribute("placeholder","" + options.placeholder);
-	if(null != options.list) new sui_controls_DataList(this.el,options.list.map(function(o) {
-		return { label : o.label, value : "" + Std.string(o.value)};
-	})).applyTo(this.input); else if(null != options.values) new sui_controls_DataList(this.el,options.values.map(function(o1) {
-		return { label : "" + Std.string(o1), value : "" + Std.string(o1)};
-	})).applyTo(this.input);
-};
-sui_controls_NumberControl.__name__ = ["sui","controls","NumberControl"];
-sui_controls_NumberControl.__super__ = sui_controls_SingleInputControl;
-sui_controls_NumberControl.prototype = $extend(sui_controls_SingleInputControl.prototype,{
-	__class__: sui_controls_NumberControl
-});
-var sui_controls_FloatControl = function(value,options) {
-	sui_controls_NumberControl.call(this,value,"float",options);
-};
-sui_controls_FloatControl.__name__ = ["sui","controls","FloatControl"];
-sui_controls_FloatControl.__super__ = sui_controls_NumberControl;
-sui_controls_FloatControl.prototype = $extend(sui_controls_NumberControl.prototype,{
-	setInput: function(v) {
-		this.input.value = "" + v;
-	}
-	,getInput: function() {
-		return parseFloat(this.input.value);
-	}
-	,__class__: sui_controls_FloatControl
-});
-var sui_controls_NumberRangeControl = function(value,options) {
-	sui_controls_DoubleInputControl.call(this,value,"float-range","input","range","input","number",function(v) {
-		return v != null;
-	},options);
-	if(null != options.autocomplete) {
-		this.input1.setAttribute("autocomplete",options.autocomplete?"on":"off");
-		this.input2.setAttribute("autocomplete",options.autocomplete?"on":"off");
-	}
-	if(null != options.min) {
-		this.input1.setAttribute("min","" + Std.string(options.min));
-		this.input2.setAttribute("min","" + Std.string(options.min));
-	}
-	if(null != options.max) {
-		this.input1.setAttribute("max","" + Std.string(options.max));
-		this.input2.setAttribute("max","" + Std.string(options.max));
-	}
-	if(null != options.step) {
-		this.input1.setAttribute("step","" + Std.string(options.step));
-		this.input2.setAttribute("step","" + Std.string(options.step));
-	}
-	if(null != options.placeholder) this.input2.setAttribute("placeholder","" + options.placeholder);
-	if(null != options.list) new sui_controls_DataList(this.el,options.list.map(function(o) {
-		return { label : o.label, value : "" + Std.string(o.value)};
-	})).applyTo(this.input1).applyTo(this.input2); else if(null != options.values) new sui_controls_DataList(this.el,options.values.map(function(o1) {
-		return { label : "" + Std.string(o1), value : "" + Std.string(o1)};
-	})).applyTo(this.input1).applyTo(this.input2);
-	this.setInputs(value);
-};
-sui_controls_NumberRangeControl.__name__ = ["sui","controls","NumberRangeControl"];
-sui_controls_NumberRangeControl.__super__ = sui_controls_DoubleInputControl;
-sui_controls_NumberRangeControl.prototype = $extend(sui_controls_DoubleInputControl.prototype,{
-	setInput1: function(v) {
-		this.input1.value = "" + Std.string(v);
-	}
-	,setInput2: function(v) {
-		this.input2.value = "" + Std.string(v);
-	}
-	,__class__: sui_controls_NumberRangeControl
-});
-var sui_controls_FloatRangeControl = function(value,options) {
-	if(null == options) options = { };
-	if(null == options.min) options.min = Math.min(value,0);
-	if(null == options.min) {
-		var s;
-		if(null != options.step) s = options.step; else s = 1;
-		options.max = Math.max(value,s);
-	}
-	sui_controls_NumberRangeControl.call(this,value,options);
-};
-sui_controls_FloatRangeControl.__name__ = ["sui","controls","FloatRangeControl"];
-sui_controls_FloatRangeControl.__super__ = sui_controls_NumberRangeControl;
-sui_controls_FloatRangeControl.prototype = $extend(sui_controls_NumberRangeControl.prototype,{
-	getInput1: function() {
-		if(thx_core_Floats.canParse(this.input1.value)) return thx_core_Floats.parse(this.input1.value); else return null;
-	}
-	,getInput2: function() {
-		if(thx_core_Floats.canParse(this.input2.value)) return thx_core_Floats.parse(this.input2.value); else return null;
-	}
-	,__class__: sui_controls_FloatRangeControl
-});
-var sui_controls_IntControl = function(value,options) {
-	sui_controls_NumberControl.call(this,value,"int",options);
-};
-sui_controls_IntControl.__name__ = ["sui","controls","IntControl"];
-sui_controls_IntControl.__super__ = sui_controls_NumberControl;
-sui_controls_IntControl.prototype = $extend(sui_controls_NumberControl.prototype,{
-	setInput: function(v) {
-		this.input.value = "" + v;
-	}
-	,getInput: function() {
-		return Std.parseInt(this.input.value);
-	}
-	,__class__: sui_controls_IntControl
-});
-var sui_controls_IntRangeControl = function(value,options) {
-	if(null == options) options = { };
-	if(null == options.min) if(value < 0) options.min = value; else options.min = 0;
-	if(null == options.min) {
-		var s;
-		if(null != options.step) s = options.step; else s = 100;
-		if(value > s) options.max = value; else options.max = s;
-	}
-	sui_controls_NumberRangeControl.call(this,value,options);
-};
-sui_controls_IntRangeControl.__name__ = ["sui","controls","IntRangeControl"];
-sui_controls_IntRangeControl.__super__ = sui_controls_NumberRangeControl;
-sui_controls_IntRangeControl.prototype = $extend(sui_controls_NumberRangeControl.prototype,{
-	getInput1: function() {
-		if(thx_core_Ints.canParse(this.input1.value)) return thx_core_Ints.parse(this.input1.value); else return null;
-	}
-	,getInput2: function() {
-		if(thx_core_Ints.canParse(this.input2.value)) return thx_core_Ints.parse(this.input2.value); else return null;
-	}
-	,__class__: sui_controls_IntRangeControl
-});
-var sui_controls_LabelControl = function(defaultValue) {
-	var _g = this;
-	var template = "<div class=\"sui-control sui-control-single sui-type-label\"><output>" + defaultValue + "</output></div>";
-	this.defaultValue = defaultValue;
-	this.values = new sui_controls_ControlValues(defaultValue);
-	this.streams = new sui_controls_ControlStreams(this.values.value,this.values.focused,this.values.enabled);
-	this.el = dots_Html.parseNodes(template)[0];
-	this.output = dots_Query.first("output",this.el);
-	this.values.enabled.subscribe(function(v) {
-		if(v) _g.el.classList.add("sui-disabled"); else _g.el.classList.remove("sui-disabled");
-	});
-};
-sui_controls_LabelControl.__name__ = ["sui","controls","LabelControl"];
-sui_controls_LabelControl.__interfaces__ = [sui_controls_IControl];
-sui_controls_LabelControl.prototype = {
-	el: null
-	,output: null
-	,defaultValue: null
-	,streams: null
-	,values: null
-	,set: function(v) {
-		this.output.innerHTML = v;
-		this.values.value.set(v);
-	}
-	,get: function() {
-		return this.values.value.get();
-	}
-	,isEnabled: function() {
-		return this.values.enabled.get();
-	}
-	,isFocused: function() {
-		return this.values.focused.get();
-	}
-	,disable: function() {
-		this.values.enabled.set(false);
-	}
-	,enable: function() {
-		this.values.enabled.set(true);
-	}
-	,focus: function() {
-	}
-	,blur: function() {
-	}
-	,reset: function() {
-		this.set(this.defaultValue);
-	}
-	,__class__: sui_controls_LabelControl
-};
-var sui_controls_MapControl = function(defaultValue,createMap,createKeyControl,createValueControl,options) {
-	var _g = this;
-	var template = "<div class=\"sui-control sui-control-single sui-type-array\">\n<table class=\"sui-map\"><tbody></tbody></table>\n<div class=\"sui-array-add\"><i class=\"sui-icon sui-icon-add\"></i></div>\n</div>";
-	var t;
-	var _0 = options;
-	if(null == _0) t = null; else t = _0;
-	if(t != null) options = t; else options = { };
-	if(null == defaultValue) defaultValue = createMap();
-	this.defaultValue = defaultValue;
-	this.createMap = createMap;
-	this.createKeyControl = createKeyControl;
-	this.createValueControl = createValueControl;
-	this.elements = [];
-	this.length = 0;
-	this.values = new sui_controls_ControlValues(defaultValue);
-	this.streams = new sui_controls_ControlStreams(this.values.value,this.values.focused.debounce(0),this.values.enabled);
-	this.el = dots_Html.parseNodes(template)[0];
-	this.tbody = dots_Query.first("tbody",this.el);
-	this.addButton = dots_Query.first(".sui-icon-add",this.el);
-	thx_stream_dom_Dom.streamEvent(this.addButton,"click",false).subscribe(function(_) {
-		_g.addControl(null,null);
-	});
-	this.values.enabled.subscribe(function(v) {
-		if(v) _g.el.classList.add("sui-disabled"); else _g.el.classList.remove("sui-disabled");
-	});
-	this.values.focused.subscribe(function(v1) {
-		if(v1) _g.el.classList.add("sui-focused"); else _g.el.classList.remove("sui-focused");
-	});
-	thx_stream_EmitterBools.negate(this.values.enabled).subscribe(thx_stream_dom_Dom.subscribeToggleClass(this.el,"sui-disabled"));
-	this.values.enabled.subscribe(function(v2) {
-		_g.elements.map(function(_1) {
-			if(v2) {
-				_1.controlKey.enable();
-				_1.controlValue.enable();
-			} else {
-				_1.controlKey.disable();
-				_1.controlValue.disable();
-			}
-			return;
-		});
-	});
-	this.setValue(defaultValue);
-	this.reset();
-	if(options.autofocus) this.focus();
-	if(options.disabled) this.disable();
-};
-sui_controls_MapControl.__name__ = ["sui","controls","MapControl"];
-sui_controls_MapControl.__interfaces__ = [sui_controls_IControl];
-sui_controls_MapControl.prototype = {
-	el: null
-	,tbody: null
-	,addButton: null
-	,defaultValue: null
-	,streams: null
-	,createMap: null
-	,createKeyControl: null
-	,createValueControl: null
-	,length: null
-	,values: null
-	,elements: null
-	,addControl: function(key,value) {
-		var _g = this;
-		var o = { controlKey : this.createKeyControl(key), controlValue : this.createValueControl(value), el : dots_Html.parseNodes("<tr class=\"sui-map-item\">\n<td class=\"sui-map-key\"></td>\n<td class=\"sui-map-value\"></td>\n<td class=\"sui-remove\"><i class=\"sui-icon sui-icon-remove\"></i></td>\n</tr>")[0], index : this.length++};
-		this.tbody.appendChild(o.el);
-		var removeElement = dots_Query.first(".sui-icon-remove",o.el);
-		var controlKeyContainer = dots_Query.first(".sui-map-key",o.el);
-		var controlValueContainer = dots_Query.first(".sui-map-value",o.el);
-		controlKeyContainer.appendChild(o.controlKey.el);
-		controlValueContainer.appendChild(o.controlValue.el);
-		thx_stream_dom_Dom.streamEvent(removeElement,"click",false).subscribe(function(_) {
-			_g.tbody.removeChild(o.el);
-			_g.elements.splice(o.index,1);
-			var _g2 = o.index;
-			var _g1 = _g.elements.length;
-			while(_g2 < _g1) {
-				var i = _g2++;
-				_g.elements[i].index--;
-			}
-			_g.length--;
-			_g.updateValue();
-		});
-		this.elements.push(o);
-		o.controlKey.streams.value.toNil().merge(o.controlValue.streams.value.toNil()).subscribe(function(_1) {
-			_g.updateValue();
-		});
-		o.controlKey.streams.focused.merge(o.controlValue.streams.focused).subscribe(thx_stream_dom_Dom.subscribeToggleClass(o.el,"sui-focus"));
-		o.controlKey.streams.focused.merge(o.controlValue.streams.focused).feed(this.values.focused);
-	}
-	,setValue: function(v) {
-		var _g = this;
-		thx_core_Iterators.map(v.keys(),function(_) {
-			_g.addControl(_,v.get(_));
-			return;
-		});
-	}
-	,getValue: function() {
-		var map = this.createMap();
-		this.elements.map(function(o) {
-			var k = o.controlKey.get();
-			var v = o.controlValue.get();
-			if(k == null || map.exists(k)) {
-				o.controlKey.el.classList.add("sui-invalid");
-				return;
-			}
-			o.controlKey.el.classList.remove("sui-invalid");
-			map.set(k,v);
-		});
-		return map;
-	}
-	,updateValue: function() {
-		this.values.value.set(this.getValue());
-	}
-	,set: function(v) {
-		this.clear();
-		this.setValue(v);
-		this.values.value.set(v);
-	}
-	,get: function() {
-		return this.values.value.get();
-	}
-	,isEnabled: function() {
-		return this.values.enabled.get();
-	}
-	,isFocused: function() {
-		return this.values.focused.get();
-	}
-	,disable: function() {
-		this.values.enabled.set(false);
-	}
-	,enable: function() {
-		this.values.enabled.set(true);
-	}
-	,focus: function() {
-		if(this.elements.length > 0) thx_core_Arrays.last(this.elements).controlValue.focus();
-	}
-	,blur: function() {
-		var el = window.document.activeElement;
-		(function(_) {
-			if(null == _) null; else el.blur();
-			return;
-		})(thx_core_Arrays.first(this.elements.filter(function(_1) {
-			return _1.controlKey.el == el || _1.controlValue.el == el;
-		})));
-	}
-	,reset: function() {
-		this.set(this.defaultValue);
-	}
-	,clear: function() {
-		var _g = this;
-		this.length = 0;
-		this.elements.map(function(item) {
-			_g.tbody.removeChild(item.el);
-		});
-		this.elements = [];
-	}
-	,__class__: sui_controls_MapControl
-};
-var sui_controls_NumberSelectControl = function(defaultValue,options) {
-	sui_controls_SelectControl.call(this,defaultValue,"select-number",options);
-};
-sui_controls_NumberSelectControl.__name__ = ["sui","controls","NumberSelectControl"];
-sui_controls_NumberSelectControl.__super__ = sui_controls_SelectControl;
-sui_controls_NumberSelectControl.prototype = $extend(sui_controls_SelectControl.prototype,{
-	__class__: sui_controls_NumberSelectControl
-});
-var sui_controls_DateKind = { __ename__ : ["sui","controls","DateKind"], __constructs__ : ["DateOnly","DateTime"] };
-sui_controls_DateKind.DateOnly = ["DateOnly",0];
-sui_controls_DateKind.DateOnly.toString = $estr;
-sui_controls_DateKind.DateOnly.__enum__ = sui_controls_DateKind;
-sui_controls_DateKind.DateTime = ["DateTime",1];
-sui_controls_DateKind.DateTime.toString = $estr;
-sui_controls_DateKind.DateTime.__enum__ = sui_controls_DateKind;
-var sui_controls_FloatKind = { __ename__ : ["sui","controls","FloatKind"], __constructs__ : ["FloatNumber","FloatTime"] };
-sui_controls_FloatKind.FloatNumber = ["FloatNumber",0];
-sui_controls_FloatKind.FloatNumber.toString = $estr;
-sui_controls_FloatKind.FloatNumber.__enum__ = sui_controls_FloatKind;
-sui_controls_FloatKind.FloatTime = ["FloatTime",1];
-sui_controls_FloatKind.FloatTime.toString = $estr;
-sui_controls_FloatKind.FloatTime.__enum__ = sui_controls_FloatKind;
-var sui_controls_TextKind = { __ename__ : ["sui","controls","TextKind"], __constructs__ : ["TextEmail","TextPassword","TextSearch","TextTel","PlainText","TextUrl"] };
-sui_controls_TextKind.TextEmail = ["TextEmail",0];
-sui_controls_TextKind.TextEmail.toString = $estr;
-sui_controls_TextKind.TextEmail.__enum__ = sui_controls_TextKind;
-sui_controls_TextKind.TextPassword = ["TextPassword",1];
-sui_controls_TextKind.TextPassword.toString = $estr;
-sui_controls_TextKind.TextPassword.__enum__ = sui_controls_TextKind;
-sui_controls_TextKind.TextSearch = ["TextSearch",2];
-sui_controls_TextKind.TextSearch.toString = $estr;
-sui_controls_TextKind.TextSearch.__enum__ = sui_controls_TextKind;
-sui_controls_TextKind.TextTel = ["TextTel",3];
-sui_controls_TextKind.TextTel.toString = $estr;
-sui_controls_TextKind.TextTel.__enum__ = sui_controls_TextKind;
-sui_controls_TextKind.PlainText = ["PlainText",4];
-sui_controls_TextKind.PlainText.toString = $estr;
-sui_controls_TextKind.PlainText.__enum__ = sui_controls_TextKind;
-sui_controls_TextKind.TextUrl = ["TextUrl",5];
-sui_controls_TextKind.TextUrl.toString = $estr;
-sui_controls_TextKind.TextUrl.__enum__ = sui_controls_TextKind;
-var sui_controls_PasswordControl = function(value,options) {
-	sui_controls_BaseTextControl.call(this,value,"text","password",options);
-};
-sui_controls_PasswordControl.__name__ = ["sui","controls","PasswordControl"];
-sui_controls_PasswordControl.__super__ = sui_controls_BaseTextControl;
-sui_controls_PasswordControl.prototype = $extend(sui_controls_BaseTextControl.prototype,{
-	__class__: sui_controls_PasswordControl
-});
-var sui_controls_SearchControl = function(value,options) {
-	if(null == options) options = { };
-	sui_controls_BaseTextControl.call(this,value,"search","search",options);
-};
-sui_controls_SearchControl.__name__ = ["sui","controls","SearchControl"];
-sui_controls_SearchControl.__super__ = sui_controls_BaseTextControl;
-sui_controls_SearchControl.prototype = $extend(sui_controls_BaseTextControl.prototype,{
-	__class__: sui_controls_SearchControl
-});
-var sui_controls_TelControl = function(value,options) {
-	if(null == options) options = { };
-	sui_controls_BaseTextControl.call(this,value,"tel","tel",options);
-};
-sui_controls_TelControl.__name__ = ["sui","controls","TelControl"];
-sui_controls_TelControl.__super__ = sui_controls_BaseTextControl;
-sui_controls_TelControl.prototype = $extend(sui_controls_BaseTextControl.prototype,{
-	__class__: sui_controls_TelControl
-});
-var sui_controls_TextControl = function(value,options) {
-	sui_controls_BaseTextControl.call(this,value,"text","text",options);
-};
-sui_controls_TextControl.__name__ = ["sui","controls","TextControl"];
-sui_controls_TextControl.__super__ = sui_controls_BaseTextControl;
-sui_controls_TextControl.prototype = $extend(sui_controls_BaseTextControl.prototype,{
-	__class__: sui_controls_TextControl
-});
-var sui_controls_TextSelectControl = function(defaultValue,options) {
-	sui_controls_SelectControl.call(this,defaultValue,"select-text",options);
-};
-sui_controls_TextSelectControl.__name__ = ["sui","controls","TextSelectControl"];
-sui_controls_TextSelectControl.__super__ = sui_controls_SelectControl;
-sui_controls_TextSelectControl.prototype = $extend(sui_controls_SelectControl.prototype,{
-	__class__: sui_controls_TextSelectControl
-});
-var sui_controls_TimeControl = function(value,options) {
-	if(null == options) options = { };
-	sui_controls_SingleInputControl.call(this,value,"input","time","time",options);
-	if(null != options.autocomplete) this.input.setAttribute("autocomplete",options.autocomplete?"on":"off");
-	if(null != options.min) this.input.setAttribute("min",sui_controls_TimeControl.timeToString(options.min));
-	if(null != options.max) this.input.setAttribute("max",sui_controls_TimeControl.timeToString(options.max));
-	if(null != options.list) new sui_controls_DataList(this.el,options.list.map(function(o) {
-		return { label : o.label, value : sui_controls_TimeControl.timeToString(o.value)};
-	})).applyTo(this.input); else if(null != options.values) new sui_controls_DataList(this.el,options.values.map(function(o1) {
-		return { label : sui_controls_TimeControl.timeToString(o1), value : sui_controls_TimeControl.timeToString(o1)};
-	})).applyTo(this.input);
-};
-sui_controls_TimeControl.__name__ = ["sui","controls","TimeControl"];
-sui_controls_TimeControl.timeToString = function(t) {
-	var h = Math.floor(t / 3600000);
-	t -= h * 3600000;
-	var m = Math.floor(t / 60000);
-	t -= m * 60000;
-	var s = t / 1000;
-	var hh = StringTools.lpad("" + h,"0",2);
-	var mm = StringTools.lpad("" + m,"0",2);
-	var ss;
-	ss = (s >= 10?"":"0") + s;
-	return "" + hh + ":" + mm + ":" + ss;
-};
-sui_controls_TimeControl.stringToTime = function(t) {
-	var p = t.split(":");
-	var h = Std.parseInt(p[0]);
-	var m = Std.parseInt(p[1]);
-	var s = parseFloat(p[2]);
-	return s * 1000 + m * 60000 + h * 3600000;
-};
-sui_controls_TimeControl.__super__ = sui_controls_SingleInputControl;
-sui_controls_TimeControl.prototype = $extend(sui_controls_SingleInputControl.prototype,{
-	setInput: function(v) {
-		this.input.value = sui_controls_TimeControl.timeToString(v);
-	}
-	,getInput: function() {
-		return sui_controls_TimeControl.stringToTime(this.input.value);
-	}
-	,__class__: sui_controls_TimeControl
-});
-var sui_controls_TriggerControl = function(label,options) {
-	var _g = this;
-	var template = "<div class=\"sui-control sui-control-single sui-type-trigger\"><button>" + label + "</button></div>";
-	if(null == options) options = { };
-	this.defaultValue = thx_core_Nil.nil;
-	this.el = dots_Html.parseNodes(template)[0];
-	this.button = dots_Query.first("button",this.el);
-	this.values = new sui_controls_ControlValues(thx_core_Nil.nil);
-	var emitter = thx_stream_dom_Dom.streamEvent(this.button,"click",false).toNil();
-	this.streams = new sui_controls_ControlStreams(emitter,this.values.focused,this.values.enabled);
-	this.values.enabled.subscribe(function(v) {
-		if(v) {
-			_g.el.classList.add("sui-disabled");
-			_g.button.removeAttribute("disabled");
-		} else {
-			_g.el.classList.remove("sui-disabled");
-			_g.button.setAttribute("disabled","disabled");
-		}
-	});
-	this.values.focused.subscribe(function(v1) {
-		if(v1) _g.el.classList.add("sui-focused"); else _g.el.classList.remove("sui-focused");
-	});
-	thx_stream_dom_Dom.streamFocus(this.button).feed(this.values.focused);
-	if(options.autofocus) this.focus();
-	if(options.disabled) this.disable();
-};
-sui_controls_TriggerControl.__name__ = ["sui","controls","TriggerControl"];
-sui_controls_TriggerControl.__interfaces__ = [sui_controls_IControl];
-sui_controls_TriggerControl.prototype = {
-	el: null
-	,button: null
-	,defaultValue: null
-	,streams: null
-	,values: null
-	,set: function(v) {
-		this.button.click();
-	}
-	,get: function() {
-		return thx_core_Nil.nil;
-	}
-	,isEnabled: function() {
-		return this.values.enabled.get();
-	}
-	,isFocused: function() {
-		return this.values.focused.get();
-	}
-	,disable: function() {
-		this.values.enabled.set(false);
-	}
-	,enable: function() {
-		this.values.enabled.set(true);
-	}
-	,focus: function() {
-		this.button.focus();
-	}
-	,blur: function() {
-		this.button.blur();
-	}
-	,reset: function() {
-		this.set(this.defaultValue);
-	}
-	,__class__: sui_controls_TriggerControl
-};
-var sui_controls_UrlControl = function(value,options) {
-	if(null == options) options = { };
-	if(null == options.placeholder) options.placeholder = "http://example.com";
-	sui_controls_BaseTextControl.call(this,value,"url","url",options);
-};
-sui_controls_UrlControl.__name__ = ["sui","controls","UrlControl"];
-sui_controls_UrlControl.__super__ = sui_controls_BaseTextControl;
-sui_controls_UrlControl.prototype = $extend(sui_controls_BaseTextControl.prototype,{
-	__class__: sui_controls_UrlControl
-});
-var sui_macro_Embed = function() { };
-sui_macro_Embed.__name__ = ["sui","macro","Embed"];
 var thx_color__$CIELCh_CIELCh_$Impl_$ = {};
 thx_color__$CIELCh_CIELCh_$Impl_$.__name__ = ["thx","color","_CIELCh","CIELCh_Impl_"];
 thx_color__$CIELCh_CIELCh_$Impl_$.create = function(lightness,chroma,hue) {
@@ -6907,12 +5310,12 @@ thx_color_parse_ColorInfo.prototype = {
 	,__class__: thx_color_parse_ColorInfo
 };
 var thx_color_parse_ChannelInfo = { __ename__ : ["thx","color","parse","ChannelInfo"], __constructs__ : ["CIPercent","CIFloat","CIDegree","CIInt8","CIInt","CIBool"] };
-thx_color_parse_ChannelInfo.CIPercent = function(value) { var $x = ["CIPercent",0,value]; $x.__enum__ = thx_color_parse_ChannelInfo; $x.toString = $estr; return $x; };
-thx_color_parse_ChannelInfo.CIFloat = function(value) { var $x = ["CIFloat",1,value]; $x.__enum__ = thx_color_parse_ChannelInfo; $x.toString = $estr; return $x; };
-thx_color_parse_ChannelInfo.CIDegree = function(value) { var $x = ["CIDegree",2,value]; $x.__enum__ = thx_color_parse_ChannelInfo; $x.toString = $estr; return $x; };
-thx_color_parse_ChannelInfo.CIInt8 = function(value) { var $x = ["CIInt8",3,value]; $x.__enum__ = thx_color_parse_ChannelInfo; $x.toString = $estr; return $x; };
-thx_color_parse_ChannelInfo.CIInt = function(value) { var $x = ["CIInt",4,value]; $x.__enum__ = thx_color_parse_ChannelInfo; $x.toString = $estr; return $x; };
-thx_color_parse_ChannelInfo.CIBool = function(value) { var $x = ["CIBool",5,value]; $x.__enum__ = thx_color_parse_ChannelInfo; $x.toString = $estr; return $x; };
+thx_color_parse_ChannelInfo.CIPercent = function(value) { var $x = ["CIPercent",0,value]; $x.__enum__ = thx_color_parse_ChannelInfo; return $x; };
+thx_color_parse_ChannelInfo.CIFloat = function(value) { var $x = ["CIFloat",1,value]; $x.__enum__ = thx_color_parse_ChannelInfo; return $x; };
+thx_color_parse_ChannelInfo.CIDegree = function(value) { var $x = ["CIDegree",2,value]; $x.__enum__ = thx_color_parse_ChannelInfo; return $x; };
+thx_color_parse_ChannelInfo.CIInt8 = function(value) { var $x = ["CIInt8",3,value]; $x.__enum__ = thx_color_parse_ChannelInfo; return $x; };
+thx_color_parse_ChannelInfo.CIInt = function(value) { var $x = ["CIInt",4,value]; $x.__enum__ = thx_color_parse_ChannelInfo; return $x; };
+thx_color_parse_ChannelInfo.CIBool = function(value) { var $x = ["CIBool",5,value]; $x.__enum__ = thx_color_parse_ChannelInfo; return $x; };
 var thx_core_Arrays = function() { };
 thx_core_Arrays.__name__ = ["thx","core","Arrays"];
 thx_core_Arrays.after = function(array,element) {
@@ -7347,9 +5750,6 @@ thx_core_ArrayStrings.min = function(arr) {
 		if(v < min) return v; else return min;
 	},arr[0]);
 };
-var thx_core_Either = { __ename__ : ["thx","core","Either"], __constructs__ : ["Left","Right"] };
-thx_core_Either.Left = function(value) { var $x = ["Left",0,value]; $x.__enum__ = thx_core_Either; $x.toString = $estr; return $x; };
-thx_core_Either.Right = function(value) { var $x = ["Right",1,value]; $x.__enum__ = thx_core_Either; $x.toString = $estr; return $x; };
 var thx_core_Error = function(message,stack,pos) {
 	Error.call(this,message);
 	this.message = message;
@@ -7772,141 +6172,9 @@ thx_core_Iterators.toArray = function(it) {
 };
 var thx_core_Nil = { __ename__ : ["thx","core","Nil"], __constructs__ : ["nil"] };
 thx_core_Nil.nil = ["nil",0];
-thx_core_Nil.nil.toString = $estr;
 thx_core_Nil.nil.__enum__ = thx_core_Nil;
 var thx_core_Nulls = function() { };
 thx_core_Nulls.__name__ = ["thx","core","Nulls"];
-var thx_core_Options = function() { };
-thx_core_Options.__name__ = ["thx","core","Options"];
-thx_core_Options.equals = function(a,b,eq) {
-	switch(a[1]) {
-	case 1:
-		switch(b[1]) {
-		case 1:
-			return true;
-		default:
-			return false;
-		}
-		break;
-	case 0:
-		switch(b[1]) {
-		case 0:
-			var a1 = a[2];
-			var b1 = b[2];
-			if(null == eq) eq = function(a2,b2) {
-				return a2 == b2;
-			};
-			return eq(a1,b1);
-		default:
-			return false;
-		}
-		break;
-	}
-};
-thx_core_Options.equalsValue = function(a,b,eq) {
-	return thx_core_Options.equals(a,null == b?haxe_ds_Option.None:haxe_ds_Option.Some(b),eq);
-};
-thx_core_Options.flatMap = function(option,callback) {
-	switch(option[1]) {
-	case 1:
-		return [];
-	case 0:
-		var v = option[2];
-		return callback(v);
-	}
-};
-thx_core_Options.map = function(option,callback) {
-	switch(option[1]) {
-	case 1:
-		return haxe_ds_Option.None;
-	case 0:
-		var v = option[2];
-		return haxe_ds_Option.Some(callback(v));
-	}
-};
-thx_core_Options.toArray = function(option) {
-	switch(option[1]) {
-	case 1:
-		return [];
-	case 0:
-		var v = option[2];
-		return [v];
-	}
-};
-thx_core_Options.toBool = function(option) {
-	switch(option[1]) {
-	case 1:
-		return false;
-	case 0:
-		return true;
-	}
-};
-thx_core_Options.toOption = function(value) {
-	if(null == value) return haxe_ds_Option.None; else return haxe_ds_Option.Some(value);
-};
-thx_core_Options.toValue = function(option) {
-	switch(option[1]) {
-	case 1:
-		return null;
-	case 0:
-		var v = option[2];
-		return v;
-	}
-};
-var thx_core__$Result_Result_$Impl_$ = {};
-thx_core__$Result_Result_$Impl_$.__name__ = ["thx","core","_Result","Result_Impl_"];
-thx_core__$Result_Result_$Impl_$.optionValue = function(this1) {
-	switch(this1[1]) {
-	case 1:
-		var v = this1[2];
-		return haxe_ds_Option.Some(v);
-	default:
-		return haxe_ds_Option.None;
-	}
-};
-thx_core__$Result_Result_$Impl_$.optionError = function(this1) {
-	switch(this1[1]) {
-	case 0:
-		var v = this1[2];
-		return haxe_ds_Option.Some(v);
-	default:
-		return haxe_ds_Option.None;
-	}
-};
-thx_core__$Result_Result_$Impl_$.value = function(this1) {
-	switch(this1[1]) {
-	case 1:
-		var v = this1[2];
-		return v;
-	default:
-		return null;
-	}
-};
-thx_core__$Result_Result_$Impl_$.error = function(this1) {
-	switch(this1[1]) {
-	case 0:
-		var v = this1[2];
-		return v;
-	default:
-		return null;
-	}
-};
-thx_core__$Result_Result_$Impl_$.get_isSuccess = function(this1) {
-	switch(this1[1]) {
-	case 1:
-		return true;
-	default:
-		return false;
-	}
-};
-thx_core__$Result_Result_$Impl_$.get_isFailure = function(this1) {
-	switch(this1[1]) {
-	case 0:
-		return true;
-	default:
-		return false;
-	}
-};
 var thx_core__$Set_Set_$Impl_$ = {};
 thx_core__$Set_Set_$Impl_$.__name__ = ["thx","core","_Set","Set_Impl_"];
 thx_core__$Set_Set_$Impl_$.arrayToSet = function(arr) {
@@ -8484,14 +6752,6 @@ thx_core_Types.valueTypeInheritance = function(value) {
 thx_core_Types.valueTypeToString = function(value) {
 	return thx_core_Types.typeToString(Type["typeof"](value));
 };
-var thx_core_error_AbstractMethod = function(posInfo) {
-	thx_core_Error.call(this,"method " + posInfo.className + "." + posInfo.methodName + "() is abstract",null,posInfo);
-};
-thx_core_error_AbstractMethod.__name__ = ["thx","core","error","AbstractMethod"];
-thx_core_error_AbstractMethod.__super__ = thx_core_Error;
-thx_core_error_AbstractMethod.prototype = $extend(thx_core_Error.prototype,{
-	__class__: thx_core_error_AbstractMethod
-});
 var thx_core_error_NullArgument = function(message,posInfo) {
 	thx_core_Error.call(this,message,null,posInfo);
 };
@@ -8500,6 +6760,1127 @@ thx_core_error_NullArgument.__super__ = thx_core_Error;
 thx_core_error_NullArgument.prototype = $extend(thx_core_Error.prototype,{
 	__class__: thx_core_error_NullArgument
 });
+var thx_culture_DateFormatInfo = function(calendarWeekRuleIndex,calendarWeekRuleName,designatorAm,designatorPm,firstDayOfWeekIndex,firstDayOfWeekName,nameCalendar,nameCalendarNative,nameDays,nameDaysAbbreviated,nameDaysShortest,nameMonths,nameMonthsAbbreviated,nameMonthGenitives,nameMonthGenitivesAbbreviated,patternDateLong,patternDateShort,patternDateTimeFull,patternDateTimeSortable,patternMonthDay,patternRfc1123,patternTimeLong,patternTimeShort,patternUniversalSortable,patternYearMonth,separatorDate,separatorTime) {
+	this.calendarWeekRuleIndex = calendarWeekRuleIndex;
+	this.calendarWeekRuleName = calendarWeekRuleName;
+	this.designatorAm = designatorAm;
+	this.designatorPm = designatorPm;
+	this.firstDayOfWeekIndex = firstDayOfWeekIndex;
+	this.firstDayOfWeekName = firstDayOfWeekName;
+	this.nameCalendar = nameCalendar;
+	this.nameCalendarNative = nameCalendarNative;
+	this.nameDays = nameDays;
+	this.nameDaysAbbreviated = nameDaysAbbreviated;
+	this.nameDaysShortest = nameDaysShortest;
+	this.nameMonths = nameMonths;
+	this.nameMonthsAbbreviated = nameMonthsAbbreviated;
+	this.nameMonthGenitives = nameMonthGenitives;
+	this.nameMonthGenitivesAbbreviated = nameMonthGenitivesAbbreviated;
+	this.patternDateLong = patternDateLong;
+	this.patternDateShort = patternDateShort;
+	this.patternDateTimeFull = patternDateTimeFull;
+	this.patternDateTimeSortable = patternDateTimeSortable;
+	this.patternMonthDay = patternMonthDay;
+	this.patternRfc1123 = patternRfc1123;
+	this.patternTimeLong = patternTimeLong;
+	this.patternTimeShort = patternTimeShort;
+	this.patternUniversalSortable = patternUniversalSortable;
+	this.patternYearMonth = patternYearMonth;
+	this.separatorDate = separatorDate;
+	this.separatorTime = separatorTime;
+};
+thx_culture_DateFormatInfo.__name__ = ["thx","culture","DateFormatInfo"];
+thx_culture_DateFormatInfo.fromObject = function(o) {
+	return new thx_culture_DateFormatInfo(o.calendarWeekRuleIndex,o.calendarWeekRuleName,o.designatorAm,o.designatorPm,o.firstDayOfWeekIndex,o.firstDayOfWeekName,o.nameCalendar,o.nameCalendarNative,o.nameDays,o.nameDaysAbbreviated,o.nameDaysShortest,o.nameMonths,o.nameMonthsAbbreviated,o.nameMonthGenitives,o.nameMonthGenitivesAbbreviated,o.patternDateLong,o.patternDateShort,o.patternDateTimeFull,o.patternDateTimeSortable,o.patternMonthDay,o.patternRfc1123,o.patternTimeLong,o.patternTimeShort,o.patternUniversalSortable,o.patternYearMonth,o.separatorDate,o.separatorTime);
+};
+thx_culture_DateFormatInfo.prototype = {
+	calendarWeekRuleIndex: null
+	,calendarWeekRuleName: null
+	,designatorAm: null
+	,designatorPm: null
+	,firstDayOfWeekIndex: null
+	,firstDayOfWeekName: null
+	,nameCalendar: null
+	,nameCalendarNative: null
+	,nameDays: null
+	,nameDaysAbbreviated: null
+	,nameDaysShortest: null
+	,nameMonths: null
+	,nameMonthsAbbreviated: null
+	,nameMonthGenitives: null
+	,nameMonthGenitivesAbbreviated: null
+	,patternDateLong: null
+	,patternDateShort: null
+	,patternDateTimeFull: null
+	,patternDateTimeSortable: null
+	,patternMonthDay: null
+	,patternRfc1123: null
+	,patternTimeLong: null
+	,patternTimeShort: null
+	,patternUniversalSortable: null
+	,patternYearMonth: null
+	,separatorDate: null
+	,separatorTime: null
+	,toObject: function() {
+		return { calendarWeekRuleIndex : this.calendarWeekRuleIndex, calendarWeekRuleName : this.calendarWeekRuleName, designatorAm : this.designatorAm, designatorPm : this.designatorPm, firstDayOfWeekIndex : this.firstDayOfWeekIndex, firstDayOfWeekName : this.firstDayOfWeekName, nameCalendar : this.nameCalendar, nameCalendarNative : this.nameCalendarNative, nameDays : this.nameDays, nameDaysAbbreviated : this.nameDaysAbbreviated, nameDaysShortest : this.nameDaysShortest, nameMonths : this.nameMonths, nameMonthsAbbreviated : this.nameMonthsAbbreviated, nameMonthGenitives : this.nameMonthGenitives, nameMonthGenitivesAbbreviated : this.nameMonthGenitivesAbbreviated, patternDateLong : this.patternDateLong, patternDateShort : this.patternDateShort, patternDateTimeFull : this.patternDateTimeFull, patternDateTimeSortable : this.patternDateTimeSortable, patternMonthDay : this.patternMonthDay, patternRfc1123 : this.patternRfc1123, patternTimeLong : this.patternTimeLong, patternTimeShort : this.patternTimeShort, patternUniversalSortable : this.patternUniversalSortable, patternYearMonth : this.patternYearMonth, separatorDate : this.separatorDate, separatorTime : this.separatorTime};
+	}
+	,__class__: thx_culture_DateFormatInfo
+};
+var thx_culture_NumberFormatInfo = function(decimalDigitsCurrency,decimalDigitsNumber,decimalDigitsPercent,groupSizesCurrency,groupSizesNumber,groupSizesPercent,patternNegativeCurrency,patternNegativeNumber,patternNegativePercent,patternPositiveCurrency,patternPositivePercent,separatorDecimalCurrency,separatorDecimalNumber,separatorDecimalPercent,separatorGroupCurrency,separatorGroupNumber,separatorGroupPercent,signNegative,signPositive,symbolCurrency,symbolNaN,symbolNegativeInfinity,symbolPercent,symbolPermille,symbolPositiveInfinity) {
+	this.decimalDigitsCurrency = decimalDigitsCurrency;
+	this.decimalDigitsNumber = decimalDigitsNumber;
+	this.decimalDigitsPercent = decimalDigitsPercent;
+	this.groupSizesCurrency = groupSizesCurrency;
+	this.groupSizesNumber = groupSizesNumber;
+	this.groupSizesPercent = groupSizesPercent;
+	this.patternNegativeCurrency = patternNegativeCurrency;
+	this.patternNegativeNumber = patternNegativeNumber;
+	this.patternNegativePercent = patternNegativePercent;
+	this.patternPositiveCurrency = patternPositiveCurrency;
+	this.patternPositivePercent = patternPositivePercent;
+	this.separatorDecimalCurrency = separatorDecimalCurrency;
+	this.separatorDecimalNumber = separatorDecimalNumber;
+	this.separatorDecimalPercent = separatorDecimalPercent;
+	this.separatorGroupCurrency = separatorGroupCurrency;
+	this.separatorGroupNumber = separatorGroupNumber;
+	this.separatorGroupPercent = separatorGroupPercent;
+	this.signNegative = signNegative;
+	this.signPositive = signPositive;
+	this.symbolCurrency = symbolCurrency;
+	this.symbolNaN = symbolNaN;
+	this.symbolNegativeInfinity = symbolNegativeInfinity;
+	this.symbolPercent = symbolPercent;
+	this.symbolPermille = symbolPermille;
+	this.symbolPositiveInfinity = symbolPositiveInfinity;
+};
+thx_culture_NumberFormatInfo.__name__ = ["thx","culture","NumberFormatInfo"];
+thx_culture_NumberFormatInfo.fromObject = function(o) {
+	return new thx_culture_NumberFormatInfo(o.decimalDigitsCurrency,o.decimalDigitsNumber,o.decimalDigitsPercent,o.groupSizesCurrency,o.groupSizesNumber,o.groupSizesPercent,o.patternNegativeCurrency,o.patternNegativeNumber,o.patternNegativePercent,o.patternPositiveCurrency,o.patternPositivePercent,o.separatorDecimalCurrency,o.separatorDecimalNumber,o.separatorDecimalPercent,o.separatorGroupCurrency,o.separatorGroupNumber,o.separatorGroupPercent,o.signNegative,o.signPositive,o.symbolCurrency,o.symbolNaN,o.symbolNegativeInfinity,o.symbolPercent,o.symbolPermille,o.symbolPositiveInfinity);
+};
+thx_culture_NumberFormatInfo.prototype = {
+	decimalDigitsCurrency: null
+	,decimalDigitsNumber: null
+	,decimalDigitsPercent: null
+	,groupSizesCurrency: null
+	,groupSizesNumber: null
+	,groupSizesPercent: null
+	,patternNegativeCurrency: null
+	,patternNegativeNumber: null
+	,patternNegativePercent: null
+	,patternPositiveCurrency: null
+	,patternPositivePercent: null
+	,separatorDecimalCurrency: null
+	,separatorDecimalNumber: null
+	,separatorDecimalPercent: null
+	,separatorGroupCurrency: null
+	,separatorGroupNumber: null
+	,separatorGroupPercent: null
+	,signNegative: null
+	,signPositive: null
+	,symbolCurrency: null
+	,symbolNaN: null
+	,symbolNegativeInfinity: null
+	,symbolPercent: null
+	,symbolPermille: null
+	,symbolPositiveInfinity: null
+	,toObject: function() {
+		return { decimalDigitsCurrency : this.decimalDigitsCurrency, decimalDigitsNumber : this.decimalDigitsNumber, decimalDigitsPercent : this.decimalDigitsPercent, groupSizesCurrency : this.groupSizesCurrency, groupSizesNumber : this.groupSizesNumber, groupSizesPercent : this.groupSizesPercent, patternNegativeCurrency : this.patternNegativeCurrency, patternNegativeNumber : this.patternNegativeNumber, patternNegativePercent : this.patternNegativePercent, patternPositiveCurrency : this.patternPositiveCurrency, patternPositivePercent : this.patternPositivePercent, separatorDecimalCurrency : this.separatorDecimalCurrency, separatorDecimalNumber : this.separatorDecimalNumber, separatorDecimalPercent : this.separatorDecimalPercent, separatorGroupCurrency : this.separatorGroupCurrency, separatorGroupNumber : this.separatorGroupNumber, separatorGroupPercent : this.separatorGroupPercent, signNegative : this.signNegative, signPositive : this.signPositive, symbolCurrency : this.symbolCurrency, symbolNaN : this.symbolNaN, symbolNegativeInfinity : this.symbolNegativeInfinity, symbolPercent : this.symbolPercent, symbolPermille : this.symbolPermille, symbolPositiveInfinity : this.symbolPositiveInfinity};
+	}
+	,__class__: thx_culture_NumberFormatInfo
+};
+var thx_culture_Culture = function(code,dateTime,ietf,isNeutral,iso2,iso3,isRightToLeft,lcid,nameCalendar,nameEnglish,nameNative,nameRegionEnglish,nameRegionNative,number,separatorList,win3) {
+	this.code = code;
+	this.dateTime = dateTime;
+	this.ietf = ietf;
+	this.isNeutral = isNeutral;
+	this.iso2 = iso2;
+	this.iso3 = iso3;
+	this.isRightToLeft = isRightToLeft;
+	this.lcid = lcid;
+	this.nameCalendar = nameCalendar;
+	this.nameEnglish = nameEnglish;
+	this.nameNative = nameNative;
+	this.nameRegionEnglish = nameRegionEnglish;
+	this.nameRegionNative = nameRegionNative;
+	this.number = number;
+	this.separatorList = separatorList;
+	this.win3 = win3;
+};
+thx_culture_Culture.__name__ = ["thx","culture","Culture"];
+thx_culture_Culture.fromObject = function(o) {
+	return new thx_culture_Culture(o.code,null == o.dateTime?null:thx_culture_DateFormatInfo.fromObject(o.dateTime),o.ietf,o.isNeutral,o.iso2,o.iso3,o.isRightToLeft,o.lcid,o.nameCalendar,o.nameEnglish,o.nameNative,o.nameRegionEnglish,o.nameRegionNative,null == o.number?null:thx_culture_NumberFormatInfo.fromObject(o.number),o.separatorList,o.win3);
+};
+thx_culture_Culture.register = function(culture) {
+	var code = "C:" + culture.code.toLowerCase();
+	if(thx_culture_Culture.cultures.exists(code)) return thx_culture_Culture.cultures.get(code);
+	thx_culture_Culture.list.push(culture);
+	thx_culture_Culture.cultures.set(code,culture);
+	var key = "I2:" + culture.iso2.toLowerCase();
+	thx_culture_Culture.cultures.set(key,culture);
+	var key1 = "I3:" + culture.iso3.toLowerCase();
+	thx_culture_Culture.cultures.set(key1,culture);
+	return culture;
+};
+thx_culture_Culture.getByCode = function(code) {
+	var key = "C:" + code.toLowerCase();
+	return thx_culture_Culture.cultures.get(key);
+};
+thx_culture_Culture.getByIso2 = function(iso2) {
+	var key = "I2:" + iso2.toLowerCase();
+	return thx_culture_Culture.cultures.get(key);
+};
+thx_culture_Culture.getByIso3 = function(iso3) {
+	var key = "I3:" + iso3.toLowerCase();
+	return thx_culture_Culture.cultures.get(key);
+};
+thx_culture_Culture.iterator = function() {
+	return HxOverrides.iter(thx_culture_Culture.list);
+};
+thx_culture_Culture.getCodeKey = function(key) {
+	return "C:" + key.toLowerCase();
+};
+thx_culture_Culture.getIso2Key = function(key) {
+	return "I2:" + key.toLowerCase();
+};
+thx_culture_Culture.getIso3Key = function(key) {
+	return "I3:" + key.toLowerCase();
+};
+thx_culture_Culture.prototype = {
+	code: null
+	,dateTime: null
+	,ietf: null
+	,isNeutral: null
+	,iso2: null
+	,iso3: null
+	,isRightToLeft: null
+	,lcid: null
+	,nameCalendar: null
+	,nameDisplayEnglish: null
+	,nameDisplayNative: null
+	,nameEnglish: null
+	,nameNative: null
+	,nameRegionEnglish: null
+	,nameRegionNative: null
+	,number: null
+	,separatorList: null
+	,win3: null
+	,toObject: function() {
+		return { code : this.code, dateTime : null == this.dateTime?null:this.dateTime.toObject(), ietf : this.ietf, isNeutral : this.isNeutral, iso2 : this.iso2, iso3 : this.iso3, isRightToLeft : this.isRightToLeft, lcid : this.lcid, nameCalendar : this.nameCalendar, nameEnglish : this.nameEnglish, nameNative : this.nameNative, nameRegionEnglish : this.nameRegionEnglish, nameRegionNative : this.nameRegionNative, number : null == this.number?null:this.number.toObject(), separatorList : this.separatorList, win3 : this.win3};
+	}
+	,get_nameDisplayEnglish: function() {
+		return this.nameEnglish + (null == this.nameRegionEnglish?"":" (" + this.nameRegionEnglish + ")");
+	}
+	,get_nameDisplayNative: function() {
+		return this.nameNative + (null == this.nameRegionNative?"":" (" + this.nameRegionNative + ")");
+	}
+	,toString: function() {
+		return this.nameEnglish + (null == this.nameRegionEnglish?"":" (" + this.nameRegionEnglish + ")");
+	}
+	,__class__: thx_culture_Culture
+};
+var thx_culture_Pattern = function() { };
+thx_culture_Pattern.__name__ = ["thx","culture","Pattern"];
+var thx_format_NumberFormat = function() { };
+thx_format_NumberFormat.__name__ = ["thx","format","NumberFormat"];
+thx_format_NumberFormat.binary = function(f,significantDigits,culture) {
+	if(significantDigits == null) significantDigits = 1;
+	var nf = thx_format_NumberFormat.numberFormat(culture);
+	if(isNaN(f)) return nf.symbolNaN;
+	if(!isFinite(f)) if(f < 0) return nf.symbolNegativeInfinity; else return nf.symbolPositiveInfinity;
+	if(significantDigits == 0 && f == 0) return ""; else return StringTools.lpad(thx_format_NumberFormat.toBase(f | 0,2,culture),"0",significantDigits);
+};
+thx_format_NumberFormat.currency = function(f,precision,symbol,culture) {
+	var nf = thx_format_NumberFormat.numberFormat(culture);
+	if(isNaN(f)) return nf.symbolNaN;
+	if(!isFinite(f)) if(f < 0) return nf.symbolNegativeInfinity; else return nf.symbolPositiveInfinity;
+	var pattern;
+	if(f < 0) pattern = thx_culture_Pattern.currencyNegatives[nf.patternNegativeCurrency]; else pattern = thx_culture_Pattern.currencyPositives[nf.patternPositiveCurrency];
+	var formatted = thx_format_NumberFormat.value(f,(function($this) {
+		var $r;
+		var t;
+		{
+			var _0 = precision;
+			if(null == _0) t = null; else t = _0;
+		}
+		$r = t != null?t:nf.decimalDigitsCurrency;
+		return $r;
+	}(this)),nf.symbolNaN,nf.symbolNegativeInfinity,nf.symbolPositiveInfinity,nf.groupSizesCurrency,nf.separatorGroupCurrency,nf.separatorDecimalCurrency);
+	return StringTools.replace(StringTools.replace(pattern,"n",formatted),"$",(function($this) {
+		var $r;
+		var t1;
+		{
+			var _01 = symbol;
+			if(null == _01) t1 = null; else t1 = _01;
+		}
+		$r = t1 != null?t1:nf.symbolCurrency;
+		return $r;
+	}(this)));
+};
+thx_format_NumberFormat.customFormat = function(f,pattern,culture) {
+	var nf = thx_format_NumberFormat.numberFormat(culture);
+	if(isNaN(f)) return nf.symbolNaN;
+	if(!isFinite(f)) if(f < 0) return nf.symbolNegativeInfinity; else return nf.symbolPositiveInfinity;
+	var isCurrency = thx_format_NumberFormat.hasSymbols(pattern,"$");
+	var isPercent = !isCurrency && thx_format_NumberFormat.hasSymbols(pattern,"%‰");
+	var groups = thx_format_NumberFormat.splitPattern(pattern,";");
+	if(groups.length > 3) throw "invalid number of sections in \"" + pattern + "\"";
+	if(f < 0) {
+		if(null != groups[1]) return thx_format_NumberFormat.customFormatF(-f,groups[1],nf,isCurrency,isPercent); else return thx_format_NumberFormat.customFormatF(-f,"-" + groups[0],nf,isCurrency,isPercent);
+	} else if(f > 0) return thx_format_NumberFormat.customFormatF(f,groups[0],nf,isCurrency,isPercent); else return thx_format_NumberFormat.customFormatF(0,(function($this) {
+		var $r;
+		var t;
+		{
+			var _0 = groups;
+			var _1;
+			if(null == _0) t = null; else if(null == (_1 = _0[2])) t = null; else t = _1;
+		}
+		$r = t != null?t:groups[0];
+		return $r;
+	}(this)),nf,isCurrency,isPercent);
+};
+thx_format_NumberFormat.decimal = function(f,significantDigits,culture) {
+	if(significantDigits == null) significantDigits = 1;
+	var nf = thx_format_NumberFormat.numberFormat(culture);
+	if(isNaN(f)) return nf.symbolNaN;
+	if(!isFinite(f)) if(f < 0) return nf.symbolNegativeInfinity; else return nf.symbolPositiveInfinity;
+	var formatted = thx_format_NumberFormat.value(f,0,nf.symbolNaN,nf.symbolNegativeInfinity,nf.symbolPositiveInfinity,[0],"","");
+	return (f < 0?nf.signNegative:"") + StringTools.lpad(formatted,"0",significantDigits);
+};
+thx_format_NumberFormat.exponential = function(f,precision,digits,symbol,culture) {
+	if(symbol == null) symbol = "e";
+	if(digits == null) digits = 3;
+	if(precision == null) precision = 6;
+	var nf = thx_format_NumberFormat.numberFormat(culture);
+	if(isNaN(f)) return nf.symbolNaN;
+	if(!isFinite(f)) if(f < 0) return nf.symbolNegativeInfinity; else return nf.symbolPositiveInfinity;
+	var info = thx_format_NumberFormat.exponentialInfo(f);
+	return thx_format_NumberFormat.number(info.f,precision,culture) + symbol + (info.e < 0?nf.signNegative:nf.signPositive) + StringTools.lpad("" + thx_core_Ints.abs(info.e),"0",digits);
+};
+thx_format_NumberFormat.fixed = function(f,precision,culture) {
+	var nf = thx_format_NumberFormat.numberFormat(culture);
+	if(isNaN(f)) return nf.symbolNaN;
+	if(!isFinite(f)) if(f < 0) return nf.symbolNegativeInfinity; else return nf.symbolPositiveInfinity;
+	var pattern;
+	if(f < 0) pattern = thx_culture_Pattern.numberNegatives[nf.patternNegativeNumber]; else pattern = "n";
+	var formatted = thx_format_NumberFormat.value(f,(function($this) {
+		var $r;
+		var t;
+		{
+			var _0 = precision;
+			if(null == _0) t = null; else t = _0;
+		}
+		$r = t != null?t:nf.decimalDigitsNumber;
+		return $r;
+	}(this)),nf.symbolNaN,nf.symbolNegativeInfinity,nf.symbolPositiveInfinity,[0],"",nf.separatorDecimalNumber);
+	return StringTools.replace(pattern,"n",formatted);
+};
+thx_format_NumberFormat.format = function(f,pattern,culture) {
+	var specifier = pattern.substring(0,1);
+	var param = thx_format_NumberFormat.paramOrNull(pattern.substring(1));
+	switch(specifier) {
+	case "C":case "c":
+		return thx_format_NumberFormat.currency(f,param,null,culture);
+	case "D":case "d":
+		return thx_format_NumberFormat.decimal(f,param,culture);
+	case "E":
+		return thx_format_NumberFormat.exponential(f,param,null,null,culture);
+	case "e":
+		return thx_format_NumberFormat.exponential(f,param,null,null,culture).toLowerCase();
+	case "F":case "f":
+		return thx_format_NumberFormat.fixed(f,param,culture);
+	case "G":
+		return thx_format_NumberFormat.general(f,param,culture);
+	case "g":
+		return thx_format_NumberFormat.general(f,param,culture).toLowerCase();
+	case "N":case "n":
+		return thx_format_NumberFormat.number(f,param,culture);
+	case "P":case "p":
+		return thx_format_NumberFormat.percent(f,param,culture);
+	case "R":case "r":
+		return "" + f;
+	case "X":
+		return thx_format_NumberFormat.hex(f,param,culture).toUpperCase();
+	case "x":
+		return thx_format_NumberFormat.hex(f,param,culture);
+	case "%":
+		return thx_format_NumberFormat.printf(f,pattern,culture);
+	default:
+		return thx_format_NumberFormat.customFormat(f,pattern,culture);
+	}
+};
+thx_format_NumberFormat.general = function(f,significantDigits,culture) {
+	var e = thx_format_NumberFormat.exponential(f,significantDigits,null,null,culture);
+	var f1 = thx_format_NumberFormat.fixed(f,significantDigits,culture);
+	if(e.length < f1.length) return e; else return f1;
+};
+thx_format_NumberFormat.hex = function(f,significantDigits,culture) {
+	if(significantDigits == null) significantDigits = 1;
+	var nf = thx_format_NumberFormat.numberFormat(culture);
+	if(isNaN(f)) return nf.symbolNaN;
+	if(!isFinite(f)) if(f < 0) return nf.symbolNegativeInfinity; else return nf.symbolPositiveInfinity;
+	if(significantDigits == 0 && f == 0) return ""; else return StringTools.lpad(thx_format_NumberFormat.toBase(f | 0,16,culture),"0",significantDigits);
+};
+thx_format_NumberFormat.integer = function(f,culture) {
+	var nf = thx_format_NumberFormat.numberFormat(culture);
+	if(isNaN(f)) return nf.symbolNaN;
+	if(!isFinite(f)) if(f < 0) return nf.symbolNegativeInfinity; else return nf.symbolPositiveInfinity;
+	return thx_format_NumberFormat.number(f,0,culture);
+};
+thx_format_NumberFormat.number = function(f,precision,culture) {
+	var nf = thx_format_NumberFormat.numberFormat(culture);
+	if(isNaN(f)) return nf.symbolNaN;
+	if(!isFinite(f)) if(f < 0) return nf.symbolNegativeInfinity; else return nf.symbolPositiveInfinity;
+	var pattern;
+	if(f < 0) pattern = thx_culture_Pattern.numberNegatives[nf.patternNegativeNumber]; else pattern = "n";
+	var formatted = thx_format_NumberFormat.value(f,(function($this) {
+		var $r;
+		var t;
+		{
+			var _0 = precision;
+			if(null == _0) t = null; else t = _0;
+		}
+		$r = t != null?t:nf.decimalDigitsNumber;
+		return $r;
+	}(this)),nf.symbolNaN,nf.symbolNegativeInfinity,nf.symbolPositiveInfinity,nf.groupSizesNumber,nf.separatorGroupNumber,nf.separatorDecimalNumber);
+	return StringTools.replace(pattern,"n",formatted);
+};
+thx_format_NumberFormat.octal = function(f,significantDigits,culture) {
+	if(significantDigits == null) significantDigits = 1;
+	var nf = thx_format_NumberFormat.numberFormat(culture);
+	if(isNaN(f)) return nf.symbolNaN;
+	if(!isFinite(f)) if(f < 0) return nf.symbolNegativeInfinity; else return nf.symbolPositiveInfinity;
+	if(significantDigits == 0 && f == 0) return ""; else return StringTools.lpad(thx_format_NumberFormat.toBase(f | 0,8,culture),"0",significantDigits);
+};
+thx_format_NumberFormat.percent = function(f,decimals,culture) {
+	var nf = thx_format_NumberFormat.numberFormat(culture);
+	if(isNaN(f)) return nf.symbolNaN;
+	if(!isFinite(f)) if(f < 0) return nf.symbolNegativeInfinity; else return nf.symbolPositiveInfinity;
+	return thx_format_NumberFormat.unit(f * 100,(function($this) {
+		var $r;
+		var t;
+		{
+			var _0 = decimals;
+			if(null == _0) t = null; else t = _0;
+		}
+		$r = t != null?t:nf.decimalDigitsPercent;
+		return $r;
+	}(this)),nf.symbolPercent,culture);
+};
+thx_format_NumberFormat.permille = function(f,decimals,culture) {
+	var nf = thx_format_NumberFormat.numberFormat(culture);
+	if(isNaN(f)) return nf.symbolNaN;
+	if(!isFinite(f)) if(f < 0) return nf.symbolNegativeInfinity; else return nf.symbolPositiveInfinity;
+	return thx_format_NumberFormat.unit(f * 1000,(function($this) {
+		var $r;
+		var t;
+		{
+			var _0 = decimals;
+			if(null == _0) t = null; else t = _0;
+		}
+		$r = t != null?t:nf.decimalDigitsPercent;
+		return $r;
+	}(this)),nf.symbolPermille,culture);
+};
+thx_format_NumberFormat.printf = function(f,pattern,culture) {
+	if(!StringTools.startsWith(pattern,"%")) throw "invalid printf term \"" + pattern + "\"";
+	var specifier = pattern.substring(pattern.length - 1);
+	var p = pattern.substring(1,pattern.length - 1).split(".");
+	var precision;
+	if(null == p[1] || "" == p[1]) precision = null; else precision = Std.parseInt(p[1]);
+	var justifyRight = true;
+	var negativeSignOnly = true;
+	var emptySpaceForSign = false;
+	var prefix = false;
+	var padding = " ";
+	var width = 0;
+	var flags = p[0];
+	while(flags.length > 0) {
+		var _g = flags.substring(0,1);
+		var d = _g;
+		switch(_g) {
+		case "-":
+			justifyRight = false;
+			break;
+		case "+":
+			negativeSignOnly = false;
+			break;
+		case " ":
+			emptySpaceForSign = true;
+			break;
+		case "#":
+			prefix = true;
+			break;
+		case "0":
+			padding = "0";
+			break;
+		default:
+			if(thx_core_Ints.canParse(d)) {
+				width = thx_core_Ints.parse(flags);
+				flags = "";
+				continue;
+			} else throw "invalid flags " + flags;
+		}
+		flags = flags.substring(1);
+	}
+	var decorate = function(s,f1,p1,ns,ps) {
+		if(prefix) s = p1 + s;
+		if(f1 < 0) s = ns + s; else if(!negativeSignOnly) s = ps + s; else if(emptySpaceForSign) s = " " + s;
+		if(justifyRight) return StringTools.lpad(s,padding,width); else return StringTools.rpad(s,padding,width);
+	};
+	var nf = thx_format_NumberFormat.numberFormat(culture);
+	switch(specifier) {
+	case "b":
+		return decorate(thx_core_Ints.toString(thx_core_Ints.abs(f | 0),2),1,"b","","");
+	case "B":
+		return decorate(thx_core_Ints.toString(thx_core_Ints.abs(f | 0),2),1,"B","","");
+	case "c":
+		return decorate(String.fromCharCode(thx_core_Ints.abs(f | 0)),1,"","","");
+	case "d":case "i":
+		return decorate(StringTools.lpad("" + Math.round(f),"0",(function($this) {
+			var $r;
+			var t;
+			{
+				var _0 = precision;
+				if(null == _0) t = null; else t = _0;
+			}
+			$r = t != null?t:0;
+			return $r;
+		}(this))),f,"",nf.signNegative,nf.signPositive);
+	case "e":
+		return decorate(thx_format_NumberFormat.exponential(Math.abs(f),precision,0,"e",culture),f,"",nf.signNegative,nf.signPositive);
+	case "E":
+		return decorate(thx_format_NumberFormat.exponential(Math.abs(f),precision,0,"E",culture),f,"",nf.signNegative,nf.signPositive);
+	case "f":
+		return decorate(thx_format_NumberFormat.fixed(Math.abs(f),precision,culture),f,"",nf.signNegative,nf.signPositive);
+	case "g":
+		var e = thx_format_NumberFormat.printf(f,"e",culture);
+		var f2 = thx_format_NumberFormat.printf(f,"f",culture);
+		if(e.length < f2.length) return e; else return f2;
+		break;
+	case "G":
+		var e1 = thx_format_NumberFormat.printf(f,"E",culture);
+		var f3 = thx_format_NumberFormat.printf(f,"f",culture);
+		if(e1.length < f3.length) return e1; else return f3;
+		break;
+	case "u":
+		return thx_format_NumberFormat.printf(Math.abs(f),"d",culture);
+	case "x":
+		return decorate(thx_format_NumberFormat.hex(Math.abs(f),precision,culture),f,"0x",nf.signNegative,nf.signPositive);
+	case "X":
+		return decorate(thx_format_NumberFormat.hex(Math.abs(f),precision,culture),f,"0X",nf.signNegative,nf.signPositive);
+	case "o":
+		return decorate(thx_format_NumberFormat.octal(Math.abs(f),precision,culture),f,"0",nf.signNegative,nf.signPositive);
+	case "%":
+		return decorate("%",1,"","","");
+	default:
+		throw "invalid pattern \"" + pattern + "\"";
+	}
+};
+thx_format_NumberFormat.toBase = function(value,base,culture) {
+	var nf = thx_format_NumberFormat.numberFormat(culture);
+	return StringTools.replace(value.toString(base),"-",nf.signNegative);
+};
+thx_format_NumberFormat.unit = function(f,decimals,unitSymbol,culture) {
+	var nf = thx_format_NumberFormat.numberFormat(culture);
+	if(isNaN(f)) return nf.symbolNaN;
+	if(!isFinite(f)) if(f < 0) return nf.symbolNegativeInfinity; else return nf.symbolPositiveInfinity;
+	var pattern;
+	if(f < 0) pattern = thx_culture_Pattern.percentNegatives[nf.patternNegativePercent]; else pattern = thx_culture_Pattern.percentPositives[nf.patternPositivePercent];
+	var formatted = thx_format_NumberFormat.value(f,decimals,nf.symbolNaN,nf.symbolNegativeInfinity,nf.symbolPositiveInfinity,nf.groupSizesPercent,nf.separatorGroupPercent,nf.separatorDecimalPercent);
+	return StringTools.replace(StringTools.replace(pattern,"n",formatted),"%",unitSymbol);
+};
+thx_format_NumberFormat.countSymbols = function(pattern,symbols) {
+	var i = 0;
+	var quote = 0;
+	var count = 0;
+	while(i < pattern.length) {
+		{
+			var _g = pattern.substring(i,i + 1);
+			var s = _g;
+			switch(_g) {
+			case "\\":
+				i++;
+				break;
+			case "'":
+				switch(quote) {
+				case 1:
+					quote = 0;
+					break;
+				case 0:
+					quote = 1;
+					break;
+				default:
+				}
+				break;
+			case "\"":
+				switch(quote) {
+				case 2:
+					quote = 0;
+					break;
+				case 0:
+					quote = 2;
+					break;
+				default:
+				}
+				break;
+			default:
+				switch(quote) {
+				case 0:
+					if(symbols.indexOf(s) >= 0) ++count; else {
+					}
+					break;
+				default:
+				}
+			}
+		}
+		i++;
+	}
+	return count;
+};
+thx_format_NumberFormat.customFormatDecimalFraction = function(d,pattern,nf) {
+	var buf = "";
+	var i = 0;
+	var quote = 0;
+	var p = d.split("");
+	var last = 0;
+	while(i < pattern.length) {
+		{
+			var _g = pattern.substring(i,i + 1);
+			var c = _g;
+			var c1 = _g;
+			switch(_g) {
+			case "\\":
+				i++;
+				buf += pattern.substring(i,i + 1);
+				break;
+			case "\"":
+				switch(quote) {
+				case 0:
+					quote = 2;
+					break;
+				case 2:
+					quote = 0;
+					break;
+				case 1:
+					buf += c;
+					break;
+				default:
+					buf += c1;
+				}
+				break;
+			case "'":
+				switch(quote) {
+				case 0:
+					quote = 1;
+					break;
+				case 1:
+					quote = 0;
+					break;
+				case 2:
+					buf += c;
+					break;
+				default:
+					buf += c1;
+				}
+				break;
+			case "0":
+				switch(quote) {
+				case 1:case 2:
+					buf += c;
+					break;
+				case 0:
+					last = buf.length;
+					if(p.length == 0) buf += "0"; else buf += p.shift();
+					break;
+				default:
+					buf += c1;
+				}
+				break;
+			case "#":
+				switch(quote) {
+				case 1:case 2:
+					buf += c;
+					break;
+				case 0:
+					last = buf.length;
+					if(p.length == 0) buf += ""; else buf += p.shift();
+					break;
+				default:
+					buf += c1;
+				}
+				break;
+			case "$":
+				switch(quote) {
+				case 1:case 2:
+					buf += c;
+					break;
+				case 0:
+					buf += nf.symbolCurrency;
+					break;
+				default:
+					buf += c1;
+				}
+				break;
+			case "%":
+				switch(quote) {
+				case 1:case 2:
+					buf += c;
+					break;
+				case 0:
+					buf += nf.symbolPercent;
+					break;
+				default:
+					buf += c1;
+				}
+				break;
+			case "‰":
+				switch(quote) {
+				case 1:case 2:
+					buf += c;
+					break;
+				case 0:
+					buf += nf.symbolPermille;
+					break;
+				default:
+					buf += c1;
+				}
+				break;
+			default:
+				switch(quote) {
+				case 1:case 2:
+					buf += c;
+					break;
+				default:
+					buf += c1;
+				}
+			}
+		}
+		i++;
+	}
+	return buf;
+};
+thx_format_NumberFormat.customFormatF = function(f,pattern,nf,isCurrency,isPercent) {
+	if(isPercent) if(thx_format_NumberFormat.hasSymbols(pattern,"‰")) f *= 1000; else f *= 100;
+	var exp = thx_format_NumberFormat.splitPattern(pattern,"eE");
+	if(exp.length > 1) {
+		var info = thx_format_NumberFormat.exponentialInfo(f);
+		var symbol = pattern.substring(exp[0].length,exp[0].length + 1);
+		var forceSign = StringTools.startsWith(exp[1],"+");
+		if(forceSign || StringTools.startsWith(exp[1],"-")) exp[1] = exp[1].substring(1);
+		return thx_format_NumberFormat.customIntegerAndFraction(info.f,exp[0],nf,isCurrency,isPercent) + symbol + (info.e < 0?nf.signNegative:forceSign?nf.signPositive:"") + thx_format_NumberFormat.customFormatInteger("" + Math.abs(info.e),exp[1],nf,isCurrency,isPercent);
+		return thx_format_NumberFormat.customIntegerAndFraction(f,exp[0],nf,isCurrency,isPercent) + symbol + thx_format_NumberFormat.customFormatInteger("" + f,exp[1],nf,isCurrency,isPercent);
+	} else return thx_format_NumberFormat.customIntegerAndFraction(f,pattern,nf,isCurrency,isPercent);
+};
+thx_format_NumberFormat.customFormatInteger = function(v,pattern,nf,isCurrency,isPercent) {
+	var buf = [];
+	var i = 0;
+	var quote = 0;
+	var p = v.split("");
+	var lbuf = "";
+	var first = true;
+	var useGroups = false;
+	var zeroes = 0;
+	while(i < pattern.length) {
+		{
+			var _g = pattern.substring(i,i + 1);
+			var c = _g;
+			var c1 = _g;
+			switch(_g) {
+			case "\\":
+				i++;
+				buf.push(thx_format__$NumberFormat_CustomFormat.Literal(pattern.substring(i,i + 1)));
+				break;
+			case "\"":
+				switch(quote) {
+				case 0:
+					quote = 2;
+					break;
+				case 2:
+					quote = 0;
+					buf.push(thx_format__$NumberFormat_CustomFormat.Literal(lbuf));
+					lbuf = "";
+					break;
+				case 1:
+					lbuf += c;
+					break;
+				default:
+					buf.push(thx_format__$NumberFormat_CustomFormat.Literal(c1));
+				}
+				break;
+			case "'":
+				switch(quote) {
+				case 0:
+					quote = 1;
+					break;
+				case 1:
+					quote = 0;
+					buf.push(thx_format__$NumberFormat_CustomFormat.Literal(lbuf));
+					lbuf = "";
+					break;
+				case 2:
+					lbuf += c;
+					break;
+				default:
+					buf.push(thx_format__$NumberFormat_CustomFormat.Literal(c1));
+				}
+				break;
+			case ",":
+				switch(quote) {
+				case 1:case 2:
+					lbuf += c;
+					break;
+				case 0:
+					useGroups = true;
+					break;
+				default:
+					buf.push(thx_format__$NumberFormat_CustomFormat.Literal(c1));
+				}
+				break;
+			case "0":
+				switch(quote) {
+				case 1:case 2:
+					lbuf += c;
+					break;
+				case 0:
+					buf.push(thx_format__$NumberFormat_CustomFormat.Zero(first));
+					first = false;
+					zeroes++;
+					break;
+				default:
+					buf.push(thx_format__$NumberFormat_CustomFormat.Literal(c1));
+				}
+				break;
+			case "#":
+				switch(quote) {
+				case 1:case 2:
+					lbuf += c;
+					break;
+				case 0:
+					buf.push(thx_format__$NumberFormat_CustomFormat.Hash(first));
+					first = false;
+					break;
+				default:
+					buf.push(thx_format__$NumberFormat_CustomFormat.Literal(c1));
+				}
+				break;
+			case "$":
+				switch(quote) {
+				case 1:case 2:
+					lbuf += c;
+					break;
+				case 0:
+					buf.push(thx_format__$NumberFormat_CustomFormat.Literal(nf.symbolCurrency));
+					break;
+				default:
+					buf.push(thx_format__$NumberFormat_CustomFormat.Literal(c1));
+				}
+				break;
+			case "%":
+				switch(quote) {
+				case 1:case 2:
+					lbuf += c;
+					break;
+				case 0:
+					buf.push(thx_format__$NumberFormat_CustomFormat.Literal(nf.symbolPercent));
+					break;
+				default:
+					buf.push(thx_format__$NumberFormat_CustomFormat.Literal(c1));
+				}
+				break;
+			case "‰":
+				switch(quote) {
+				case 1:case 2:
+					lbuf += c;
+					break;
+				case 0:
+					buf.push(thx_format__$NumberFormat_CustomFormat.Literal(nf.symbolPermille));
+					break;
+				default:
+					buf.push(thx_format__$NumberFormat_CustomFormat.Literal(c1));
+				}
+				break;
+			default:
+				switch(quote) {
+				case 1:case 2:
+					lbuf += c;
+					break;
+				default:
+					buf.push(thx_format__$NumberFormat_CustomFormat.Literal(c1));
+				}
+			}
+		}
+		i++;
+	}
+	if(lbuf.length > 0) buf.push(thx_format__$NumberFormat_CustomFormat.Literal(lbuf));
+	var _g1 = p.length;
+	while(_g1 < zeroes) {
+		var i1 = _g1++;
+		p.unshift("0");
+	}
+	if(useGroups) {
+		i = p.length - 1;
+		var groups;
+		if(isCurrency) groups = nf.groupSizesCurrency.slice(); else if(isPercent) groups = nf.groupSizesPercent.slice(); else groups = nf.groupSizesNumber.slice();
+		var group = groups.shift();
+		var pos = 0;
+		while(i >= 0) {
+			if(group == 0) break;
+			if(pos == group) {
+				p[i] = p[i] + (isCurrency?nf.separatorGroupCurrency:isPercent?nf.separatorGroupPercent:nf.separatorGroupNumber);
+				pos = 0;
+				if(groups.length > 0) group = groups.shift();
+			} else {
+				pos++;
+				i--;
+			}
+		}
+	}
+	buf.reverse();
+	var r = buf.map(function(_) {
+		switch(_[1]) {
+		case 0:
+			var s = _[2];
+			return s;
+		case 1:
+			var first1 = _[2];
+			if(p.length == 0) return ""; else if(first1) return p.join(""); else return p.pop();
+			break;
+		case 2:
+			var first2 = _[2];
+			if(first2) return p.join(""); else return p.pop();
+			break;
+		}
+	});
+	r.reverse();
+	return r.join("");
+};
+thx_format_NumberFormat.customIntegerAndFraction = function(f,pattern,nf,isCurrency,isPercent) {
+	var p = thx_format_NumberFormat.splitPattern(pattern,".");
+	var power = p[0].length - (p[0] = thx_core_Strings.trimCharsRight(p[0],",")).length;
+	f /= Math.pow(1000,power);
+	if(p.length == 1) return thx_format_NumberFormat.customFormatInteger("" + Math.round(f),p[0],nf,isCurrency,isPercent); else {
+		f = thx_core_Floats.roundTo(f,thx_format_NumberFormat.countSymbols(p[1],"#0"));
+		var np = thx_format_NumberFormat.splitOnDecimalSeparator(f);
+		return thx_format_NumberFormat.customFormatInteger(np[0],p[0],nf,isCurrency,isPercent) + (isCurrency?nf.separatorDecimalCurrency:isPercent?nf.separatorDecimalPercent:nf.separatorDecimalNumber) + thx_format_NumberFormat.customFormatDecimalFraction((function($this) {
+			var $r;
+			var t;
+			{
+				var _0 = np;
+				var _1;
+				if(null == _0) t = null; else if(null == (_1 = _0[1])) t = null; else t = _1;
+			}
+			$r = t != null?t:"0";
+			return $r;
+		}(this)),p[1],nf);
+	}
+};
+thx_format_NumberFormat.exponentialInfo = function(f) {
+	var s = ("" + Math.abs(f)).toLowerCase();
+	var pose = s.indexOf("e");
+	var p;
+	var e;
+	if(pose > 0) {
+		p = s.substring(0,pose).split(".");
+		e = thx_core_Ints.parse(s.substring(pose + 1));
+	} else {
+		p = s.split(".").concat([""]);
+		e = 0;
+		if(p[0].length > 1) {
+			e = p[0].length - 1;
+			p[1] = p[0].substring(1) + p[1];
+			p[0] = p[0].substring(0,1);
+		} else if(p[0] == "0") {
+			e = -(1 + p[1].length - thx_core_Strings.trimCharsLeft(p[1],"0").length);
+			p[1] = p[1].substring(-e - 1);
+			p[0] = p[1].substring(0,1);
+			p[1] = p[1].substring(1);
+		}
+	}
+	return { e : e, f : (f < 0?-1:1) * Std.parseFloat(p.slice(0,2).join("."))};
+};
+thx_format_NumberFormat.hasSymbols = function(pattern,symbols) {
+	var i = 0;
+	var quote = 0;
+	while(i < pattern.length) {
+		{
+			var _g = pattern.substring(i,i + 1);
+			var s = _g;
+			switch(_g) {
+			case "\\":
+				i++;
+				break;
+			case "'":
+				switch(quote) {
+				case 1:
+					quote = 0;
+					break;
+				case 0:
+					quote = 1;
+					break;
+				default:
+				}
+				break;
+			case "\"":
+				switch(quote) {
+				case 2:
+					quote = 0;
+					break;
+				case 0:
+					quote = 2;
+					break;
+				default:
+				}
+				break;
+			default:
+				switch(quote) {
+				case 0:
+					if(symbols.indexOf(s) >= 0) return true; else {
+					}
+					break;
+				default:
+				}
+			}
+		}
+		i++;
+	}
+	return false;
+};
+thx_format_NumberFormat.intPart = function(s,groupSizes,groupSeparator) {
+	var buf = [];
+	var pos = 0;
+	var sizes = groupSizes.slice();
+	var size = sizes.shift();
+	var seg;
+	while(s.length > 0) if(size == 0) {
+		buf.unshift(s);
+		s = "";
+	} else if(s.length > size) {
+		buf.unshift(s.substring(s.length - size));
+		s = s.substring(0,s.length - size);
+		if(sizes.length > 0) size = sizes.shift();
+	} else {
+		buf.unshift(s);
+		s = "";
+	}
+	return buf.join(groupSeparator);
+};
+thx_format_NumberFormat.numberFormat = function(culture) {
+	if(null != culture && null != culture.number) return culture.number; else return thx_culture_Culture.invariant.number;
+};
+thx_format_NumberFormat.pad = function(s,len,round) {
+	var t;
+	var _0 = s;
+	if(null == _0) t = null; else t = _0;
+	if(t != null) s = t; else s = "";
+	if(len > 0 && s.length > len) {
+		if(round) return s.substring(0,len - 1) + (Std.parseInt(s.substring(len - 1,len)) + (Std.parseInt(s.substring(len,len + 1)) >= 5?1:0)); else return s.substring(0,len);
+	} else return StringTools.rpad(s,"0",len);
+};
+thx_format_NumberFormat.paramOrNull = function(param) {
+	if(param.length == 0) return null; else return Std.parseInt(param);
+};
+thx_format_NumberFormat.splitOnDecimalSeparator = function(f) {
+	var p = ("" + f).split(".");
+	var i = p[0];
+	var d = ((function($this) {
+		var $r;
+		var t;
+		{
+			var _0 = p;
+			var _1;
+			if(null == _0) t = null; else if(null == (_1 = _0[1])) t = null; else t = _1;
+		}
+		$r = t != null?t:"";
+		return $r;
+	}(this))).toLowerCase();
+	if(d.indexOf("e") >= 0) {
+		p = d.split("e");
+		d = p[0];
+		var e = thx_core_Ints.parse(p[1]);
+		if(e < 0) {
+			d = StringTools.rpad("","0",-e - 1) + i + d;
+			i = "0";
+		} else {
+			var s = i + d;
+			d = s.substring(e + 1);
+			i = thx_format_NumberFormat.pad(s,e + 1,false);
+		}
+	}
+	if(d.length > 0) return [i,d]; else return [i];
+};
+thx_format_NumberFormat.splitPattern = function(pattern,separator) {
+	var pos = [];
+	var i = 0;
+	var quote = 0;
+	while(i < pattern.length) {
+		{
+			var _g = pattern.substring(i,i + 1);
+			var s = _g;
+			switch(_g) {
+			case "\\":
+				i++;
+				break;
+			case "'":
+				switch(quote) {
+				case 1:
+					quote = 0;
+					break;
+				case 0:
+					quote = 1;
+					break;
+				default:
+				}
+				break;
+			case "\"":
+				switch(quote) {
+				case 2:
+					quote = 0;
+					break;
+				case 0:
+					quote = 2;
+					break;
+				default:
+				}
+				break;
+			default:
+				switch(quote) {
+				case 0:
+					if(separator.indexOf(s) >= 0) pos.push(i); else {
+					}
+					break;
+				default:
+				}
+			}
+		}
+		i++;
+	}
+	var buf = [];
+	var prev = 0;
+	var _g1 = 0;
+	while(_g1 < pos.length) {
+		var p = pos[_g1];
+		++_g1;
+		buf.push(pattern.substring(prev,p));
+		prev = p + 1;
+	}
+	buf.push(pattern.substring(prev));
+	return buf;
+};
+thx_format_NumberFormat.value = function(f,precision,symbolNaN,symbolNegativeInfinity,symbolPositiveInfinity,groupSizes,groupSeparator,decimalSeparator) {
+	f = Math.abs(f);
+	var p = thx_format_NumberFormat.splitOnDecimalSeparator(f);
+	if(precision <= 0 && null != p[1]) {
+		if(parseFloat("0." + p[1]) >= 0.5) p[0] = p[0].substring(0,p[0].length - 1) + (Std.parseFloat(p[0].substring(p[0].length - 1)) + 1);
+	}
+	var buf = [];
+	buf.push(thx_format_NumberFormat.intPart(p[0],groupSizes,groupSeparator));
+	if(precision > 0) buf.push(thx_format_NumberFormat.pad(p[1],precision,true));
+	return buf.join(decimalSeparator);
+};
+var thx_format__$NumberFormat_CustomFormat = { __ename__ : ["thx","format","_NumberFormat","CustomFormat"], __constructs__ : ["Literal","Hash","Zero"] };
+thx_format__$NumberFormat_CustomFormat.Literal = function(s) { var $x = ["Literal",0,s]; $x.__enum__ = thx_format__$NumberFormat_CustomFormat; return $x; };
+thx_format__$NumberFormat_CustomFormat.Hash = function(first) { var $x = ["Hash",1,first]; $x.__enum__ = thx_format__$NumberFormat_CustomFormat; return $x; };
+thx_format__$NumberFormat_CustomFormat.Zero = function(first) { var $x = ["Zero",2,first]; $x.__enum__ = thx_format__$NumberFormat_CustomFormat; return $x; };
 var thx_math_random_PseudoRandom = function(seed) {
 	if(seed == null) seed = 1;
 	this.seed = seed;
@@ -8533,2033 +7914,6 @@ thx_math_random__$Random_Random_$Impl_$.shuffle = function(this1,arr) {
 		array.push(arr[index]);
 	}
 	return array;
-};
-var thx_promise_Future = function() {
-	this.handlers = [];
-	this.state = haxe_ds_Option.None;
-};
-thx_promise_Future.__name__ = ["thx","promise","Future"];
-thx_promise_Future.all = function(arr) {
-	return thx_promise_Future.create(function(callback) {
-		var results = [];
-		var counter = 0;
-		thx_core_Arrays.mapi(arr,function(p,i) {
-			p.then(function(value) {
-				results[i] = value;
-				counter++;
-				if(counter == arr.length) callback(results);
-			});
-		});
-	});
-};
-thx_promise_Future.create = function(handler) {
-	var future = new thx_promise_Future();
-	handler($bind(future,future.setState));
-	return future;
-};
-thx_promise_Future.flatMap = function(future) {
-	return thx_promise_Future.create(function(callback) {
-		future.then(function(future1) {
-			future1.then(callback);
-		});
-	});
-};
-thx_promise_Future.value = function(v) {
-	return thx_promise_Future.create(function(callback) {
-		callback(v);
-	});
-};
-thx_promise_Future.prototype = {
-	handlers: null
-	,state: null
-	,delay: function(delayms) {
-		if(null == delayms) return thx_promise_Future.flatMap(this.map(function(value) {
-			return thx_promise_Timer.immediateValue(value);
-		})); else return thx_promise_Future.flatMap(this.map(function(value1) {
-			return thx_promise_Timer.delayValue(value1,delayms);
-		}));
-	}
-	,hasValue: function() {
-		return thx_core_Options.toBool(this.state);
-	}
-	,map: function(handler) {
-		var _g = this;
-		return thx_promise_Future.create(function(callback) {
-			_g.then(function(value) {
-				callback(handler(value));
-			});
-		});
-	}
-	,mapAsync: function(handler) {
-		var _g = this;
-		return thx_promise_Future.create(function(callback) {
-			_g.then(function(result) {
-				handler(result,callback);
-			});
-		});
-	}
-	,mapFuture: function(handler) {
-		return thx_promise_Future.flatMap(this.map(handler));
-	}
-	,then: function(handler) {
-		this.handlers.push(handler);
-		this.update();
-		return this;
-	}
-	,toString: function() {
-		return "Future";
-	}
-	,setState: function(newstate) {
-		{
-			var _g = this.state;
-			switch(_g[1]) {
-			case 1:
-				this.state = haxe_ds_Option.Some(newstate);
-				break;
-			case 0:
-				var r = _g[2];
-				throw new thx_core_Error("future was already \"" + Std.string(r) + "\", can't apply the new state \"" + Std.string(newstate) + "\"",null,{ fileName : "Future.hx", lineNumber : 85, className : "thx.promise.Future", methodName : "setState"});
-				break;
-			}
-		}
-		this.update();
-		return this;
-	}
-	,update: function() {
-		{
-			var _g = this.state;
-			switch(_g[1]) {
-			case 1:
-				break;
-			case 0:
-				var result = _g[2];
-				var index = -1;
-				while(++index < this.handlers.length) this.handlers[index](result);
-				this.handlers = [];
-				break;
-			}
-		}
-	}
-	,__class__: thx_promise_Future
-};
-var thx_promise_Futures = function() { };
-thx_promise_Futures.__name__ = ["thx","promise","Futures"];
-thx_promise_Futures.join = function(p1,p2) {
-	return thx_promise_Future.create(function(callback) {
-		var counter = 0;
-		var v1 = null;
-		var v2 = null;
-		var complete = function() {
-			if(counter < 2) return;
-			callback({ _0 : v1, _1 : v2});
-		};
-		p1.then(function(v) {
-			counter++;
-			v1 = v;
-			complete();
-		});
-		p2.then(function(v3) {
-			counter++;
-			v2 = v3;
-			complete();
-		});
-	});
-};
-thx_promise_Futures.log = function(future,prefix) {
-	if(prefix == null) prefix = "";
-	return future.then(function(r) {
-		haxe_Log.trace("" + prefix + " VALUE: " + Std.string(r),{ fileName : "Future.hx", lineNumber : 132, className : "thx.promise.Futures", methodName : "log"});
-	});
-};
-var thx_promise_FutureTuple6 = function() { };
-thx_promise_FutureTuple6.__name__ = ["thx","promise","FutureTuple6"];
-thx_promise_FutureTuple6.mapTuple = function(future,callback) {
-	return future.map(function(t) {
-		return callback(t._0,t._1,t._2,t._3,t._4,t._5);
-	});
-};
-thx_promise_FutureTuple6.mapTupleAsync = function(future,callback) {
-	return future.mapAsync(function(t,cb) {
-		callback(t._0,t._1,t._2,t._3,t._4,t._5,cb);
-		return;
-	});
-};
-thx_promise_FutureTuple6.mapTupleFuture = function(future,callback) {
-	return thx_promise_Future.flatMap(future.map(function(t) {
-		return callback(t._0,t._1,t._2,t._3,t._4,t._5);
-	}));
-};
-thx_promise_FutureTuple6.tuple = function(future,callback) {
-	return future.then(function(t) {
-		callback(t._0,t._1,t._2,t._3,t._4,t._5);
-	});
-};
-var thx_promise_FutureTuple5 = function() { };
-thx_promise_FutureTuple5.__name__ = ["thx","promise","FutureTuple5"];
-thx_promise_FutureTuple5.join = function(p1,p2) {
-	return thx_promise_Future.create(function(callback) {
-		thx_promise_Futures.join(p1,p2).then(function(t) {
-			callback((function($this) {
-				var $r;
-				var this1 = t._0;
-				$r = { _0 : this1._0, _1 : this1._1, _2 : this1._2, _3 : this1._3, _4 : this1._4, _5 : t._1};
-				return $r;
-			}(this)));
-		});
-	});
-};
-thx_promise_FutureTuple5.mapTuple = function(future,callback) {
-	return future.map(function(t) {
-		return callback(t._0,t._1,t._2,t._3,t._4);
-	});
-};
-thx_promise_FutureTuple5.mapTupleAsync = function(future,callback) {
-	return future.mapAsync(function(t,cb) {
-		callback(t._0,t._1,t._2,t._3,t._4,cb);
-		return;
-	});
-};
-thx_promise_FutureTuple5.mapTupleFuture = function(future,callback) {
-	return thx_promise_Future.flatMap(future.map(function(t) {
-		return callback(t._0,t._1,t._2,t._3,t._4);
-	}));
-};
-thx_promise_FutureTuple5.tuple = function(future,callback) {
-	return future.then(function(t) {
-		callback(t._0,t._1,t._2,t._3,t._4);
-	});
-};
-var thx_promise_FutureTuple4 = function() { };
-thx_promise_FutureTuple4.__name__ = ["thx","promise","FutureTuple4"];
-thx_promise_FutureTuple4.join = function(p1,p2) {
-	return thx_promise_Future.create(function(callback) {
-		thx_promise_Futures.join(p1,p2).then(function(t) {
-			callback((function($this) {
-				var $r;
-				var this1 = t._0;
-				$r = { _0 : this1._0, _1 : this1._1, _2 : this1._2, _3 : this1._3, _4 : t._1};
-				return $r;
-			}(this)));
-		});
-	});
-};
-thx_promise_FutureTuple4.mapTuple = function(future,callback) {
-	return future.map(function(t) {
-		return callback(t._0,t._1,t._2,t._3);
-	});
-};
-thx_promise_FutureTuple4.mapTupleAsync = function(future,callback) {
-	return future.mapAsync(function(t,cb) {
-		callback(t._0,t._1,t._2,t._3,cb);
-		return;
-	});
-};
-thx_promise_FutureTuple4.mapTupleFuture = function(future,callback) {
-	return thx_promise_Future.flatMap(future.map(function(t) {
-		return callback(t._0,t._1,t._2,t._3);
-	}));
-};
-thx_promise_FutureTuple4.tuple = function(future,callback) {
-	return future.then(function(t) {
-		callback(t._0,t._1,t._2,t._3);
-	});
-};
-var thx_promise_FutureTuple3 = function() { };
-thx_promise_FutureTuple3.__name__ = ["thx","promise","FutureTuple3"];
-thx_promise_FutureTuple3.join = function(p1,p2) {
-	return thx_promise_Future.create(function(callback) {
-		thx_promise_Futures.join(p1,p2).then(function(t) {
-			callback((function($this) {
-				var $r;
-				var this1 = t._0;
-				$r = { _0 : this1._0, _1 : this1._1, _2 : this1._2, _3 : t._1};
-				return $r;
-			}(this)));
-		});
-	});
-};
-thx_promise_FutureTuple3.mapTuple = function(future,callback) {
-	return future.map(function(t) {
-		return callback(t._0,t._1,t._2);
-	});
-};
-thx_promise_FutureTuple3.mapTupleAsync = function(future,callback) {
-	return future.mapAsync(function(t,cb) {
-		callback(t._0,t._1,t._2,cb);
-		return;
-	});
-};
-thx_promise_FutureTuple3.mapTupleFuture = function(future,callback) {
-	return thx_promise_Future.flatMap(future.map(function(t) {
-		return callback(t._0,t._1,t._2);
-	}));
-};
-thx_promise_FutureTuple3.tuple = function(future,callback) {
-	return future.then(function(t) {
-		callback(t._0,t._1,t._2);
-	});
-};
-var thx_promise_FutureTuple2 = function() { };
-thx_promise_FutureTuple2.__name__ = ["thx","promise","FutureTuple2"];
-thx_promise_FutureTuple2.join = function(p1,p2) {
-	return thx_promise_Future.create(function(callback) {
-		thx_promise_Futures.join(p1,p2).then(function(t) {
-			callback((function($this) {
-				var $r;
-				var this1 = t._0;
-				$r = { _0 : this1._0, _1 : this1._1, _2 : t._1};
-				return $r;
-			}(this)));
-		});
-	});
-};
-thx_promise_FutureTuple2.mapTuple = function(future,callback) {
-	return future.map(function(t) {
-		return callback(t._0,t._1);
-	});
-};
-thx_promise_FutureTuple2.mapTupleAsync = function(future,callback) {
-	return future.mapAsync(function(t,cb) {
-		callback(t._0,t._1,cb);
-		return;
-	});
-};
-thx_promise_FutureTuple2.mapTupleFuture = function(future,callback) {
-	return thx_promise_Future.flatMap(future.map(function(t) {
-		return callback(t._0,t._1);
-	}));
-};
-thx_promise_FutureTuple2.tuple = function(future,callback) {
-	return future.then(function(t) {
-		callback(t._0,t._1);
-	});
-};
-var thx_promise_FutureNil = function() { };
-thx_promise_FutureNil.__name__ = ["thx","promise","FutureNil"];
-thx_promise_FutureNil.join = function(p1,p2) {
-	return thx_promise_Future.create(function(callback) {
-		thx_promise_Futures.join(p1,p2).then(function(t) {
-			callback(t._1);
-		});
-	});
-};
-var thx_promise__$Promise_Promise_$Impl_$ = {};
-thx_promise__$Promise_Promise_$Impl_$.__name__ = ["thx","promise","_Promise","Promise_Impl_"];
-thx_promise__$Promise_Promise_$Impl_$.futureToPromise = function(future) {
-	return future.map(function(v) {
-		return thx_core_Either.Right(v);
-	});
-};
-thx_promise__$Promise_Promise_$Impl_$.all = function(arr) {
-	return thx_promise__$Promise_Promise_$Impl_$.create(function(resolve,reject) {
-		var results = [];
-		var counter = 0;
-		var hasError = false;
-		thx_core_Arrays.mapi(arr,function(p,i) {
-			thx_promise__$Promise_Promise_$Impl_$.either(p,function(value) {
-				if(hasError) return;
-				results[i] = value;
-				counter++;
-				if(counter == arr.length) resolve(results);
-			},function(err) {
-				if(hasError) return;
-				hasError = true;
-				reject(err);
-			});
-		});
-	});
-};
-thx_promise__$Promise_Promise_$Impl_$.create = function(callback) {
-	return thx_promise_Future.create(function(cb) {
-		callback(function(value) {
-			cb(thx_core_Either.Right(value));
-		},function(error) {
-			cb(thx_core_Either.Left(error));
-		});
-	});
-};
-thx_promise__$Promise_Promise_$Impl_$.createFulfill = function(callback) {
-	return thx_promise_Future.create(callback);
-};
-thx_promise__$Promise_Promise_$Impl_$.error = function(err) {
-	return thx_promise__$Promise_Promise_$Impl_$.create(function(_,reject) {
-		reject(err);
-	});
-};
-thx_promise__$Promise_Promise_$Impl_$.value = function(v) {
-	return thx_promise__$Promise_Promise_$Impl_$.create(function(resolve,_) {
-		resolve(v);
-	});
-};
-thx_promise__$Promise_Promise_$Impl_$.always = function(this1,handler) {
-	this1.then(function(_) {
-		handler();
-	});
-};
-thx_promise__$Promise_Promise_$Impl_$.either = function(this1,success,failure) {
-	this1.then(function(r) {
-		switch(r[1]) {
-		case 1:
-			var value = r[2];
-			success(value);
-			break;
-		case 0:
-			var error = r[2];
-			failure(error);
-			break;
-		}
-	});
-	return this1;
-};
-thx_promise__$Promise_Promise_$Impl_$.delay = function(this1,delayms) {
-	return this1.delay(delayms);
-};
-thx_promise__$Promise_Promise_$Impl_$.isFailure = function(this1) {
-	{
-		var _g = this1.state;
-		switch(_g[1]) {
-		case 1:
-			return false;
-		case 0:
-			switch(_g[2][1]) {
-			case 1:
-				return false;
-			default:
-				return true;
-			}
-			break;
-		}
-	}
-};
-thx_promise__$Promise_Promise_$Impl_$.isResolved = function(this1) {
-	{
-		var _g = this1.state;
-		switch(_g[1]) {
-		case 1:
-			return false;
-		case 0:
-			switch(_g[2][1]) {
-			case 0:
-				return false;
-			default:
-				return true;
-			}
-			break;
-		}
-	}
-};
-thx_promise__$Promise_Promise_$Impl_$.failure = function(this1,failure) {
-	return thx_promise__$Promise_Promise_$Impl_$.either(this1,function(_) {
-	},failure);
-};
-thx_promise__$Promise_Promise_$Impl_$.mapAlways = function(this1,handler) {
-	return this1.map(function(_) {
-		return handler();
-	});
-};
-thx_promise__$Promise_Promise_$Impl_$.mapAlwaysAsync = function(this1,handler) {
-	return this1.mapAsync(function(_,cb) {
-		handler(cb);
-		return;
-	});
-};
-thx_promise__$Promise_Promise_$Impl_$.mapAlwaysFuture = function(this1,handler) {
-	return thx_promise_Future.flatMap(this1.map(function(_) {
-		return handler();
-	}));
-};
-thx_promise__$Promise_Promise_$Impl_$.mapEither = function(this1,success,failure) {
-	return this1.map(function(result) {
-		switch(result[1]) {
-		case 1:
-			var value = result[2];
-			return success(value);
-		case 0:
-			var error = result[2];
-			return failure(error);
-		}
-	});
-};
-thx_promise__$Promise_Promise_$Impl_$.mapEitherFuture = function(this1,success,failure) {
-	return thx_promise_Future.flatMap(this1.map(function(result) {
-		switch(result[1]) {
-		case 1:
-			var value = result[2];
-			return success(value);
-		case 0:
-			var error = result[2];
-			return failure(error);
-		}
-	}));
-};
-thx_promise__$Promise_Promise_$Impl_$.mapFailure = function(this1,failure) {
-	return thx_promise__$Promise_Promise_$Impl_$.mapEither(this1,function(value) {
-		return value;
-	},failure);
-};
-thx_promise__$Promise_Promise_$Impl_$.mapFailureFuture = function(this1,failure) {
-	return thx_promise__$Promise_Promise_$Impl_$.mapEitherFuture(this1,function(value) {
-		return thx_promise_Future.value(value);
-	},failure);
-};
-thx_promise__$Promise_Promise_$Impl_$.mapSuccess = function(this1,success) {
-	return thx_promise__$Promise_Promise_$Impl_$.mapEitherFuture(this1,function(v) {
-		return thx_promise__$Promise_Promise_$Impl_$.value(success(v));
-	},function(err) {
-		return thx_promise__$Promise_Promise_$Impl_$.error(err);
-	});
-};
-thx_promise__$Promise_Promise_$Impl_$.mapSuccessPromise = function(this1,success) {
-	return thx_promise__$Promise_Promise_$Impl_$.mapEitherFuture(this1,success,function(err) {
-		return thx_promise__$Promise_Promise_$Impl_$.error(err);
-	});
-};
-thx_promise__$Promise_Promise_$Impl_$.success = function(this1,success) {
-	return thx_promise__$Promise_Promise_$Impl_$.either(this1,success,function(_) {
-	});
-};
-thx_promise__$Promise_Promise_$Impl_$.throwFailure = function(this1) {
-	return thx_promise__$Promise_Promise_$Impl_$.failure(this1,function(err) {
-		throw err;
-	});
-};
-thx_promise__$Promise_Promise_$Impl_$.toString = function(this1) {
-	return "Promise";
-};
-var thx_promise_Promises = function() { };
-thx_promise_Promises.__name__ = ["thx","promise","Promises"];
-thx_promise_Promises.join = function(p1,p2) {
-	return thx_promise__$Promise_Promise_$Impl_$.create(function(resolve,reject) {
-		var hasError = false;
-		var counter = 0;
-		var v1 = null;
-		var v2 = null;
-		var complete = function() {
-			if(counter < 2) return;
-			resolve({ _0 : v1, _1 : v2});
-		};
-		var handleError = function(error) {
-			if(hasError) return;
-			hasError = true;
-			reject(error);
-		};
-		thx_promise__$Promise_Promise_$Impl_$.either(p1,function(v) {
-			if(hasError) return;
-			counter++;
-			v1 = v;
-			complete();
-		},handleError);
-		thx_promise__$Promise_Promise_$Impl_$.either(p2,function(v3) {
-			if(hasError) return;
-			counter++;
-			v2 = v3;
-			complete();
-		},handleError);
-	});
-};
-thx_promise_Promises.log = function(promise,prefix) {
-	if(prefix == null) prefix = "";
-	return thx_promise__$Promise_Promise_$Impl_$.either(promise,function(r) {
-		haxe_Log.trace("" + prefix + " SUCCESS: " + Std.string(r),{ fileName : "Promise.hx", lineNumber : 174, className : "thx.promise.Promises", methodName : "log"});
-	},function(e) {
-		haxe_Log.trace("" + prefix + " ERROR: " + e.toString(),{ fileName : "Promise.hx", lineNumber : 175, className : "thx.promise.Promises", methodName : "log"});
-	});
-};
-var thx_promise_PromiseTuple6 = function() { };
-thx_promise_PromiseTuple6.__name__ = ["thx","promise","PromiseTuple6"];
-thx_promise_PromiseTuple6.mapTuplePromise = function(promise,success) {
-	return thx_promise__$Promise_Promise_$Impl_$.mapSuccessPromise(promise,function(t) {
-		return success(t._0,t._1,t._2,t._3,t._4,t._5);
-	});
-};
-thx_promise_PromiseTuple6.mapTuple = function(promise,success) {
-	return thx_promise__$Promise_Promise_$Impl_$.mapSuccess(promise,function(t) {
-		return success(t._0,t._1,t._2,t._3,t._4,t._5);
-	});
-};
-thx_promise_PromiseTuple6.tuple = function(promise,success,failure) {
-	return thx_promise__$Promise_Promise_$Impl_$.either(promise,function(t) {
-		success(t._0,t._1,t._2,t._3,t._4,t._5);
-	},null == failure?function(_) {
-	}:failure);
-};
-var thx_promise_PromiseTuple5 = function() { };
-thx_promise_PromiseTuple5.__name__ = ["thx","promise","PromiseTuple5"];
-thx_promise_PromiseTuple5.join = function(p1,p2) {
-	return thx_promise__$Promise_Promise_$Impl_$.create(function(resolve,reject) {
-		thx_promise__$Promise_Promise_$Impl_$.either(thx_promise_Promises.join(p1,p2),function(t) {
-			resolve((function($this) {
-				var $r;
-				var this1 = t._0;
-				$r = { _0 : this1._0, _1 : this1._1, _2 : this1._2, _3 : this1._3, _4 : this1._4, _5 : t._1};
-				return $r;
-			}(this)));
-		},function(e) {
-			reject(e);
-		});
-	});
-};
-thx_promise_PromiseTuple5.mapTuplePromise = function(promise,success) {
-	return thx_promise__$Promise_Promise_$Impl_$.mapSuccessPromise(promise,function(t) {
-		return success(t._0,t._1,t._2,t._3,t._4);
-	});
-};
-thx_promise_PromiseTuple5.mapTuple = function(promise,success) {
-	return thx_promise__$Promise_Promise_$Impl_$.mapSuccess(promise,function(t) {
-		return success(t._0,t._1,t._2,t._3,t._4);
-	});
-};
-thx_promise_PromiseTuple5.tuple = function(promise,success,failure) {
-	return thx_promise__$Promise_Promise_$Impl_$.either(promise,function(t) {
-		success(t._0,t._1,t._2,t._3,t._4);
-	},null == failure?function(_) {
-	}:failure);
-};
-var thx_promise_PromiseTuple4 = function() { };
-thx_promise_PromiseTuple4.__name__ = ["thx","promise","PromiseTuple4"];
-thx_promise_PromiseTuple4.join = function(p1,p2) {
-	return thx_promise__$Promise_Promise_$Impl_$.create(function(resolve,reject) {
-		thx_promise__$Promise_Promise_$Impl_$.either(thx_promise_Promises.join(p1,p2),function(t) {
-			resolve((function($this) {
-				var $r;
-				var this1 = t._0;
-				$r = { _0 : this1._0, _1 : this1._1, _2 : this1._2, _3 : this1._3, _4 : t._1};
-				return $r;
-			}(this)));
-		},function(e) {
-			reject(e);
-		});
-	});
-};
-thx_promise_PromiseTuple4.mapTuplePromise = function(promise,success) {
-	return thx_promise__$Promise_Promise_$Impl_$.mapSuccessPromise(promise,function(t) {
-		return success(t._0,t._1,t._2,t._3);
-	});
-};
-thx_promise_PromiseTuple4.mapTuple = function(promise,success) {
-	return thx_promise__$Promise_Promise_$Impl_$.mapSuccess(promise,function(t) {
-		return success(t._0,t._1,t._2,t._3);
-	});
-};
-thx_promise_PromiseTuple4.tuple = function(promise,success,failure) {
-	return thx_promise__$Promise_Promise_$Impl_$.either(promise,function(t) {
-		success(t._0,t._1,t._2,t._3);
-	},null == failure?function(_) {
-	}:failure);
-};
-var thx_promise_PromiseTuple3 = function() { };
-thx_promise_PromiseTuple3.__name__ = ["thx","promise","PromiseTuple3"];
-thx_promise_PromiseTuple3.join = function(p1,p2) {
-	return thx_promise__$Promise_Promise_$Impl_$.create(function(resolve,reject) {
-		thx_promise__$Promise_Promise_$Impl_$.either(thx_promise_Promises.join(p1,p2),function(t) {
-			resolve((function($this) {
-				var $r;
-				var this1 = t._0;
-				$r = { _0 : this1._0, _1 : this1._1, _2 : this1._2, _3 : t._1};
-				return $r;
-			}(this)));
-		},function(e) {
-			reject(e);
-		});
-	});
-};
-thx_promise_PromiseTuple3.mapTuplePromise = function(promise,success) {
-	return thx_promise__$Promise_Promise_$Impl_$.mapSuccessPromise(promise,function(t) {
-		return success(t._0,t._1,t._2);
-	});
-};
-thx_promise_PromiseTuple3.mapTuple = function(promise,success) {
-	return thx_promise__$Promise_Promise_$Impl_$.mapSuccess(promise,function(t) {
-		return success(t._0,t._1,t._2);
-	});
-};
-thx_promise_PromiseTuple3.tuple = function(promise,success,failure) {
-	return thx_promise__$Promise_Promise_$Impl_$.either(promise,function(t) {
-		success(t._0,t._1,t._2);
-	},null == failure?function(_) {
-	}:failure);
-};
-var thx_promise_PromiseTuple2 = function() { };
-thx_promise_PromiseTuple2.__name__ = ["thx","promise","PromiseTuple2"];
-thx_promise_PromiseTuple2.join = function(p1,p2) {
-	return thx_promise__$Promise_Promise_$Impl_$.create(function(resolve,reject) {
-		thx_promise__$Promise_Promise_$Impl_$.either(thx_promise_Promises.join(p1,p2),function(t) {
-			resolve((function($this) {
-				var $r;
-				var this1 = t._0;
-				$r = { _0 : this1._0, _1 : this1._1, _2 : t._1};
-				return $r;
-			}(this)));
-		},function(e) {
-			reject(e);
-		});
-	});
-};
-thx_promise_PromiseTuple2.mapTuplePromise = function(promise,success) {
-	return thx_promise__$Promise_Promise_$Impl_$.mapSuccessPromise(promise,function(t) {
-		return success(t._0,t._1);
-	});
-};
-thx_promise_PromiseTuple2.mapTuple = function(promise,success) {
-	return thx_promise__$Promise_Promise_$Impl_$.mapSuccess(promise,function(t) {
-		return success(t._0,t._1);
-	});
-};
-thx_promise_PromiseTuple2.tuple = function(promise,success,failure) {
-	return thx_promise__$Promise_Promise_$Impl_$.either(promise,function(t) {
-		success(t._0,t._1);
-	},null == failure?function(_) {
-	}:failure);
-};
-var thx_promise_PromiseNil = function() { };
-thx_promise_PromiseNil.__name__ = ["thx","promise","PromiseNil"];
-thx_promise_PromiseNil.join = function(p1,p2) {
-	return thx_promise__$Promise_Promise_$Impl_$.create(function(resolve,reject) {
-		thx_promise__$Promise_Promise_$Impl_$.either(thx_promise_Promises.join(p1,p2),function(t) {
-			resolve(t._1);
-		},function(e) {
-			reject(e);
-		});
-	});
-};
-var thx_promise_Timer = function() { };
-thx_promise_Timer.__name__ = ["thx","promise","Timer"];
-thx_promise_Timer.delay = function(delayms) {
-	return thx_promise_Timer.delayValue(thx_core_Nil.nil,delayms);
-};
-thx_promise_Timer.delayValue = function(value,delayms) {
-	return thx_promise_Future.create(function(callback) {
-		thx_core_Timer.delay((function(f,a1) {
-			return function() {
-				f(a1);
-			};
-		})(callback,value),delayms);
-	});
-};
-thx_promise_Timer.immediate = function() {
-	return thx_promise_Timer.immediateValue(thx_core_Nil.nil);
-};
-thx_promise_Timer.immediateValue = function(value) {
-	return thx_promise_Future.create(function(callback) {
-		thx_core_Timer.immediate((function(f,a1) {
-			return function() {
-				f(a1);
-			};
-		})(callback,value));
-	});
-};
-var thx_stream_Emitter = function(init) {
-	this.init = init;
-};
-thx_stream_Emitter.__name__ = ["thx","stream","Emitter"];
-thx_stream_Emitter.prototype = {
-	init: null
-	,feed: function(value) {
-		var stream = new thx_stream_Stream(null);
-		stream.subscriber = function(r) {
-			switch(r[1]) {
-			case 0:
-				var v = r[2];
-				value.set(v);
-				break;
-			case 1:
-				var c = r[2];
-				if(c) stream.cancel(); else stream.end();
-				break;
-			}
-		};
-		value.upStreams.push(stream);
-		stream.addCleanUp(function() {
-			HxOverrides.remove(value.upStreams,stream);
-		});
-		this.init(stream);
-		return stream;
-	}
-	,plug: function(bus) {
-		var stream = new thx_stream_Stream(null);
-		stream.subscriber = $bind(bus,bus.emit);
-		bus.upStreams.push(stream);
-		stream.addCleanUp(function() {
-			HxOverrides.remove(bus.upStreams,stream);
-		});
-		this.init(stream);
-		return stream;
-	}
-	,sign: function(subscriber) {
-		var stream = new thx_stream_Stream(subscriber);
-		this.init(stream);
-		return stream;
-	}
-	,subscribe: function(pulse,end) {
-		if(null != pulse) pulse = pulse; else pulse = function(_) {
-		};
-		if(null != end) end = end; else end = function(_1) {
-		};
-		var stream = new thx_stream_Stream(function(r) {
-			switch(r[1]) {
-			case 0:
-				var v = r[2];
-				pulse(v);
-				break;
-			case 1:
-				var c = r[2];
-				end(c);
-				break;
-			}
-		});
-		this.init(stream);
-		return stream;
-	}
-	,concat: function(other) {
-		var _g = this;
-		return new thx_stream_Emitter(function(stream) {
-			_g.init(new thx_stream_Stream(function(r) {
-				switch(r[1]) {
-				case 0:
-					var v = r[2];
-					stream.pulse(v);
-					break;
-				case 1:
-					switch(r[2]) {
-					case true:
-						stream.cancel();
-						break;
-					case false:
-						other.init(stream);
-						break;
-					}
-					break;
-				}
-			}));
-		});
-	}
-	,count: function() {
-		return this.map((function() {
-			var c = 0;
-			return function(_) {
-				return ++c;
-			};
-		})());
-	}
-	,debounce: function(delay) {
-		var _g = this;
-		return new thx_stream_Emitter(function(stream) {
-			var cancel = function() {
-			};
-			stream.addCleanUp(function() {
-				cancel();
-			});
-			_g.init(new thx_stream_Stream(function(r) {
-				switch(r[1]) {
-				case 0:
-					var v = r[2];
-					cancel();
-					cancel = thx_core_Timer.delay((function(f,v1) {
-						return function() {
-							f(v1);
-						};
-					})($bind(stream,stream.pulse),v),delay);
-					break;
-				case 1:
-					switch(r[2]) {
-					case true:
-						stream.cancel();
-						break;
-					case false:
-						thx_core_Timer.delay($bind(stream,stream.end),delay);
-						break;
-					}
-					break;
-				}
-			}));
-		});
-	}
-	,delay: function(time) {
-		var _g = this;
-		return new thx_stream_Emitter(function(stream) {
-			var cancel = thx_core_Timer.delay(function() {
-				_g.init(stream);
-			},time);
-			stream.addCleanUp(cancel);
-		});
-	}
-	,diff: function(init,f) {
-		return this.window(2,null != init).map(function(a) {
-			if(a.length == 1) return f(init,a[0]); else return f(a[0],a[1]);
-		});
-	}
-	,merge: function(other) {
-		var _g = this;
-		return new thx_stream_Emitter(function(stream) {
-			_g.init(stream);
-			other.init(stream);
-		});
-	}
-	,previous: function() {
-		var _g = this;
-		return new thx_stream_Emitter(function(stream) {
-			var value = null;
-			var first = true;
-			var pulse = function() {
-				if(first) {
-					first = false;
-					return;
-				}
-				stream.pulse(value);
-			};
-			_g.init(new thx_stream_Stream(function(r) {
-				switch(r[1]) {
-				case 0:
-					var v = r[2];
-					pulse();
-					value = v;
-					break;
-				case 1:
-					switch(r[2]) {
-					case true:
-						stream.cancel();
-						break;
-					case false:
-						stream.end();
-						break;
-					}
-					break;
-				}
-			}));
-		});
-	}
-	,reduce: function(acc,f) {
-		var _g = this;
-		return new thx_stream_Emitter(function(stream) {
-			_g.init(new thx_stream_Stream(function(r) {
-				switch(r[1]) {
-				case 0:
-					var v = r[2];
-					acc = f(acc,v);
-					stream.pulse(acc);
-					break;
-				case 1:
-					switch(r[2]) {
-					case true:
-						stream.cancel();
-						break;
-					case false:
-						stream.end();
-						break;
-					}
-					break;
-				}
-			}));
-		});
-	}
-	,window: function(size,emitWithLess) {
-		if(emitWithLess == null) emitWithLess = false;
-		var _g = this;
-		return new thx_stream_Emitter(function(stream) {
-			var buf = [];
-			var pulse = function() {
-				if(buf.length > size) buf.shift();
-				if(buf.length == size || emitWithLess) stream.pulse(buf.slice());
-			};
-			_g.init(new thx_stream_Stream(function(r) {
-				switch(r[1]) {
-				case 0:
-					var v = r[2];
-					buf.push(v);
-					pulse();
-					break;
-				case 1:
-					switch(r[2]) {
-					case true:
-						stream.cancel();
-						break;
-					case false:
-						stream.end();
-						break;
-					}
-					break;
-				}
-			}));
-		});
-	}
-	,map: function(f) {
-		return this.mapFuture(function(v) {
-			return thx_promise_Future.value(f(v));
-		});
-	}
-	,mapFuture: function(f) {
-		var _g = this;
-		return new thx_stream_Emitter(function(stream) {
-			_g.init(new thx_stream_Stream(function(r) {
-				switch(r[1]) {
-				case 0:
-					var v = r[2];
-					f(v).then($bind(stream,stream.pulse));
-					break;
-				case 1:
-					switch(r[2]) {
-					case true:
-						stream.cancel();
-						break;
-					case false:
-						stream.end();
-						break;
-					}
-					break;
-				}
-			}));
-		});
-	}
-	,toOption: function() {
-		return this.map(function(v) {
-			if(null == v) return haxe_ds_Option.None; else return haxe_ds_Option.Some(v);
-		});
-	}
-	,toNil: function() {
-		return this.map(function(_) {
-			return thx_core_Nil.nil;
-		});
-	}
-	,toTrue: function() {
-		return this.map(function(_) {
-			return true;
-		});
-	}
-	,toFalse: function() {
-		return this.map(function(_) {
-			return false;
-		});
-	}
-	,toValue: function(value) {
-		return this.map(function(_) {
-			return value;
-		});
-	}
-	,filter: function(f) {
-		return this.filterFuture(function(v) {
-			return thx_promise_Future.value(f(v));
-		});
-	}
-	,filterFuture: function(f) {
-		var _g = this;
-		return new thx_stream_Emitter(function(stream) {
-			_g.init(new thx_stream_Stream(function(r) {
-				switch(r[1]) {
-				case 0:
-					var v = r[2];
-					f(v).then(function(c) {
-						if(c) stream.pulse(v);
-					});
-					break;
-				case 1:
-					switch(r[2]) {
-					case true:
-						stream.cancel();
-						break;
-					case false:
-						stream.end();
-						break;
-					}
-					break;
-				}
-			}));
-		});
-	}
-	,first: function() {
-		return this.take(1);
-	}
-	,distinct: function(equals) {
-		if(null == equals) equals = function(a,b) {
-			return a == b;
-		};
-		var last = null;
-		return this.filter(function(v) {
-			if(equals(v,last)) return false; else {
-				last = v;
-				return true;
-			}
-		});
-	}
-	,last: function() {
-		var _g = this;
-		return new thx_stream_Emitter(function(stream) {
-			var last = null;
-			_g.init(new thx_stream_Stream(function(r) {
-				switch(r[1]) {
-				case 0:
-					var v = r[2];
-					last = v;
-					break;
-				case 1:
-					switch(r[2]) {
-					case true:
-						stream.cancel();
-						break;
-					case false:
-						stream.pulse(last);
-						stream.end();
-						break;
-					}
-					break;
-				}
-			}));
-		});
-	}
-	,memberOf: function(arr,equality) {
-		return this.filter(function(v) {
-			return thx_core_Arrays.contains(arr,v,equality);
-		});
-	}
-	,notNull: function() {
-		return this.filter(function(v) {
-			return v != null;
-		});
-	}
-	,skip: function(n) {
-		return this.skipUntil((function() {
-			var count = 0;
-			return function(_) {
-				return count++ < n;
-			};
-		})());
-	}
-	,skipUntil: function(predicate) {
-		return this.filter((function() {
-			var flag = false;
-			return function(v) {
-				if(flag) return true;
-				if(predicate(v)) return false;
-				return flag = true;
-			};
-		})());
-	}
-	,take: function(count) {
-		return this.takeUntil((function(counter) {
-			return function(_) {
-				return counter++ < count;
-			};
-		})(0));
-	}
-	,takeAt: function(index) {
-		return this.take(index + 1).last();
-	}
-	,takeLast: function(n) {
-		return thx_stream_EmitterArrays.flatten(this.window(n).last());
-	}
-	,takeUntil: function(f) {
-		var _g = this;
-		return new thx_stream_Emitter(function(stream) {
-			var instream = null;
-			instream = new thx_stream_Stream(function(r) {
-				switch(r[1]) {
-				case 0:
-					var v = r[2];
-					if(f(v)) stream.pulse(v); else {
-						instream.end();
-						stream.end();
-					}
-					break;
-				case 1:
-					switch(r[2]) {
-					case true:
-						instream.cancel();
-						stream.cancel();
-						break;
-					case false:
-						instream.end();
-						stream.end();
-						break;
-					}
-					break;
-				}
-			});
-			_g.init(instream);
-		});
-	}
-	,withValue: function(expected) {
-		return this.filter(function(v) {
-			return v == expected;
-		});
-	}
-	,pair: function(other) {
-		var _g = this;
-		return new thx_stream_Emitter(function(stream) {
-			var _0 = null;
-			var _1 = null;
-			stream.addCleanUp(function() {
-				_0 = null;
-				_1 = null;
-			});
-			var pulse = function() {
-				if(null == _0 || null == _1) return;
-				stream.pulse({ _0 : _0, _1 : _1});
-			};
-			_g.init(new thx_stream_Stream(function(r) {
-				switch(r[1]) {
-				case 0:
-					var v = r[2];
-					_0 = v;
-					pulse();
-					break;
-				case 1:
-					switch(r[2]) {
-					case true:
-						stream.cancel();
-						break;
-					case false:
-						stream.end();
-						break;
-					}
-					break;
-				}
-			}));
-			other.init(new thx_stream_Stream(function(r1) {
-				switch(r1[1]) {
-				case 0:
-					var v1 = r1[2];
-					_1 = v1;
-					pulse();
-					break;
-				case 1:
-					switch(r1[2]) {
-					case true:
-						stream.cancel();
-						break;
-					case false:
-						stream.end();
-						break;
-					}
-					break;
-				}
-			}));
-		});
-	}
-	,sampleBy: function(sampler) {
-		var _g = this;
-		return new thx_stream_Emitter(function(stream) {
-			var _0 = null;
-			var _1 = null;
-			stream.addCleanUp(function() {
-				_0 = null;
-				_1 = null;
-			});
-			var pulse = function() {
-				if(null == _0 || null == _1) return;
-				stream.pulse({ _0 : _0, _1 : _1});
-			};
-			_g.init(new thx_stream_Stream(function(r) {
-				switch(r[1]) {
-				case 0:
-					var v = r[2];
-					_0 = v;
-					break;
-				case 1:
-					switch(r[2]) {
-					case true:
-						stream.cancel();
-						break;
-					case false:
-						stream.end();
-						break;
-					}
-					break;
-				}
-			}));
-			sampler.init(new thx_stream_Stream(function(r1) {
-				switch(r1[1]) {
-				case 0:
-					var v1 = r1[2];
-					_1 = v1;
-					pulse();
-					break;
-				case 1:
-					switch(r1[2]) {
-					case true:
-						stream.cancel();
-						break;
-					case false:
-						stream.end();
-						break;
-					}
-					break;
-				}
-			}));
-		});
-	}
-	,samplerOf: function(sampled) {
-		return sampled.sampleBy(this).map(function(t) {
-			return { _0 : t._1, _1 : t._0};
-		});
-	}
-	,zip: function(other) {
-		var _g = this;
-		return new thx_stream_Emitter(function(stream) {
-			var _0 = [];
-			var _1 = [];
-			stream.addCleanUp(function() {
-				_0 = null;
-				_1 = null;
-			});
-			var pulse = function() {
-				if(_0.length == 0 || _1.length == 0) return;
-				stream.pulse((function($this) {
-					var $r;
-					var _01 = _0.shift();
-					var _11 = _1.shift();
-					$r = { _0 : _01, _1 : _11};
-					return $r;
-				}(this)));
-			};
-			_g.init(new thx_stream_Stream(function(r) {
-				switch(r[1]) {
-				case 0:
-					var v = r[2];
-					_0.push(v);
-					pulse();
-					break;
-				case 1:
-					switch(r[2]) {
-					case true:
-						stream.cancel();
-						break;
-					case false:
-						stream.end();
-						break;
-					}
-					break;
-				}
-			}));
-			other.init(new thx_stream_Stream(function(r1) {
-				switch(r1[1]) {
-				case 0:
-					var v1 = r1[2];
-					_1.push(v1);
-					pulse();
-					break;
-				case 1:
-					switch(r1[2]) {
-					case true:
-						stream.cancel();
-						break;
-					case false:
-						stream.end();
-						break;
-					}
-					break;
-				}
-			}));
-		});
-	}
-	,audit: function(handler) {
-		return this.map(function(v) {
-			handler(v);
-			return v;
-		});
-	}
-	,log: function(prefix,posInfo) {
-		if(prefix == null) prefix = ""; else prefix = "" + prefix + ": ";
-		return this.map(function(v) {
-			haxe_Log.trace("" + prefix + Std.string(v),posInfo);
-			return v;
-		});
-	}
-	,split: function() {
-		var _g = this;
-		var inited = false;
-		var streams = [];
-		var init = function(stream) {
-			streams.push(stream);
-			if(!inited) {
-				inited = true;
-				thx_core_Timer.immediate(function() {
-					_g.init(new thx_stream_Stream(function(r) {
-						switch(r[1]) {
-						case 0:
-							var v = r[2];
-							var _g1 = 0;
-							while(_g1 < streams.length) {
-								var s = streams[_g1];
-								++_g1;
-								s.pulse(v);
-							}
-							break;
-						case 1:
-							switch(r[2]) {
-							case true:
-								var _g11 = 0;
-								while(_g11 < streams.length) {
-									var s1 = streams[_g11];
-									++_g11;
-									s1.cancel();
-								}
-								break;
-							case false:
-								var _g12 = 0;
-								while(_g12 < streams.length) {
-									var s2 = streams[_g12];
-									++_g12;
-									s2.end();
-								}
-								break;
-							}
-							break;
-						}
-					}));
-				});
-			}
-		};
-		var _0 = new thx_stream_Emitter(init);
-		var _1 = new thx_stream_Emitter(init);
-		return { _0 : _0, _1 : _1};
-	}
-	,__class__: thx_stream_Emitter
-};
-var thx_stream_Bus = function(distinctValuesOnly,equal) {
-	if(distinctValuesOnly == null) distinctValuesOnly = false;
-	var _g = this;
-	this.distinctValuesOnly = distinctValuesOnly;
-	if(null == equal) this.equal = function(a,b) {
-		return a == b;
-	}; else this.equal = equal;
-	this.downStreams = [];
-	this.upStreams = [];
-	thx_stream_Emitter.call(this,function(stream) {
-		_g.downStreams.push(stream);
-		stream.addCleanUp(function() {
-			HxOverrides.remove(_g.downStreams,stream);
-		});
-	});
-};
-thx_stream_Bus.__name__ = ["thx","stream","Bus"];
-thx_stream_Bus.__super__ = thx_stream_Emitter;
-thx_stream_Bus.prototype = $extend(thx_stream_Emitter.prototype,{
-	downStreams: null
-	,upStreams: null
-	,distinctValuesOnly: null
-	,equal: null
-	,value: null
-	,cancel: function() {
-		this.emit(thx_stream_StreamValue.End(true));
-	}
-	,clear: function() {
-		this.clearEmitters();
-		this.clearStreams();
-	}
-	,clearStreams: function() {
-		var _g = 0;
-		var _g1 = this.downStreams.slice();
-		while(_g < _g1.length) {
-			var stream = _g1[_g];
-			++_g;
-			stream.end();
-		}
-	}
-	,clearEmitters: function() {
-		var _g = 0;
-		var _g1 = this.upStreams.slice();
-		while(_g < _g1.length) {
-			var stream = _g1[_g];
-			++_g;
-			stream.cancel();
-		}
-	}
-	,emit: function(value) {
-		switch(value[1]) {
-		case 0:
-			var v = value[2];
-			if(this.distinctValuesOnly) {
-				if(this.equal(v,this.value)) return;
-				this.value = v;
-			}
-			var _g = 0;
-			var _g1 = this.downStreams.slice();
-			while(_g < _g1.length) {
-				var stream = _g1[_g];
-				++_g;
-				stream.pulse(v);
-			}
-			break;
-		case 1:
-			switch(value[2]) {
-			case true:
-				var _g2 = 0;
-				var _g11 = this.downStreams.slice();
-				while(_g2 < _g11.length) {
-					var stream1 = _g11[_g2];
-					++_g2;
-					stream1.cancel();
-				}
-				break;
-			case false:
-				var _g3 = 0;
-				var _g12 = this.downStreams.slice();
-				while(_g3 < _g12.length) {
-					var stream2 = _g12[_g3];
-					++_g3;
-					stream2.end();
-				}
-				break;
-			}
-			break;
-		}
-	}
-	,end: function() {
-		this.emit(thx_stream_StreamValue.End(false));
-	}
-	,pulse: function(value) {
-		this.emit(thx_stream_StreamValue.Pulse(value));
-	}
-	,__class__: thx_stream_Bus
-});
-var thx_stream_Emitters = function() { };
-thx_stream_Emitters.__name__ = ["thx","stream","Emitters"];
-thx_stream_Emitters.skipNull = function(emitter) {
-	return emitter.filter(function(value) {
-		return null != value;
-	});
-};
-thx_stream_Emitters.unique = function(emitter) {
-	return emitter.filter((function() {
-		var buf = [];
-		return function(v) {
-			if(HxOverrides.indexOf(buf,v,0) >= 0) return false; else {
-				buf.push(v);
-				return true;
-			}
-		};
-	})());
-};
-var thx_stream_EmitterStrings = function() { };
-thx_stream_EmitterStrings.__name__ = ["thx","stream","EmitterStrings"];
-thx_stream_EmitterStrings.match = function(emitter,pattern) {
-	return emitter.filter(function(s) {
-		return pattern.match(s);
-	});
-};
-thx_stream_EmitterStrings.toBool = function(emitter) {
-	return emitter.map(function(s) {
-		return s != null && s != "";
-	});
-};
-thx_stream_EmitterStrings.truthy = function(emitter) {
-	return emitter.filter(function(s) {
-		return s != null && s != "";
-	});
-};
-thx_stream_EmitterStrings.unique = function(emitter) {
-	return emitter.filter((function() {
-		var buf = new haxe_ds_StringMap();
-		return function(v) {
-			if(__map_reserved[v] != null?buf.existsReserved(v):buf.h.hasOwnProperty(v)) return false; else {
-				if(__map_reserved[v] != null) buf.setReserved(v,true); else buf.h[v] = true;
-				return true;
-			}
-		};
-	})());
-};
-var thx_stream_EmitterInts = function() { };
-thx_stream_EmitterInts.__name__ = ["thx","stream","EmitterInts"];
-thx_stream_EmitterInts.average = function(emitter) {
-	return emitter.map((function() {
-		var sum = 0.0;
-		var count = 0;
-		return function(v) {
-			return (sum += v) / ++count;
-		};
-	})());
-};
-thx_stream_EmitterInts.greaterThan = function(emitter,x) {
-	return emitter.filter(function(v) {
-		return v > x;
-	});
-};
-thx_stream_EmitterInts.greaterThanOrEqualTo = function(emitter,x) {
-	return emitter.filter(function(v) {
-		return v >= x;
-	});
-};
-thx_stream_EmitterInts.inRange = function(emitter,min,max) {
-	return emitter.filter(function(v) {
-		return v <= max && v >= min;
-	});
-};
-thx_stream_EmitterInts.insideRange = function(emitter,min,max) {
-	return emitter.filter(function(v) {
-		return v < max && v > min;
-	});
-};
-thx_stream_EmitterInts.lessThan = function(emitter,x) {
-	return emitter.filter(function(v) {
-		return v < x;
-	});
-};
-thx_stream_EmitterInts.lessThanOrEqualTo = function(emitter,x) {
-	return emitter.filter(function(v) {
-		return v <= x;
-	});
-};
-thx_stream_EmitterInts.max = function(emitter) {
-	return emitter.filter((function() {
-		var max = null;
-		return function(v) {
-			if(null == max || v > max) {
-				max = v;
-				return true;
-			} else return false;
-		};
-	})());
-};
-thx_stream_EmitterInts.min = function(emitter) {
-	return emitter.filter((function() {
-		var min = null;
-		return function(v) {
-			if(null == min || v < min) {
-				min = v;
-				return true;
-			} else return false;
-		};
-	})());
-};
-thx_stream_EmitterInts.sum = function(emitter) {
-	return emitter.map((function() {
-		var value = 0;
-		return function(v) {
-			return value += v;
-		};
-	})());
-};
-thx_stream_EmitterInts.toBool = function(emitter) {
-	return emitter.map(function(i) {
-		return i != 0;
-	});
-};
-thx_stream_EmitterInts.unique = function(emitter) {
-	return emitter.filter((function() {
-		var buf_h = { };
-		return function(v) {
-			if(buf_h.hasOwnProperty(v)) return false; else {
-				buf_h[v] = true;
-				return true;
-			}
-		};
-	})());
-};
-var thx_stream_EmitterFloats = function() { };
-thx_stream_EmitterFloats.__name__ = ["thx","stream","EmitterFloats"];
-thx_stream_EmitterFloats.average = function(emitter) {
-	return emitter.map((function() {
-		var sum = 0.0;
-		var count = 0;
-		return function(v) {
-			return (sum += v) / ++count;
-		};
-	})());
-};
-thx_stream_EmitterFloats.greaterThan = function(emitter,x) {
-	return emitter.filter(function(v) {
-		return v > x;
-	});
-};
-thx_stream_EmitterFloats.greaterThanOrEqualTo = function(emitter,x) {
-	return emitter.filter(function(v) {
-		return v >= x;
-	});
-};
-thx_stream_EmitterFloats.inRange = function(emitter,min,max) {
-	return emitter.filter(function(v) {
-		return v <= max && v >= min;
-	});
-};
-thx_stream_EmitterFloats.insideRange = function(emitter,min,max) {
-	return emitter.filter(function(v) {
-		return v < max && v > min;
-	});
-};
-thx_stream_EmitterFloats.lessThan = function(emitter,x) {
-	return emitter.filter(function(v) {
-		return v < x;
-	});
-};
-thx_stream_EmitterFloats.lessThanOrEqualTo = function(emitter,x) {
-	return emitter.filter(function(v) {
-		return v <= x;
-	});
-};
-thx_stream_EmitterFloats.max = function(emitter) {
-	return emitter.filter((function() {
-		var max = -Infinity;
-		return function(v) {
-			if(v > max) {
-				max = v;
-				return true;
-			} else return false;
-		};
-	})());
-};
-thx_stream_EmitterFloats.min = function(emitter) {
-	return emitter.filter((function() {
-		var min = Infinity;
-		return function(v) {
-			if(v < min) {
-				min = v;
-				return true;
-			} else return false;
-		};
-	})());
-};
-thx_stream_EmitterFloats.sum = function(emitter) {
-	return emitter.map((function() {
-		var sum = 0.0;
-		return function(v) {
-			return sum += v;
-		};
-	})());
-};
-var thx_stream_EmitterOptions = function() { };
-thx_stream_EmitterOptions.__name__ = ["thx","stream","EmitterOptions"];
-thx_stream_EmitterOptions.either = function(emitter,some,none,end) {
-	if(null == some) some = function(_) {
-	};
-	if(null == none) none = function() {
-	};
-	return emitter.subscribe(function(o) {
-		switch(o[1]) {
-		case 0:
-			var v = o[2];
-			some(v);
-			break;
-		case 1:
-			none();
-			break;
-		}
-	},end);
-};
-thx_stream_EmitterOptions.filterOption = function(emitter) {
-	return emitter.filter(function(opt) {
-		return thx_core_Options.toBool(opt);
-	}).map(function(opt1) {
-		return thx_core_Options.toValue(opt1);
-	});
-};
-thx_stream_EmitterOptions.toBool = function(emitter) {
-	return emitter.map(function(opt) {
-		return thx_core_Options.toBool(opt);
-	});
-};
-thx_stream_EmitterOptions.toValue = function(emitter) {
-	return emitter.map(function(opt) {
-		return thx_core_Options.toValue(opt);
-	});
-};
-var thx_stream_EmitterBools = function() { };
-thx_stream_EmitterBools.__name__ = ["thx","stream","EmitterBools"];
-thx_stream_EmitterBools.negate = function(emitter) {
-	return emitter.map(function(v) {
-		return !v;
-	});
-};
-var thx_stream_EmitterEmitters = function() { };
-thx_stream_EmitterEmitters.__name__ = ["thx","stream","EmitterEmitters"];
-thx_stream_EmitterEmitters.flatMap = function(emitter) {
-	return new thx_stream_Emitter(function(stream) {
-		emitter.init(new thx_stream_Stream(function(r) {
-			switch(r[1]) {
-			case 0:
-				var em = r[2];
-				em.init(stream);
-				break;
-			case 1:
-				switch(r[2]) {
-				case true:
-					stream.cancel();
-					break;
-				case false:
-					stream.end();
-					break;
-				}
-				break;
-			}
-		}));
-	});
-};
-var thx_stream_EmitterArrays = function() { };
-thx_stream_EmitterArrays.__name__ = ["thx","stream","EmitterArrays"];
-thx_stream_EmitterArrays.containerOf = function(emitter,value) {
-	return emitter.filter(function(arr) {
-		return HxOverrides.indexOf(arr,value,0) >= 0;
-	});
-};
-thx_stream_EmitterArrays.flatten = function(emitter) {
-	return new thx_stream_Emitter(function(stream) {
-		emitter.init(new thx_stream_Stream(function(r) {
-			switch(r[1]) {
-			case 0:
-				var arr = r[2];
-				arr.map($bind(stream,stream.pulse));
-				break;
-			case 1:
-				switch(r[2]) {
-				case true:
-					stream.cancel();
-					break;
-				case false:
-					stream.end();
-					break;
-				}
-				break;
-			}
-		}));
-	});
-};
-var thx_stream_EmitterValues = function() { };
-thx_stream_EmitterValues.__name__ = ["thx","stream","EmitterValues"];
-thx_stream_EmitterValues.left = function(emitter) {
-	return emitter.map(function(v) {
-		return v._0;
-	});
-};
-thx_stream_EmitterValues.right = function(emitter) {
-	return emitter.map(function(v) {
-		return v._1;
-	});
-};
-var thx_stream_IStream = function() { };
-thx_stream_IStream.__name__ = ["thx","stream","IStream"];
-thx_stream_IStream.prototype = {
-	cancel: null
-	,__class__: thx_stream_IStream
-};
-var thx_stream_Stream = function(subscriber) {
-	this.subscriber = subscriber;
-	this.cleanUps = [];
-	this.finalized = false;
-	this.canceled = false;
-};
-thx_stream_Stream.__name__ = ["thx","stream","Stream"];
-thx_stream_Stream.__interfaces__ = [thx_stream_IStream];
-thx_stream_Stream.prototype = {
-	subscriber: null
-	,cleanUps: null
-	,finalized: null
-	,canceled: null
-	,addCleanUp: function(f) {
-		this.cleanUps.push(f);
-	}
-	,cancel: function() {
-		this.canceled = true;
-		this.finalize(thx_stream_StreamValue.End(true));
-	}
-	,end: function() {
-		this.finalize(thx_stream_StreamValue.End(false));
-	}
-	,pulse: function(v) {
-		this.subscriber(thx_stream_StreamValue.Pulse(v));
-	}
-	,finalize: function(signal) {
-		if(this.finalized) return;
-		this.finalized = true;
-		while(this.cleanUps.length > 0) (this.cleanUps.shift())();
-		this.subscriber(signal);
-		this.subscriber = function(_) {
-		};
-	}
-	,__class__: thx_stream_Stream
-};
-var thx_stream_StreamValue = { __ename__ : ["thx","stream","StreamValue"], __constructs__ : ["Pulse","End"] };
-thx_stream_StreamValue.Pulse = function(value) { var $x = ["Pulse",0,value]; $x.__enum__ = thx_stream_StreamValue; $x.toString = $estr; return $x; };
-thx_stream_StreamValue.End = function(cancel) { var $x = ["End",1,cancel]; $x.__enum__ = thx_stream_StreamValue; $x.toString = $estr; return $x; };
-var thx_stream_Value = function(value,equals) {
-	var _g = this;
-	if(null == equals) this.equals = thx_core_Functions.equality; else this.equals = equals;
-	this.value = value;
-	this.downStreams = [];
-	this.upStreams = [];
-	thx_stream_Emitter.call(this,function(stream) {
-		_g.downStreams.push(stream);
-		stream.addCleanUp(function() {
-			HxOverrides.remove(_g.downStreams,stream);
-		});
-		stream.pulse(_g.value);
-	});
-};
-thx_stream_Value.__name__ = ["thx","stream","Value"];
-thx_stream_Value.createOption = function(value,equals) {
-	var def;
-	if(null == value) def = haxe_ds_Option.None; else def = haxe_ds_Option.Some(value);
-	return new thx_stream_Value(def,function(a,b) {
-		return thx_core_Options.equals(a,b,equals);
-	});
-};
-thx_stream_Value.__super__ = thx_stream_Emitter;
-thx_stream_Value.prototype = $extend(thx_stream_Emitter.prototype,{
-	value: null
-	,downStreams: null
-	,upStreams: null
-	,equals: null
-	,get: function() {
-		return this.value;
-	}
-	,clear: function() {
-		this.clearEmitters();
-		this.clearStreams();
-	}
-	,clearStreams: function() {
-		var _g = 0;
-		var _g1 = this.downStreams.slice();
-		while(_g < _g1.length) {
-			var stream = _g1[_g];
-			++_g;
-			stream.end();
-		}
-	}
-	,clearEmitters: function() {
-		var _g = 0;
-		var _g1 = this.upStreams.slice();
-		while(_g < _g1.length) {
-			var stream = _g1[_g];
-			++_g;
-			stream.cancel();
-		}
-	}
-	,set: function(value) {
-		if(this.equals(this.value,value)) return;
-		this.value = value;
-		this.update();
-	}
-	,update: function() {
-		var _g = 0;
-		var _g1 = this.downStreams.slice();
-		while(_g < _g1.length) {
-			var stream = _g1[_g];
-			++_g;
-			stream.pulse(this.value);
-		}
-	}
-	,__class__: thx_stream_Value
-});
-var thx_stream_dom_Dom = function() { };
-thx_stream_dom_Dom.__name__ = ["thx","stream","dom","Dom"];
-thx_stream_dom_Dom.ready = function() {
-	return thx_promise__$Promise_Promise_$Impl_$.create(function(resolve,_) {
-		window.document.addEventListener("DOMContentLoaded",function(_1) {
-			resolve(thx_core_Nil.nil);
-		},false);
-	});
-};
-thx_stream_dom_Dom.streamClick = function(el,capture) {
-	if(capture == null) capture = false;
-	return thx_stream_dom_Dom.streamEvent(el,"click",capture);
-};
-thx_stream_dom_Dom.streamEvent = function(el,name,capture) {
-	if(capture == null) capture = false;
-	return new thx_stream_Emitter(function(stream) {
-		el.addEventListener(name,$bind(stream,stream.pulse),capture);
-		stream.addCleanUp(function() {
-			el.removeEventListener(name,$bind(stream,stream.pulse),capture);
-		});
-	});
-};
-thx_stream_dom_Dom.streamFocus = function(el,capture) {
-	if(capture == null) capture = false;
-	return thx_stream_dom_Dom.streamEvent(el,"focus",capture).toTrue().merge(thx_stream_dom_Dom.streamEvent(el,"blur",capture).toFalse());
-};
-thx_stream_dom_Dom.streamKey = function(el,name,capture) {
-	if(capture == null) capture = false;
-	return new thx_stream_Emitter((function($this) {
-		var $r;
-		if(!StringTools.startsWith(name,"key")) name = "key" + name;
-		$r = function(stream) {
-			el.addEventListener(name,$bind(stream,stream.pulse),capture);
-			stream.addCleanUp(function() {
-				el.removeEventListener(name,$bind(stream,stream.pulse),capture);
-			});
-		};
-		return $r;
-	}(this)));
-};
-thx_stream_dom_Dom.streamChecked = function(el,capture) {
-	if(capture == null) capture = false;
-	return thx_stream_dom_Dom.streamEvent(el,"change",capture).map(function(_) {
-		return el.checked;
-	});
-};
-thx_stream_dom_Dom.streamChange = function(el,capture) {
-	if(capture == null) capture = false;
-	return thx_stream_dom_Dom.streamEvent(el,"change",capture).map(function(_) {
-		return el.value;
-	});
-};
-thx_stream_dom_Dom.streamInput = function(el,capture) {
-	if(capture == null) capture = false;
-	return thx_stream_dom_Dom.streamEvent(el,"input",capture).map(function(_) {
-		return el.value;
-	});
-};
-thx_stream_dom_Dom.streamMouseDown = function(el,capture) {
-	if(capture == null) capture = false;
-	return thx_stream_dom_Dom.streamEvent(el,"mousedown",capture);
-};
-thx_stream_dom_Dom.streamMouseEvent = function(el,name,capture) {
-	if(capture == null) capture = false;
-	return thx_stream_dom_Dom.streamEvent(el,name,capture);
-};
-thx_stream_dom_Dom.streamMouseMove = function(el,capture) {
-	if(capture == null) capture = false;
-	return thx_stream_dom_Dom.streamEvent(el,"mousemove",capture);
-};
-thx_stream_dom_Dom.streamMouseUp = function(el,capture) {
-	if(capture == null) capture = false;
-	return thx_stream_dom_Dom.streamEvent(el,"mouseup",capture);
-};
-thx_stream_dom_Dom.subscribeAttribute = function(el,name) {
-	return function(value) {
-		if(null == value) el.removeAttribute(name); else el.setAttribute(name,value);
-	};
-};
-thx_stream_dom_Dom.subscribeFocus = function(el) {
-	return function(focus) {
-		if(focus) el.focus(); else el.blur();
-	};
-};
-thx_stream_dom_Dom.subscribeHTML = function(el) {
-	return function(html) {
-		el.innerHTML = html;
-	};
-};
-thx_stream_dom_Dom.subscribeText = function(el,force) {
-	if(force == null) force = false;
-	return function(text) {
-		if(el.textContent != text || force) el.textContent = text;
-	};
-};
-thx_stream_dom_Dom.subscribeToggleAttribute = function(el,name,value) {
-	if(null == value) value = el.getAttribute(name);
-	return function(on) {
-		if(on) el.setAttribute(name,value); else el.removeAttribute(name);
-	};
-};
-thx_stream_dom_Dom.subscribeToggleClass = function(el,name) {
-	return function(on) {
-		if(on) el.classList.add(name); else el.classList.remove(name);
-	};
-};
-thx_stream_dom_Dom.subscribeSwapClass = function(el,nameOn,nameOff) {
-	return function(on) {
-		if(on) {
-			el.classList.add(nameOn);
-			el.classList.remove(nameOff);
-		} else {
-			el.classList.add(nameOff);
-			el.classList.remove(nameOn);
-		}
-	};
-};
-thx_stream_dom_Dom.subscribeToggleVisibility = function(el) {
-	var originalDisplay = el.style.display;
-	if(originalDisplay == "none") originalDisplay = "";
-	return function(on) {
-		if(on) el.style.display = originalDisplay; else el.style.display = "none";
-	};
 };
 function $iterator(o) { if( o instanceof Array ) return function() { return HxOverrides.iter(o); }; return typeof(o.iterator) == 'function' ? $bind(o,o.iterator) : o.iterator; }
 var $_, $fid = 0;
@@ -10602,7 +7956,6 @@ if(Array.prototype.filter == null) Array.prototype.filter = function(f1) {
 	return a1;
 };
 var __map_reserved = {}
-dots_Dom.addCss(".sui-icon-add,.sui-icon-collapse,.sui-icon-down,.sui-icon-expand,.sui-icon-remove,.sui-icon-up{background-repeat:no-repeat}.sui-icon-add{background-image:url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2264%22%20height%3D%2264%22%20viewBox%3D%220%200%2064%2064%22%3E%3Cpath%20d%3D%22M45%2029H35V19c0-1.657-1.343-3-3-3s-3%201.343-3%203v10H19c-1.657%200-3%201.343-3%203s1.343%203%203%203h10v10c0%201.657%201.343%203%203%203s3-1.343%203-3V35h10c1.657%200%203-1.343%203-3s-1.343-3-3-3zM32%200C14.327%200%200%2014.327%200%2032s14.327%2032%2032%2032%2032-14.327%2032-32S49.673%200%2032%200zm0%2058C17.64%2058%206%2046.36%206%2032S17.64%206%2032%206s26%2011.64%2026%2026-11.64%2026-26%2026z%22%20enable-background%3D%22new%22%2F%3E%3C%2Fsvg%3E\")}.sui-icon-collapse{background-image:url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2264%22%20height%3D%2264%22%20viewBox%3D%220%200%2064%2064%22%3E%3Cpath%20d%3D%22M52.16%2038.918l-18-18C33.612%2020.352%2032.847%2020%2032%2020h-.014c-.848%200-1.613.352-2.16.918l-18%2018%20.008.007c-.516.54-.834%201.27-.834%202.075%200%201.657%201.343%203%203%203%20.91%200%201.725-.406%202.275-1.046l15.718-15.718L47.917%2043.16c.54.52%201.274.84%202.083.84%201.657%200%203-1.343%203-3%200-.81-.32-1.542-.84-2.082z%22%20enable-background%3D%22new%22%2F%3E%3C%2Fsvg%3E\")}.sui-icon-down{background-image:url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2264%22%20height%3D%2264%22%20viewBox%3D%220%200%2064%2064%22%3E%3Cpath%20d%3D%22M53%2023c0-1.657-1.343-3-3-3-.81%200-1.542.32-2.082.84L31.992%2036.764%2016.275%2021.046C15.725%2020.406%2014.91%2020%2014%2020c-1.657%200-3%201.343-3%203%200%20.805.318%201.536.835%202.075l-.008.008%2018%2018c.547.565%201.312.917%202.16.917H32c.85%200%201.613-.352%202.16-.918l18-18c.52-.54.84-1.273.84-2.082z%22%20enable-background%3D%22new%22%2F%3E%3C%2Fsvg%3E\")}.sui-icon-expand{background-image:url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2264%22%20height%3D%2264%22%20viewBox%3D%220%200%2064%2064%22%3E%3Cpath%20d%3D%22M53%2023c0-1.657-1.343-3-3-3-.81%200-1.542.32-2.082.84L31.992%2036.764%2016.275%2021.046C15.725%2020.406%2014.91%2020%2014%2020c-1.657%200-3%201.343-3%203%200%20.805.318%201.536.835%202.075l-.008.008%2018%2018c.547.565%201.312.917%202.16.917H32c.85%200%201.613-.352%202.16-.918l18-18c.52-.54.84-1.273.84-2.082z%22%20enable-background%3D%22new%22%2F%3E%3C%2Fsvg%3E\")}.sui-icon-remove{background-image:url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2264%22%20height%3D%2264%22%20viewBox%3D%220%200%2064%2064%22%3E%3Cpath%20d%3D%22M45%2029H19c-1.657%200-3%201.343-3%203s1.343%203%203%203h26c1.657%200%203-1.343%203-3s-1.343-3-3-3zM32%200C14.327%200%200%2014.327%200%2032s14.327%2032%2032%2032%2032-14.327%2032-32S49.673%200%2032%200zm0%2058C17.64%2058%206%2046.36%206%2032S17.64%206%2032%206s26%2011.64%2026%2026-11.64%2026-26%2026z%22%20enable-background%3D%22new%22%2F%3E%3C%2Fsvg%3E\")}.sui-icon-up{background-image:url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2264%22%20height%3D%2264%22%20viewBox%3D%220%200%2064%2064%22%3E%3Cpath%20d%3D%22M52.16%2038.918l-18-18C33.612%2020.352%2032.847%2020%2032%2020h-.014c-.848%200-1.613.352-2.16.918l-18%2018%20.008.007c-.516.54-.834%201.27-.834%202.075%200%201.657%201.343%203%203%203%20.91%200%201.725-.406%202.275-1.046l15.718-15.718L47.917%2043.16c.54.52%201.274.84%202.083.84%201.657%200%203-1.343%203-3%200-.81-.32-1.542-.84-2.082z%22%20enable-background%3D%22new%22%2F%3E%3C%2Fsvg%3E\")}.sui-grid{border-collapse:collapse;}.sui-grid *{box-sizing:border-box}.sui-grid td{border-bottom:1px solid #ddd;margin:0;padding:0}.sui-grid tr:first-child td{border-top:1px solid #ddd}.sui-grid td:first-child{border-left:1px solid #ddd}.sui-grid td:last-child{border-right:1px solid #ddd}.sui-grid td.sui-top,.sui-grid td.sui-left{background-color:#fff}.sui-grid td.sui-bottom,.sui-grid td.sui-right{background-color:#f6f6f6}.sui-bottom-left,.sui-bottom-right,.sui-top-left,.sui-top-right{position:absolute;background-color:#fff}.sui-top-right{top:0;right:0;-webkit-box-shadow:-1px 1px 6px rgba(0,0,0,0.1);-moz-box-shadow:-1px 1px 6px rgba(0,0,0,0.1);box-shadow:-1px 1px 6px rgba(0,0,0,0.1);}.sui-top-right.sui-grid tr:first-child td{border-top:none}.sui-top-right.sui-grid td:last-child{border-right:none}.sui-top-left{top:0;left:0;-webkit-box-shadow:1px 1px 6px rgba(0,0,0,0.1);-moz-box-shadow:1px 1px 6px rgba(0,0,0,0.1);box-shadow:1px 1px 6px rgba(0,0,0,0.1);}.sui-top-left.sui-grid tr:first-child td{border-top:none}.sui-top-left.sui-grid td:last-child{border-left:none}.sui-bottom-right{bottom:0;right:0;-webkit-box-shadow:-1px 1px 6px rgba(0,0,0,0.1);-moz-box-shadow:-1px 1px 6px rgba(0,0,0,0.1);box-shadow:-1px 1px 6px rgba(0,0,0,0.1);}.sui-bottom-right.sui-grid tr:first-child td{border-bottom:none}.sui-bottom-right.sui-grid td:last-child{border-right:none}.sui-bottom-left{bottom:0;left:0;-webkit-box-shadow:1px 1px 6px rgba(0,0,0,0.1);-moz-box-shadow:1px 1px 6px rgba(0,0,0,0.1);box-shadow:1px 1px 6px rgba(0,0,0,0.1);}.sui-bottom-left.sui-grid tr:first-child td{border-bottom:none}.sui-bottom-left.sui-grid td:last-child{border-left:none}.sui-fill{position:absolute;width:100%;max-height:100%;top:0;left:0}.sui-append{width:100%}.sui-control,.sui-folder{-moz-user-select:-moz-none;-khtml-user-select:none;-webkit-user-select:none;-o-user-select:none;user-select:none;font-size:11px;font-family:Helvetica,\"Nimbus Sans L\",\"Liberation Sans\",Arial,sans-serif;line-height:18px;vertical-align:middle;}.sui-control *,.sui-folder *{box-sizing:border-box;margin:0;padding:0}.sui-control button,.sui-folder button{line-height:18px;vertical-align:middle}.sui-control input,.sui-folder input{line-height:18px;vertical-align:middle;border:none;background-color:#f6f6f6;max-width:16em}.sui-control button:hover,.sui-folder button:hover{background-color:#fafafa;border:1px solid #ddd}.sui-control button:focus,.sui-folder button:focus{background-color:#fafafa;border:1px solid #aaa;outline:#eee solid 2px}.sui-control input:focus,.sui-folder input:focus{outline:#eee solid 2px;$outline-offset:-2px;background-color:#fafafa}.sui-control output,.sui-folder output{padding:0 6px;background-color:#fff;display:inline-block}.sui-control input[type=\"number\"],.sui-folder input[type=\"number\"],.sui-control input[type=\"date\"],.sui-folder input[type=\"date\"],.sui-control input[type=\"datetime-local\"],.sui-folder input[type=\"datetime-local\"],.sui-control input[type=\"time\"],.sui-folder input[type=\"time\"]{text-align:right}.sui-control input[type=\"number\"],.sui-folder input[type=\"number\"]{font-family:Consolas,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New,monospace}.sui-control input,.sui-folder input{padding:0 6px}.sui-control input[type=\"color\"],.sui-folder input[type=\"color\"],.sui-control input[type=\"checkbox\"],.sui-folder input[type=\"checkbox\"]{padding:0;margin:0}.sui-control input[type=\"range\"],.sui-folder input[type=\"range\"]{margin:0 8px;min-height:19px}.sui-control button,.sui-folder button{background-color:#eee;border:1px solid #aaa;border-radius:4px}.sui-control.sui-control-single input,.sui-folder.sui-control-single input,.sui-control.sui-control-single output,.sui-folder.sui-control-single output,.sui-control.sui-control-single button,.sui-folder.sui-control-single button{width:100%}.sui-control.sui-control-single input[type=\"checkbox\"],.sui-folder.sui-control-single input[type=\"checkbox\"]{width:initial}.sui-control.sui-control-double input,.sui-folder.sui-control-double input,.sui-control.sui-control-double output,.sui-folder.sui-control-double output,.sui-control.sui-control-double button,.sui-folder.sui-control-double button{width:50%}.sui-control.sui-control-double .input1,.sui-folder.sui-control-double .input1{width:calc(100% - 7em);max-width:8em}.sui-control.sui-control-double .input2,.sui-folder.sui-control-double .input2{width:7em}.sui-control.sui-control-double .input1[type=\"range\"],.sui-folder.sui-control-double .input1[type=\"range\"]{width:calc(100% - 7em - 16px)}.sui-control.sui-type-bool,.sui-folder.sui-type-bool{text-align:center}.sui-control.sui-invalid,.sui-folder.sui-invalid{border-left:4px solid #d00}.sui-array{list-style:none;}.sui-array .sui-array-item{border-bottom:1px dotted #aaa;position:relative;}.sui-array .sui-array-item .sui-icon,.sui-array .sui-array-item .sui-icon-mini{opacity:.1}.sui-array .sui-array-item .sui-array-add .sui-icon,.sui-array .sui-array-item .sui-array-add .sui-icon-mini{opacity:.2}.sui-array .sui-array-item > *{vertical-align:top}.sui-array .sui-array-item:first-child > .sui-move > .sui-icon-up{visibility:hidden}.sui-array .sui-array-item:last-child{border-bottom:none;}.sui-array .sui-array-item:last-child > .sui-move > .sui-icon-down{visibility:hidden}.sui-array .sui-array-item > div{display:inline-block}.sui-array .sui-array-item .sui-move{position:absolute;width:8px;height:100%;}.sui-array .sui-array-item .sui-move .sui-icon-mini{display:block;position:absolute}.sui-array .sui-array-item .sui-move .sui-icon-up{top:0;left:1px}.sui-array .sui-array-item .sui-move .sui-icon-down{bottom:0;left:1px}.sui-array .sui-array-item .sui-control-container{margin:0 14px 0 10px;width:calc(100% - 24px)}.sui-array .sui-array-item .sui-remove{width:12px;position:absolute;right:1px;top:0}.sui-array .sui-array-item .sui-icon-remove,.sui-array .sui-array-item .sui-icon-up,.sui-array .sui-array-item .sui-icon-down{cursor:pointer}.sui-array .sui-array-item.sui-focus > .sui-move .sui-icon,.sui-array .sui-array-item.sui-focus > .sui-remove .sui-icon,.sui-array .sui-array-item.sui-focus > .sui-move .sui-icon-mini,.sui-array .sui-array-item.sui-focus > .sui-remove .sui-icon-mini{opacity:.4}.sui-array ~ .sui-control{margin-bottom:0}.sui-map{border-collapse:collapse;}.sui-map .sui-map-item > td{border-bottom:1px dotted #aaa;}.sui-map .sui-map-item > td:first-child{border-left:none}.sui-map .sui-map-item:last-child > td{border-bottom:none}.sui-map .sui-map-item .sui-icon{opacity:.1}.sui-map .sui-map-item .sui-array-add .sui-icon{opacity:.2}.sui-map .sui-map-item .sui-remove{width:14px;text-align:right;padding:0 1px}.sui-map .sui-map-item .sui-icon-remove{cursor:pointer}.sui-map .sui-map-item.sui-focus > .sui-remove .sui-icon{opacity:.4}.sui-disabled .sui-icon,.sui-disabled .sui-icon-mini,.sui-disabled .sui-icon:hover,.sui-disabled .sui-icon-mini:hover{opacity:.05 !important;cursor:default}.sui-array-add{text-align:right;}.sui-array-add .sui-icon,.sui-array-add .sui-icon-mini{margin-right:1px;opacity:.2;cursor:pointer}.sui-icon,.sui-icon-mini{display:inline-block;opacity:.4;vertical-align:middle;}.sui-icon:hover,.sui-icon-mini:hover{opacity:.8 !important}.sui-icon{width:12px;height:12px;background-size:12px 12px}.sui-icon-mini{width:8px;height:8px;background-size:8px 8px}.sui-folder{padding:0 6px;font-weight:bold}.sui-collapsible{cursor:pointer}.sui-bottom-left .sui-trigger-toggle,.sui-bottom-right .sui-trigger-toggle{transform:rotate(180deg)}.sui-choice-options > .sui-grid,.sui-grid-inner{width:100%}.sui-choice-options > .sui-grid > tr > td:first-child,.sui-choice-options > .sui-grid > tbody > tr > td:first-child{border-left:none}.sui-choice-options > .sui-grid > tr:last-child > td,.sui-choice-options > .sui-grid > tbody > tr:last-child > td{border-bottom:none}.sui-grid-inner{border-left:6px solid #f6f6f6}.sui-choice-header select{width:100%}");
 
       // Production steps of ECMA-262, Edition 5, 15.4.4.21
       // Reference: http://es5.github.io/#x15.4.4.21
@@ -10669,16 +8022,19 @@ if(typeof(scope.performance.now) == "undefined") {
 	};
 	scope.performance.now = now;
 }
-dots_Html.pattern = new EReg("[<]([^> ]+)","");
-dots_Query.doc = document;
+thx_culture_Culture.cultures = new haxe_ds_StringMap();
+thx_culture_Culture.list = [];
+fly_Config.width = 660;
+fly_Config.height = 440;
+fly_Config.columns = [0,3,6,6,9,9,9,9,12,12,12,12,12,12,15,15,15,15,15,15,15,18];
 fly_Game.ONE_DEGREE = Math.PI / 180;
-fly_Game.edibleFly = new fly_components_Edible(true,true,5);
-fly_Game.edibleFlower = new fly_components_Edible(false,false,1);
+fly_Game.edibleFly = new fly_components_Edible(true,true,50,true);
+fly_Game.edibleFlower = new fly_components_Edible(true,true,10,false);
 fly_components_Explosion.maxStage = 30;
 fly_components_Explosion.peak = 20;
-fly_components_Explosion.radius = 40;
+fly_components_Explosion.radius = 50;
 fly_components_Detonation.instance = new fly_components_Detonation(fly_components_Explosion.radius);
-fly_components_Droplet.maxLife = 100;
+fly_components_Droplet.maxLife = 300;
 fly_systems_MazeCollision.E = 0.00001;
 haxe_ds_ObjectMap.count = 0;
 js_Boot.__toStr = {}.toString;
@@ -10689,8 +8045,6 @@ minicanvas_BrowserCanvas.defaultScaleMode = minicanvas_ScaleMode.Auto;
 minicanvas_BrowserCanvas.parentNode = typeof document != 'undefined' && document.body;
 minicanvas_NodeCanvas.defaultScaleMode = minicanvas_ScaleMode.NoScale;
 minicanvas_NodeCanvas.imagePath = "images";
-sui_controls_ColorControl.PATTERN = new EReg("^[#][0-9a-f]{6}$","i");
-sui_controls_DataList.nid = 0;
 thx_color__$Grey_Grey_$Impl_$.black = 0;
 thx_color__$Grey_Grey_$Impl_$.white = 1;
 thx_color_parse_ColorParser.parser = new thx_color_parse_ColorParser();
@@ -10708,6 +8062,14 @@ thx_core_Strings.STRIPTAGS = new EReg("</?[a-z]+[^>]*?/?>","gi");
 thx_core_Strings.WSG = new EReg("\\s+","g");
 thx_core_Strings.SPLIT_LINES = new EReg("\r\n|\n\r|\n|\r","g");
 thx_core_Timer.FRAME_RATE = Math.round(16.6666666666666679);
-thx_promise__$Promise_Promise_$Impl_$.nil = thx_promise__$Promise_Promise_$Impl_$.value(thx_core_Nil.nil);
+thx_culture_DateFormatInfo.invariant = new thx_culture_DateFormatInfo(0,"FirstDay","AM","PM",0,"Sunday","Gregorian",null,["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],["Su","Mo","Tu","We","Th","Fr","Sa"],["January","February","March","April","May","June","July","August","September","October","November","December",""],["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec",""],["January","February","March","April","May","June","July","August","September","October","November","December",""],["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec",""],"dddd, dd MMMM yyyy","MM/dd/yyyy","dddd, dd MMMM yyyy HH:mm:ss","yyyy'-'MM'-'dd'T'HH':'mm':'ss","MMMM dd","ddd, dd MMM yyyy HH':'mm':'ss 'GMT'","HH:mm:ss","HH:mm","yyyy'-'MM'-'dd HH':'mm':'ss'Z'","yyyy MMMM","/",":");
+thx_culture_NumberFormatInfo.invariant = new thx_culture_NumberFormatInfo(2,2,2,[3],[3],[3],0,1,0,0,0,".",".",".",",",",",",","-","+","¤","NaN","-Infinity","%","‰","Infinity");
+thx_culture_Culture.invariant = new thx_culture_Culture("",thx_culture_DateFormatInfo.invariant,"",false,"iv","IVL",false,127,"Gregorian","Invariant Language","Invariant Language","Invariant Country","Invariant Country",thx_culture_NumberFormatInfo.invariant,",","IVL");
+thx_culture_Pattern.currencyNegatives = ["($n)","-$n","$-n","$n-","(n$)","-n$","n-$","n$-","-n $","-$ n","n $-","$ n-","$ -n","n- $","($ n)","(n $)"];
+thx_culture_Pattern.currencyPositives = ["$n","n$","$ n","n $"];
+thx_culture_Pattern.numberNegatives = ["(n)","-n","- n","n-","n -"];
+thx_culture_Pattern.percentNegatives = ["-n %","-n%","-%n","%-n","%n-","n-%","n%-","-%n","n %-","% n-","% -n","n- %"];
+thx_culture_Pattern.percentPositives = ["n %","n%","%n","% n"];
+thx_format_NumberFormat.BASE = "0123456789abcdefghijklmnopqrstuvwxyz";
 Main.main();
 })(typeof console != "undefined" ? console : {log:function(){}});
