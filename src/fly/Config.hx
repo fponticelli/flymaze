@@ -16,6 +16,9 @@ class Config {
   public var gen : Random;
   public var cellSize : Float;
   public var flyCircleRadius : Float;
+  public var seed : Int;
+
+  var pseudoRandom : PseudoRandom;
 
   public function new() {
     width  = 642;
@@ -27,6 +30,11 @@ class Config {
     startRow = rows - 1; // Std.int(rows / 4 * 3);
     backgroundColor = 0xBADA88;
     flyCircleRadius = 60;
-    gen = new PseudoRandom(5);
+    seed = 6;
+    gen = pseudoRandom = new PseudoRandom(seed);
+  }
+
+  public function resetSeed() {
+    pseudoRandom.seed = seed;
   }
 }

@@ -8,7 +8,7 @@ class Droplet implements edge.IComponent {
   var radius : Float;
   var color : RGB;
   var life : Int;
-  public static var maxLife = 100;
+  public static var maxLife = 300;
   public static function create()
     return new Droplet(
       Math.random() * 0.5 + 1.2,

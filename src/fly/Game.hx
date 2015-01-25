@@ -24,8 +24,9 @@ class Game {
     var p = new Position(
           (config.startCol + 0.5) * config.cellSize,
           (config.startRow + 1) * config.cellSize - 2),
-        direction = new Direction(-Math.PI / 2 + 3 * ONE_DEGREE),
-        velocity = new Velocity(2);
+        direction = new Direction(-Math.PI / 2),
+        velocity = new Velocity(2.2),
+        score = new Score(0);
 
     var m = new amaze.Maze(config.cols, config.rows, config.gen);
     m.generate(config.startRow, config.startCol);
@@ -42,7 +43,7 @@ class Game {
           velocity,
           snake,
           maze,
-          new Score(0)
+          score
         ]);
 
     engine.add(snakeEntity);
@@ -53,7 +54,7 @@ class Game {
     for(i in 0...1500)
       createFlower(engine, config);
 
-    var steering = ONE_DEGREE * 5;
+    var steering = ONE_DEGREE * 6;
 
     world.frame.add(new KeyboardInput(function(e) for(key in e.keys) switch key {
       case 37, 65: // left
@@ -75,12 +76,12 @@ class Game {
     world.physics.add(new SnakeEats(8));
     world.physics.add(new UpdateDroplet());
     world.physics.add(new UpdateExplosion());
-    world.physics.add(new UpdateDetonation());
+    world.physics.add(new UpdateDetonation(score, 10));
 
     world.render.add(new RenderBackground(mini, config.backgroundColor));
     world.render.add(new RenderDroplet(mini));
     world.render.add(new RenderMaze(mini.ctx, config.cellSize));
-    world.render.add(new RenderFlower(mini, 200, 22));
+    world.render.add(new RenderFlower(mini, 200, 20));
     world.render.add(new RenderSnake(mini));
     world.render.add(new RenderFly(mini));
     world.render.add(new RenderExplosion(mini));
@@ -97,14 +98,15 @@ class Game {
     });
   }
 
-  static var edibleFly = new Edible(true, true, 5);
-  static var edibleFlower = new Edible(false, false, 1);
+  static var edibleFly = new Edible(true, true, 50);
+  static var edibleFlower = new Edible(true, true, 10);
 
   function createFly(engine : Engine, config : Config) {
     var a = config.gen.float() * Math.PI * 2,
         p = new Position(
-          Math.cos(a) * config.gen.float() * config.flyCircleRadius + config.width / 2,
-          Math.sin(a) * config.gen.float() * config.flyCircleRadius + config.height / 2);
+          config.gen.float() * config.width, //Math.cos(a) * config.gen.float() * config.flyCircleRadius + config.width / 2,
+          config.gen.float() * config.height //Math.sin(a) * config.gen.float() * config.flyCircleRadius + config.height / 2
+        );
     engine.add(new Entity([p, Fly.create(config.gen), edibleFly]));
   }
 

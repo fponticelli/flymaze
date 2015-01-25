@@ -13,7 +13,7 @@ class Explosion implements edge.IComponent {
 
   public static var maxStage = 30;
   public static var peak = 20;
-  public static var radius = 40;
+  public static var radius = 70;
   public static function create() {
     var offset = 20,
         size = (radius + Math.ceil(offset)) * 2,
