@@ -75,21 +75,27 @@ class Game {
 //      case _: trace('key: $key');
     }));
 
-    world.physics.add(new UpdateGameInfo(gameInfo, function(nextLevel) {
-      js.Browser.window.removeEventListener("keyup", keyUp);
-      world.clear();
-      endLevel(nextLevel);
-    }));
+
+    engine.add(new Entity([new CountDown(3)]));
 
     world.physics.add(new UpdateDelayedComponents());
     world.physics.add(new MazeCollision(config.cellSize));
-    world.physics.add(new UpdatePosition());
-    world.physics.add(new UpdateFly(Config.width, Config.height, config.gen));
-    world.physics.add(new UpdateSnake());
-    world.physics.add(new SnakeEats(gameInfo, 10));
     world.physics.add(new UpdateDroplet());
     world.physics.add(new UpdateExplosion());
     world.physics.add(new UpdateDetonation(gameInfo, 10));
+    world.physics.add(new UpdateFly(Config.width, Config.height, config.gen));
+
+
+    world.physics.add(new UpdateCountDown(function() {
+      world.physics.add(new UpdateGameInfo(gameInfo, function(nextLevel) {
+        js.Browser.window.removeEventListener("keyup", keyUp);
+        world.clear();
+        endLevel(nextLevel);
+      }));
+      world.physics.add(new UpdatePosition());
+      world.physics.add(new UpdateSnake());
+      world.physics.add(new SnakeEats(gameInfo, 10));
+    }));
 
     world.render.add(new RenderBackground(mini, config.backgroundColor));
     world.render.add(new RenderDroplet(mini));
@@ -98,6 +104,7 @@ class Game {
     world.render.add(new RenderSnake(mini));
     world.render.add(new RenderFly(mini));
     world.render.add(new RenderExplosion(mini));
+    world.render.add(new RenderCountDown(mini));
     world.render.add(new RenderGameInfo(gameInfo, mini));
 
     world.render.add(new PlayAudio());

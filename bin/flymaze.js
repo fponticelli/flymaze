@@ -795,20 +795,23 @@ var fly_Game = function(mini,config,gameInfo,endLevel) {
 			}
 		}
 	}));
-	this.world.physics.add(new fly_systems_UpdateGameInfo(gameInfo,function(nextLevel) {
-		window.removeEventListener("keyup",keyUp);
-		_g.world.clear();
-		endLevel(nextLevel);
-	}));
+	this.engine.add(new edge_Entity([new fly_components_CountDown(3)]));
 	this.world.physics.add(new fly_systems_UpdateDelayedComponents());
 	this.world.physics.add(new fly_systems_MazeCollision(config.cellSize));
-	this.world.physics.add(new fly_systems_UpdatePosition());
-	this.world.physics.add(new fly_systems_UpdateFly(fly_Config.width,fly_Config.height,config.gen));
-	this.world.physics.add(new fly_systems_UpdateSnake());
-	this.world.physics.add(new fly_systems_SnakeEats(gameInfo,10));
 	this.world.physics.add(new fly_systems_UpdateDroplet());
 	this.world.physics.add(new fly_systems_UpdateExplosion());
 	this.world.physics.add(new fly_systems_UpdateDetonation(gameInfo,10));
+	this.world.physics.add(new fly_systems_UpdateFly(fly_Config.width,fly_Config.height,config.gen));
+	this.world.physics.add(new fly_systems_UpdateCountDown(function() {
+		_g.world.physics.add(new fly_systems_UpdateGameInfo(gameInfo,function(nextLevel) {
+			window.removeEventListener("keyup",keyUp);
+			_g.world.clear();
+			endLevel(nextLevel);
+		}));
+		_g.world.physics.add(new fly_systems_UpdatePosition());
+		_g.world.physics.add(new fly_systems_UpdateSnake());
+		_g.world.physics.add(new fly_systems_SnakeEats(gameInfo,10));
+	}));
 	this.world.render.add(new fly_systems_RenderBackground(mini,config.backgroundColor));
 	this.world.render.add(new fly_systems_RenderDroplet(mini));
 	this.world.render.add(new fly_systems_RenderMaze(mini.ctx,config.cellSize));
@@ -816,6 +819,7 @@ var fly_Game = function(mini,config,gameInfo,endLevel) {
 	this.world.render.add(new fly_systems_RenderSnake(mini));
 	this.world.render.add(new fly_systems_RenderFly(mini));
 	this.world.render.add(new fly_systems_RenderExplosion(mini));
+	this.world.render.add(new fly_systems_RenderCountDown(mini));
 	this.world.render.add(new fly_systems_RenderGameInfo(gameInfo,mini));
 	this.world.render.add(new fly_systems_PlayAudio());
 	this.world.render.add(new fly_systems_BackgroundBuzz());
@@ -857,6 +861,15 @@ fly_components_Audio.get_boing = function() {
 fly_components_Audio.prototype = {
 	name: null
 	,__class__: fly_components_Audio
+};
+var fly_components_CountDown = function(time) {
+	this.time = time;
+};
+fly_components_CountDown.__name__ = ["fly","components","CountDown"];
+fly_components_CountDown.__interfaces__ = [edge_IComponent];
+fly_components_CountDown.prototype = {
+	time: null
+	,__class__: fly_components_CountDown
 };
 var fly_components_DelayedComponents = function(ticks,toAdd,toRemove) {
 	this.ticks = ticks;
@@ -1220,6 +1233,71 @@ fly_systems_MazeCollision.prototype = {
 	,entityRequirements: null
 	,__class__: fly_systems_MazeCollision
 };
+var haxe_IMap = function() { };
+haxe_IMap.__name__ = ["haxe","IMap"];
+haxe_IMap.prototype = {
+	remove: null
+	,__class__: haxe_IMap
+};
+var haxe_ds_StringMap = function() {
+	this.h = { };
+};
+haxe_ds_StringMap.__name__ = ["haxe","ds","StringMap"];
+haxe_ds_StringMap.__interfaces__ = [haxe_IMap];
+haxe_ds_StringMap.prototype = {
+	h: null
+	,rh: null
+	,set: function(key,value) {
+		if(__map_reserved[key] != null) this.setReserved(key,value); else this.h[key] = value;
+	}
+	,get: function(key) {
+		if(__map_reserved[key] != null) return this.getReserved(key);
+		return this.h[key];
+	}
+	,exists: function(key) {
+		if(__map_reserved[key] != null) return this.existsReserved(key);
+		return this.h.hasOwnProperty(key);
+	}
+	,setReserved: function(key,value) {
+		if(this.rh == null) this.rh = { };
+		this.rh["$" + key] = value;
+	}
+	,getReserved: function(key) {
+		if(this.rh == null) return null; else return this.rh["$" + key];
+	}
+	,existsReserved: function(key) {
+		if(this.rh == null) return false;
+		return this.rh.hasOwnProperty("$" + key);
+	}
+	,remove: function(key) {
+		if(__map_reserved[key] != null) {
+			key = "$" + key;
+			if(this.rh == null || !this.rh.hasOwnProperty(key)) return false;
+			delete(this.rh[key]);
+			return true;
+		} else {
+			if(!this.h.hasOwnProperty(key)) return false;
+			delete(this.h[key]);
+			return true;
+		}
+	}
+	,arrayKeys: function() {
+		var out = [];
+		for( var key in this.h ) {
+		if(this.h.hasOwnProperty(key)) out.push(key);
+		}
+		if(this.rh != null) {
+			for( var key in this.rh ) {
+			if(key.charCodeAt(0) == 36) out.push(key.substr(1));
+			}
+		}
+		return out;
+	}
+	,iterator: function() {
+		return new haxe_ds__$StringMap_StringMapIterator(this,this.arrayKeys());
+	}
+	,__class__: haxe_ds_StringMap
+};
 var js_Boot = function() { };
 js_Boot.__name__ = ["js","Boot"];
 js_Boot.getClass = function(o) {
@@ -1361,6 +1439,29 @@ fly_systems_RenderBackground.prototype = {
 	,componentRequirements: null
 	,entityRequirements: null
 	,__class__: fly_systems_RenderBackground
+};
+var fly_systems_RenderCountDown = function(mini) {
+	this.entityRequirements = null;
+	this.componentRequirements = [fly_components_CountDown];
+	this.mini = mini;
+};
+fly_systems_RenderCountDown.__name__ = ["fly","systems","RenderCountDown"];
+fly_systems_RenderCountDown.__interfaces__ = [edge_ISystem];
+fly_systems_RenderCountDown.prototype = {
+	mini: null
+	,update: function(countDown) {
+		this.mini.ctx.font = "160px 'Montserrat', sans-serif";
+		this.mini.ctx.textAlign = "center";
+		this.mini.ctx.lineWidth = 4;
+		this.mini.ctx.strokeStyle = "#FFFFFF";
+		this.mini.ctx.fillStyle = "#000000";
+		var t = "" + Math.ceil(countDown.time);
+		this.mini.ctx.strokeText(t,fly_Config.width / 2,fly_Config.height / 2);
+		this.mini.ctx.fillText(t,fly_Config.width / 2,fly_Config.height / 2);
+	}
+	,componentRequirements: null
+	,entityRequirements: null
+	,__class__: fly_systems_RenderCountDown
 };
 var fly_systems_RenderDroplet = function(mini) {
 	this.entityRequirements = null;
@@ -1667,6 +1768,28 @@ fly_systems_SnakeEats.prototype = {
 	,entityRequirements: null
 	,__class__: fly_systems_SnakeEats
 };
+var fly_systems_UpdateCountDown = function(callback) {
+	this.entityRequirements = null;
+	this.componentRequirements = [fly_components_CountDown];
+	this.callback = callback;
+};
+fly_systems_UpdateCountDown.__name__ = ["fly","systems","UpdateCountDown"];
+fly_systems_UpdateCountDown.__interfaces__ = [edge_ISystem];
+fly_systems_UpdateCountDown.prototype = {
+	timeDelta: null
+	,entity: null
+	,engine: null
+	,callback: null
+	,update: function(countDown) {
+		countDown.time -= this.timeDelta / 1000;
+		if(countDown.time > 0) return;
+		this.engine.remove(this.entity);
+		this.callback();
+	}
+	,componentRequirements: null
+	,entityRequirements: null
+	,__class__: fly_systems_UpdateCountDown
+};
 var fly_systems_UpdateDelayedComponents = function() {
 	this.entityRequirements = null;
 	this.componentRequirements = [fly_components_DelayedComponents];
@@ -1850,12 +1973,6 @@ fly_systems_UpdateSnake.prototype = {
 	,entityRequirements: null
 	,__class__: fly_systems_UpdateSnake
 };
-var haxe_IMap = function() { };
-haxe_IMap.__name__ = ["haxe","IMap"];
-haxe_IMap.prototype = {
-	remove: null
-	,__class__: haxe_IMap
-};
 var haxe_ds_ObjectMap = function() {
 	this.h = { };
 	this.h.__keys__ = { };
@@ -1912,65 +2029,6 @@ haxe_ds__$StringMap_StringMapIterator.prototype = {
 		return this.map.get(this.keys[this.index++]);
 	}
 	,__class__: haxe_ds__$StringMap_StringMapIterator
-};
-var haxe_ds_StringMap = function() {
-	this.h = { };
-};
-haxe_ds_StringMap.__name__ = ["haxe","ds","StringMap"];
-haxe_ds_StringMap.__interfaces__ = [haxe_IMap];
-haxe_ds_StringMap.prototype = {
-	h: null
-	,rh: null
-	,set: function(key,value) {
-		if(__map_reserved[key] != null) this.setReserved(key,value); else this.h[key] = value;
-	}
-	,get: function(key) {
-		if(__map_reserved[key] != null) return this.getReserved(key);
-		return this.h[key];
-	}
-	,exists: function(key) {
-		if(__map_reserved[key] != null) return this.existsReserved(key);
-		return this.h.hasOwnProperty(key);
-	}
-	,setReserved: function(key,value) {
-		if(this.rh == null) this.rh = { };
-		this.rh["$" + key] = value;
-	}
-	,getReserved: function(key) {
-		if(this.rh == null) return null; else return this.rh["$" + key];
-	}
-	,existsReserved: function(key) {
-		if(this.rh == null) return false;
-		return this.rh.hasOwnProperty("$" + key);
-	}
-	,remove: function(key) {
-		if(__map_reserved[key] != null) {
-			key = "$" + key;
-			if(this.rh == null || !this.rh.hasOwnProperty(key)) return false;
-			delete(this.rh[key]);
-			return true;
-		} else {
-			if(!this.h.hasOwnProperty(key)) return false;
-			delete(this.h[key]);
-			return true;
-		}
-	}
-	,arrayKeys: function() {
-		var out = [];
-		for( var key in this.h ) {
-		if(this.h.hasOwnProperty(key)) out.push(key);
-		}
-		if(this.rh != null) {
-			for( var key in this.rh ) {
-			if(key.charCodeAt(0) == 36) out.push(key.substr(1));
-			}
-		}
-		return out;
-	}
-	,iterator: function() {
-		return new haxe_ds__$StringMap_StringMapIterator(this,this.arrayKeys());
-	}
-	,__class__: haxe_ds_StringMap
 };
 var minicanvas_MiniCanvas = function(width,height,scaleMode) {
 	this.scaleMode = scaleMode;
@@ -3035,6 +3093,7 @@ if(Array.prototype.map == null) Array.prototype.map = function(f) {
 	}
 	return a;
 };
+var __map_reserved = {}
 fly_systems_PlayAudio.loadSound("exp1","sound/Buff.mp3");
 fly_systems_PlayAudio.loadSound("exp2","sound/Buffs.mp3");
 fly_systems_PlayAudio.loadSound("exp3","sound/Burf.mp3");
@@ -3044,7 +3103,6 @@ fly_systems_PlayAudio.loadSound("buzz","sound/Bzzz.mp3");
 fly_systems_PlayAudio.loadSound("gulp","sound/Gulp.mp3");
 fly_systems_PlayAudio.loadSound("crunch","sound/Crunch.mp3");
 fly_systems_PlayAudio.loadSound("poop","sound/Poop.mp3");
-var __map_reserved = {}
 
       // Production steps of ECMA-262, Edition 5, 15.4.4.21
       // Reference: http://es5.github.io/#x15.4.4.21
