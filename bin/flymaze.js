@@ -796,6 +796,7 @@ var fly_Game = function(mini,config,gameInfo,endLevel) {
 		}
 	}));
 	this.engine.add(new edge_Entity([new fly_components_CountDown(3)]));
+	this.engine.add(new edge_Entity([fly_components_Audio.start]));
 	this.world.physics.add(new fly_systems_UpdateDelayedComponents());
 	this.world.physics.add(new fly_systems_MazeCollision(config.cellSize));
 	this.world.physics.add(new fly_systems_UpdateDroplet());
@@ -3103,6 +3104,7 @@ fly_systems_PlayAudio.loadSound("buzz","sound/Bzzz.mp3");
 fly_systems_PlayAudio.loadSound("gulp","sound/Gulp.mp3");
 fly_systems_PlayAudio.loadSound("crunch","sound/Crunch.mp3");
 fly_systems_PlayAudio.loadSound("poop","sound/Poop.mp3");
+fly_systems_PlayAudio.loadSound("start","sound/Start.mp3");
 
       // Production steps of ECMA-262, Edition 5, 15.4.4.21
       // Reference: http://es5.github.io/#x15.4.4.21
@@ -3181,6 +3183,7 @@ fly_components_Audio.buzzing = new fly_components_Audio("buzz");
 fly_components_Audio.eatFly = new fly_components_Audio("gulp");
 fly_components_Audio.eatFlower = new fly_components_Audio("crunch");
 fly_components_Audio.poop = new fly_components_Audio("poop");
+fly_components_Audio.start = new fly_components_Audio("start");
 fly_components_Audio.explosions = [new fly_components_Audio("exp1"),new fly_components_Audio("exp2"),new fly_components_Audio("exp3")];
 fly_components_Audio.explosion_id = 0;
 fly_components_Audio.boings = [new fly_components_Audio("boing1"),new fly_components_Audio("boing2")];

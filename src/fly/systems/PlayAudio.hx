@@ -51,6 +51,7 @@ class PlayAudio implements ISystem {
     loadSound("gulp",   "sound/Gulp.mp3");
     loadSound("crunch", "sound/Crunch.mp3");
     loadSound("poop",   "sound/Poop.mp3");
+    loadSound("start",  "sound/Start.mp3");
   }
 
   static var context : AudioContext = untyped __js__("(function() {

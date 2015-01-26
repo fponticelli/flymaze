@@ -7,6 +7,7 @@ class Audio implements edge.IComponent {
   public static var eatFly    = new Audio("gulp");
   public static var eatFlower = new Audio("crunch");
   public static var poop      = new Audio("poop");
+  public static var start     = new Audio("start");
   public static var explosion(get, null) : Audio;
   public static var boing(get, null) : Audio;
 

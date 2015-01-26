@@ -77,6 +77,7 @@ class Game {
 
 
     engine.add(new Entity([new CountDown(3)]));
+    engine.add(new Entity([Audio.start]));
 
     world.physics.add(new UpdateDelayedComponents());
     world.physics.add(new MazeCollision(config.cellSize));
