@@ -155,7 +155,7 @@ class Main {
 <p><em>Mute audio</em> with M.</p>
 <p></p>
 <p>Copyright © Franco Ponticelli</p>
-<p>Credits for Sounds Effects go to Gabriel and Matilder Ponticelli</p>
+<p>Sounds Effect Credits go to Gabriel and Matilde Ponticelli</p>
 <p>Realized with <a href="http://haxe.org">Haxe</a> and the library <a href="http://github.com/fponticelli/edge">edge</a>.</p>
 ';
     el.innerHTML = message;
