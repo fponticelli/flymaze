@@ -71,6 +71,7 @@ var Main = function() { };
 Main.__name__ = ["Main"];
 Main.main = function() {
 	Main.mini = minicanvas_MiniCanvas.create(fly_Config.width,fly_Config.height).display("flymaze");
+	Main.instructions();
 	Main.decorateBackground();
 	Main.startScreen();
 };
@@ -185,6 +186,11 @@ Main.background = function() {
 		f.id = i;
 		Main.flowers.update(p,f);
 	}
+};
+Main.instructions = function() {
+	var el = window.document.querySelector("figcaption");
+	var message = "\n<p>Use the arrow keys <i class=\"fa fa-caret-square-o-left\"></i> <i class=\"fa fa-caret-square-o-right\"></i> (or A/D) to turn left/right.</p>\n<p>Kill all the flies within 2 minutes to pass level.</p>\n<p>When you eat a flower or a fly, you leave a <em>droplet</em>.<br>They explode after a few seconds and they help to clean-up the area faster.</p>\n<p><em>Pause</em> with spacebar or (P).</p>\n<p><em>Mute audio</em> with M.</p>\n<p></p>\n<p>Copyright © Franco Ponticelli</p>\n<p>Credits for Sounds Effects go to Gabriel and Matilder Ponticelli</p>\n<p>Realized with <a href=\"http://haxe.org\">Haxe</a> and the library <a href=\"http://github.com/fponticelli/edge\">edge</a>.</p>\n";
+	el.innerHTML = message;
 };
 Math.__name__ = ["Math"];
 var Reflect = function() { };

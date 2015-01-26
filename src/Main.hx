@@ -14,6 +14,7 @@ class Main {
     mini = MiniCanvas
       .create(Config.width, Config.height)
       .display("flymaze");
+    instructions();
 
     decorateBackground();
     startScreen();
@@ -141,5 +142,22 @@ class Main {
       f.id = i;
       flowers.update(p, f);
     }
+  }
+
+  static function instructions() {
+    var el = js.Browser.document.querySelector('figcaption');
+
+    var message = '
+<p>Use the arrow keys <i class="fa fa-caret-square-o-left"></i> <i class="fa fa-caret-square-o-right"></i> (or A/D) to turn left/right.</p>
+<p>Kill all the flies within 2 minutes to pass level.</p>
+<p>When you eat a flower or a fly, you leave a <em>droplet</em>.<br>They explode after a few seconds and they help to clean-up the area faster.</p>
+<p><em>Pause</em> with spacebar or (P).</p>
+<p><em>Mute audio</em> with M.</p>
+<p></p>
+<p>Copyright © Franco Ponticelli</p>
+<p>Credits for Sounds Effects go to Gabriel and Matilder Ponticelli</p>
+<p>Realized with <a href="http://haxe.org">Haxe</a> and the library <a href="http://github.com/fponticelli/edge">edge</a>.</p>
+';
+    el.innerHTML = message;
   }
 }
