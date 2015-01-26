@@ -101,6 +101,8 @@ class Game {
       world.physics.add(new UpdatePosition());
       world.physics.add(new UpdateSnake());
       world.physics.add(new SnakeEats(gameInfo, 10));
+
+      js.Browser.window.addEventListener("keyup", keyUp);
     }));
 
     world.render.add(new RenderBackground(mini, config.backgroundColor));
@@ -115,8 +117,6 @@ class Game {
 
     world.render.add(new PlayAudio());
     world.render.add(new BackgroundBuzz());
-
-    js.Browser.window.addEventListener("keyup", keyUp);
   }
 
   static var edibleFly = new Edible(true, true, 50, true);
