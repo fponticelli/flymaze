@@ -1,3 +1,5 @@
 # FLYMAZE
 
-Simple game. Latest [live version here](https://rawgit.com/fponticelli/flymaze/master/bin/index.html).
+A game of Flies and Snakes ... in a maze.
+
+Latest [live version here](http://flymaze.ponticelli.me/).
