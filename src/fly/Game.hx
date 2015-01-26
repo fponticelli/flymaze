@@ -39,6 +39,8 @@ class Game {
         else {
           start();
         }
+      } else if(e.keyCode == 77) {
+        gameInfo.mute = !gameInfo.mute;
       }
     }
 
@@ -115,7 +117,7 @@ class Game {
     world.render.add(new RenderCountDown(mini));
     world.render.add(new RenderGameInfo(gameInfo, mini));
 
-    world.render.add(new PlayAudio());
+    world.render.add(new PlayAudio(gameInfo));
     world.render.add(new BackgroundBuzz());
   }
 

@@ -16,6 +16,7 @@ class RenderCountDown implements ISystem {
   function update(countDown : CountDown) {
     mini.ctx.font = "160px 'Montserrat', sans-serif";
     mini.ctx.textAlign = "center";
+    mini.ctx.textBaseline = "middle";
     mini.ctx.lineWidth = 4;
     mini.ctx.strokeStyle = "#FFFFFF";
     mini.ctx.fillStyle = "#000000";

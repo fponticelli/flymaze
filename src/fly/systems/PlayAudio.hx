@@ -8,8 +8,14 @@ import fly.components.*;
 class PlayAudio implements ISystem {
   var entity : Entity;
   var engine : Engine;
+  var info : GameInfo;
+  public function new(info : GameInfo) {
+    this.info = info;
+  }
+
   function update(audio : Audio) {
-    playSound(audio.name);
+    if(!info.mute)
+      playSound(audio.name);
     engine.remove(entity);
   }
 

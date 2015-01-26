@@ -27,7 +27,7 @@ class Main {
       mini.onKeyUp(function(e) {
         if(e.keyCode != 32) return;
         mini.offKeyUp();
-        var info = new GameInfo(0, 0, 0, 0);
+        var info = new GameInfo(0, 0, 0, 0, false);
         playLevel(info);
       });
     }, 250);
@@ -70,7 +70,7 @@ class Main {
       mini.onKeyUp(function(e) {
         if(e.keyCode != 32) return;
         mini.offKeyUp();
-        var info = new GameInfo(0, 0, 0, 0);
+        var info = new GameInfo(0, 0, 0, 0, info.mute);
         playLevel(info);
       });
     }, 250);
@@ -121,6 +121,7 @@ class Main {
 
   static function write(text : String, size : Float, x : Float, y : Float) {
     mini.ctx.font = size + "px 'Montserrat', sans-serif";
+    mini.ctx.textBaseline = "bottom";
     mini.ctx.lineWidth = 4;
     mini.ctx.textAlign = "center";
     mini.ctx.strokeStyle = "#FFFFFF";

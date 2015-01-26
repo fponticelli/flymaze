@@ -82,7 +82,7 @@ Main.startScreen = function() {
 		Main.mini.onKeyUp(function(e) {
 			if(e.keyCode != 32) return;
 			Main.mini.offKeyUp();
-			var info = new fly_components_GameInfo(0,0,0,0);
+			var info = new fly_components_GameInfo(0,0,0,0,false);
 			Main.playLevel(info);
 		});
 	},250);
@@ -119,7 +119,7 @@ Main.gameOver = function(info) {
 		Main.mini.onKeyUp(function(e) {
 			if(e.keyCode != 32) return;
 			Main.mini.offKeyUp();
-			var info1 = new fly_components_GameInfo(0,0,0,0);
+			var info1 = new fly_components_GameInfo(0,0,0,0,info.mute);
 			Main.playLevel(info1);
 		});
 	},250);
@@ -164,6 +164,7 @@ Main.decorateBackground = function() {
 };
 Main.write = function(text,size,x,y) {
 	Main.mini.ctx.font = size + "px 'Montserrat', sans-serif";
+	Main.mini.ctx.textBaseline = "bottom";
 	Main.mini.ctx.lineWidth = 4;
 	Main.mini.ctx.textAlign = "center";
 	Main.mini.ctx.strokeStyle = "#FFFFFF";
@@ -759,7 +760,7 @@ var fly_Game = function(mini,config,gameInfo,endLevel) {
 	var keyUp = function(e) {
 		if(e.keyCode == 32 || e.keyCode == 80) {
 			if(_g.world.running) _g.stop(); else _g.start();
-		}
+		} else if(e.keyCode == 77) gameInfo.mute = !gameInfo.mute;
 	};
 	this.world = new edge_World();
 	this.engine = this.world.engine;
@@ -824,7 +825,7 @@ var fly_Game = function(mini,config,gameInfo,endLevel) {
 	this.world.render.add(new fly_systems_RenderExplosion(mini));
 	this.world.render.add(new fly_systems_RenderCountDown(mini));
 	this.world.render.add(new fly_systems_RenderGameInfo(gameInfo,mini));
-	this.world.render.add(new fly_systems_PlayAudio());
+	this.world.render.add(new fly_systems_PlayAudio(gameInfo));
 	this.world.render.add(new fly_systems_BackgroundBuzz());
 };
 fly_Game.__name__ = ["fly","Game"];
@@ -978,11 +979,12 @@ fly_components_Fly.prototype = {
 	height: null
 	,__class__: fly_components_Fly
 };
-var fly_components_GameInfo = function(score,toPassLevel,timeLeft,level) {
+var fly_components_GameInfo = function(score,toPassLevel,timeLeft,level,mute) {
 	this.score = score;
 	this.toPassLevel = toPassLevel;
 	this.timeLeft = timeLeft;
 	this.level = level;
+	this.mute = mute;
 };
 fly_components_GameInfo.__name__ = ["fly","components","GameInfo"];
 fly_components_GameInfo.__interfaces__ = [edge_IComponent];
@@ -991,6 +993,7 @@ fly_components_GameInfo.prototype = {
 	,toPassLevel: null
 	,timeLeft: null
 	,level: null
+	,mute: null
 	,__class__: fly_components_GameInfo
 };
 var fly_components_Maze = function(maze,id) {
@@ -1386,9 +1389,10 @@ js_Boot.__nativeClassName = function(o) {
 js_Boot.__resolveNativeClass = function(name) {
 	if(typeof window != "undefined") return window[name]; else return global[name];
 };
-var fly_systems_PlayAudio = function() {
+var fly_systems_PlayAudio = function(info) {
 	this.entityRequirements = null;
 	this.componentRequirements = [fly_components_Audio];
+	this.info = info;
 };
 fly_systems_PlayAudio.__name__ = ["fly","systems","PlayAudio"];
 fly_systems_PlayAudio.__interfaces__ = [edge_ISystem];
@@ -1416,8 +1420,9 @@ fly_systems_PlayAudio.playSound = function(name) {
 fly_systems_PlayAudio.prototype = {
 	entity: null
 	,engine: null
+	,info: null
 	,update: function(audio) {
-		fly_systems_PlayAudio.playSound(audio.name);
+		if(!this.info.mute) fly_systems_PlayAudio.playSound(audio.name);
 		this.engine.remove(this.entity);
 	}
 	,componentRequirements: null
@@ -1454,6 +1459,7 @@ fly_systems_RenderCountDown.prototype = {
 	,update: function(countDown) {
 		this.mini.ctx.font = "160px 'Montserrat', sans-serif";
 		this.mini.ctx.textAlign = "center";
+		this.mini.ctx.textBaseline = "middle";
 		this.mini.ctx.lineWidth = 4;
 		this.mini.ctx.strokeStyle = "#FFFFFF";
 		this.mini.ctx.fillStyle = "#000000";
@@ -1585,6 +1591,7 @@ fly_systems_RenderGameInfo.prototype = {
 	,gameInfo: null
 	,update: function() {
 		this.mini.ctx.font = "14px 'Montserrat', sans-serif";
+		this.mini.ctx.textBaseline = "bottom";
 		this.mini.ctx.textAlign = "left";
 		this.mini.ctx.lineWidth = 4;
 		this.mini.ctx.strokeStyle = "#FFFFFF";
@@ -1597,6 +1604,16 @@ fly_systems_RenderGameInfo.prototype = {
 			var message = messages[i];
 			this.mini.ctx.strokeText(message,10,(1 + i) * 20);
 			this.mini.ctx.fillText(message,10,(1 + i) * 20);
+		}
+		if(this.gameInfo.mute) {
+			this.mini.ctx.font = "36px 'FontAwesome'";
+			var message1 = String.fromCharCode(61534);
+			this.mini.ctx.strokeText(message1,fly_Config.width - 35,38);
+			this.mini.ctx.fillText(message1,fly_Config.width - 35,38);
+			this.mini.ctx.font = "28px 'FontAwesome'";
+			var message2 = String.fromCharCode(61478);
+			this.mini.ctx.strokeText(message2,fly_Config.width - 27,34);
+			this.mini.ctx.fillText(message2,fly_Config.width - 27,34);
 		}
 	}
 	,componentRequirements: null
@@ -3178,7 +3195,7 @@ thx_culture_Culture.cultures = new haxe_ds_StringMap();
 thx_culture_Culture.list = [];
 fly_Config.width = 660;
 fly_Config.height = 440;
-fly_Config.columns = [0,18,6,9,9,9,9,12,12,12,12,12,12,15,15,15,15,15,15,15,18];
+fly_Config.columns = [0,6,6,9,9,9,9,12,12,12,12,12,12,15,15,15,15,15,15,15,18];
 fly_Game.ONE_DEGREE = Math.PI / 180;
 fly_Game.edibleFly = new fly_components_Edible(true,true,50,true);
 fly_Game.edibleFlower = new fly_components_Edible(true,true,10,false);

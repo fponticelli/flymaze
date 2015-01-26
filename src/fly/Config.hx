@@ -8,7 +8,7 @@ using thx.color.RGB;
 class Config {
   static public var width  : Int = 660;
   static public var height : Int = 440;
-  static var columns = [0, 3, 6, 6, 9, 9, 9, 9, 12, 12, 12, 12, 12, 12, 15, 15, 15, 15, 15, 15, 15, 18];
+  static var columns = [0, 6, 6, 9, 9, 9, 9, 12, 12, 12, 12, 12, 12, 15, 15, 15, 15, 15, 15, 15, 18];
 
   public var cols : Int;
   public var rows : Int;

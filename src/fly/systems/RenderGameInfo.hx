@@ -16,6 +16,7 @@ class RenderGameInfo implements ISystem {
 
   function update() {
     mini.ctx.font = "14px 'Montserrat', sans-serif";
+    mini.ctx.textBaseline = "bottom";
     mini.ctx.textAlign = "left";
     mini.ctx.lineWidth = 4;
     mini.ctx.strokeStyle = "#FFFFFF";
@@ -30,6 +31,19 @@ class RenderGameInfo implements ISystem {
       var message = messages[i];
       mini.ctx.strokeText(message, 10, (1 + i) * 20);
       mini.ctx.fillText(message, 10, (1 + i) * 20);
+    }
+
+    if(gameInfo.mute) {
+      mini.ctx.font = "36px 'FontAwesome'";
+      var message = String.fromCharCode(0xF05E);
+      mini.ctx.strokeText(message, Config.width - 35, 38);
+      mini.ctx.fillText(message, Config.width - 35, 38);
+
+      mini.ctx.font = "28px 'FontAwesome'";
+      var message = String.fromCharCode(0xF026);
+      mini.ctx.strokeText(message, Config.width - 27, 34);
+      mini.ctx.fillText(message, Config.width - 27, 34);
+
     }
   }
 }
