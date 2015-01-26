@@ -34,7 +34,7 @@ class PlayAudio implements ISystem {
     request.send();
   }
 
-  static function playSound(name : String) {
+  public static function playSound(name : String) {
     var source = context.createBufferSource();
     source.buffer = sounds.get(name);
     source.connect(context.destination, 0, 0);
@@ -42,16 +42,18 @@ class PlayAudio implements ISystem {
   }
 
   static function __init__() {
-    loadSound("exp1",   "sound/Buff.mp3");
-    loadSound("exp2",   "sound/Buffs.mp3");
-    loadSound("exp3",   "sound/Burf.mp3");
-    loadSound("boing1", "sound/Boin.mp3");
-    loadSound("boing2", "sound/Boing.mp3");
-    loadSound("buzz",   "sound/Bzzz.mp3");
-    loadSound("gulp",   "sound/Gulp.mp3");
-    loadSound("crunch", "sound/Crunch.mp3");
-    loadSound("poop",   "sound/Poop.mp3");
-    loadSound("start",  "sound/Start.mp3");
+    loadSound("exp1",     "sound/Buff.mp3");
+    loadSound("exp2",     "sound/Buffs.mp3");
+    loadSound("exp3",     "sound/Burf.mp3");
+    loadSound("boing1",   "sound/Boin.mp3");
+    loadSound("boing2",   "sound/Boing.mp3");
+    loadSound("buzz",     "sound/Bzzz.mp3");
+    loadSound("gulp",     "sound/Gulp.mp3");
+    loadSound("crunch",   "sound/Crunch.mp3");
+    loadSound("poop",     "sound/Poop.mp3");
+    loadSound("start",    "sound/Start.mp3");
+    loadSound("success",  "sound/Tadada.mp3");
+    loadSound("gameover", "sound/Game over.mp3");
   }
 
   static var context : AudioContext = untyped __js__("(function() {

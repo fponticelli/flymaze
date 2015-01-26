@@ -91,6 +91,11 @@ class Game {
       world.physics.add(new UpdateGameInfo(gameInfo, function(nextLevel) {
         js.Browser.window.removeEventListener("keyup", keyUp);
         world.clear();
+        if(nextLevel) {
+          PlayAudio.playSound("success");
+        } else {
+          PlayAudio.playSound("gameover");
+        }
         endLevel(nextLevel);
       }));
       world.physics.add(new UpdatePosition());
