@@ -385,8 +385,8 @@ edge_Engine.prototype = {
 		var $it1 = this.mapInfo.keys();
 		while( $it1.hasNext() ) {
 			var system1 = $it1.next();
-			var this11 = this.mapInfo.h[system1.__id__].entities;
-			this11.remove(entity);
+			var this2 = this.mapInfo.h[system1.__id__].entities;
+			this2.remove(entity);
 		}
 		this.mapEntities.remove(entity);
 		entity.engine = null;
@@ -785,8 +785,8 @@ var fly_Game = function(mini,config,gameInfo,endLevel) {
 		var i1 = _g11++;
 		this.createFlower(this.engine,config);
 	}
-	var steering = fly_Game.ONE_DEGREE * 10;
-	this.world.frame.add(new fly_systems_KeyboardInput(function(e1) {
+	var steering = fly_Game.ONE_DEGREE * 6;
+	this.world.physics.add(new fly_systems_KeyboardInput(function(e1) {
 		var _g4 = 0;
 		var _g12 = e1.keys;
 		while(_g4 < _g12.length) {

@@ -63,9 +63,10 @@ class Game {
     for(i in 0...config.flowers)
       createFlower(engine, config);
 
-    var steering = ONE_DEGREE * 10;
+    var steering = ONE_DEGREE * 6;
 
-    world.frame.add(new KeyboardInput(function(e) for(key in e.keys) switch key {
+    // TODO, consider adding a phase specific for input?
+    world.physics.add(new KeyboardInput(function(e) for(key in e.keys) switch key {
       case 37, 65: // left
         direction.angle -= steering;
       case 39, 68: // right
