@@ -59,6 +59,16 @@ function updateScore(/*data*/) {
   scoreScoreTable();
 }
 
+function getTopPlayers() {
+  return players.slice(0, topPlayers).map(function(o) {
+    return {
+      name : o.name,
+      score : o.score,
+      level : o.level
+    };
+  });
+}
+
 io.on('connection', function (socket) {
   socket.emit('request:id');
 
@@ -68,14 +78,14 @@ io.on('connection', function (socket) {
       setPlayerName(data.id, data.name);
     }
     // TODO this should only hit the current player
-    socket.emit('leaderboard:top', players.slice(0, topPlayers));
+    socket.emit('leaderboard:top', getTopPlayers());
   });
 
   socket.on('id:change', function(data) {
     if(getPlayerName(data.id) === data.name)
       return;
     if(isTopPlayer(data.id)) {
-      socket.emit('leaderboard:top', players.slice(0, topPlayers));
+      socket.emit('leaderboard:top', getTopPlayers());
     }
   });
 
@@ -92,7 +102,7 @@ io.on('connection', function (socket) {
       updateScore(data);
     }
     if(isTopScore(data.score)) {
-      socket.emit('leaderboard:top', players.slice(0, topPlayers));
+      socket.emit('leaderboard:top', getTopPlayers());
     }
   });
 
@@ -101,7 +111,7 @@ io.on('connection', function (socket) {
     if(!gameSessions[data.gameid]) return;
     updateScore(data);
     if(isTopScore(data.score)) {
-      socket.emit('leaderboard:top', players.slice(0, topPlayers));
+      socket.emit('leaderboard:top', getTopPlayers());
     }
   });
 });
