@@ -10,6 +10,7 @@ using thx.format.NumberFormat;
 
 class Main {
   static var mini : MiniCanvas;
+  static var socket : Dynamic = untyped io.connect(js.Browser.location.origin);
   public static function main() {
     mini = MiniCanvas
       .create(Config.width, Config.height)
@@ -18,6 +19,19 @@ class Main {
 
     decorateBackground();
     startScreen();
+
+
+// connect
+// on 'games/leaderboard' display
+// on 'games/active' display
+// send score every N seconds
+// send score on level
+// send score on game over
+// rename user
+    socket.on('news', function (data) {
+      trace(data);
+      socket.emit('my other event', { my: 'data' });
+    });
   }
 
   static function startScreen() {
@@ -96,6 +110,8 @@ class Main {
       p.x = w * Math.random();
       p.y = h * Math.random();
       f.id++;
+      trace(p.x + " " + p.y);
+      trace(f.id);
       flowers.update(p, f);
       if(p.x < s) {
         double = true;
@@ -114,10 +130,10 @@ class Main {
       if(double)
         flowers.update(p, f);
     }
-    mini.fill(0xFFFFFFCC);
+    //mini.fill(0xFFFFFFCC);
 
-    el.style.backgroundSize = '${w}px ${h}px';
     el.style.backgroundImage = 'url(${mini.canvas.toDataURL("image/png")})';
+    el.style.backgroundSize = '${w}px ${h}px';
   }
 
   static function write(text : String, size : Float, x : Float, y : Float) {
