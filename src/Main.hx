@@ -32,7 +32,34 @@ class Main {
       trace(data);
       socket.emit('my other event', { my: 'data' });
     });
+
+    wireSockets();
   }
+
+  static function sendId() {
+    
+  }
+
+  static function wireSockets() {
+    socket.on("request:id", function (_) {
+      trace("REQUEST:ID");
+      trace(data);
+    });
+
+    socket.on("leaderboard:top", function (data) {
+      trace("LEADERBOARD:TOP");
+      trace(data);
+    });
+  }
+
+/*
+request:id
+leaderboard:top
+
+id:confirm
+score:play
+score:final
+*/
 
   static function startScreen() {
     background();
