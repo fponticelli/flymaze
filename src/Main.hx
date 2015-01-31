@@ -275,6 +275,8 @@ class Main {
   static function updateLeaderboard(data : Array<{ name : String, level : Int, score : Int }>) {
     var el = leaderboardElement,
         rows = data.mapi(function(o, i) {
+          if(o == null || o.name == null)
+            return "";
           return '<tr class="${o.name == name ? "selected" : ""}">
 <td>${i+1}</td>
 <td>${o.name.htmlEscape()}</td>
