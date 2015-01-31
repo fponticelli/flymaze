@@ -3415,7 +3415,7 @@ if(typeof(scope.performance.now) == "undefined") {
 }
 thx_culture_Culture.cultures = new haxe_ds_StringMap();
 thx_culture_Culture.list = [];
-Main.socket = io.connect(window.location.origin);
+Main.socket = io.connect(new EReg("^http","").replace(window.location.origin,"ws"));
 fly_Config.width = 660;
 fly_Config.height = 440;
 fly_Config.columns = [0,6,6,9,9,9,9,12,12,12,12,12,12,15,15,15,15,15,15,15,18];

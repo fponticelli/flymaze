@@ -16,7 +16,7 @@ using thx.core.Strings;
 
 class Main {
   static var mini : MiniCanvas;
-  static var socket : Dynamic = untyped io.connect(js.Browser.location.origin);
+  static var socket : Dynamic = untyped io.connect((~/^http/).replace(js.Browser.location.origin, 'ws'));
   static var cancelGame : Void -> Void;
   static var gameid : String;
   static var info : GameInfo;
