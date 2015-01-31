@@ -6,6 +6,7 @@ import fly.components.Position;
 import fly.components.Flower;
 import fly.systems.RenderFlower;
 import thx.core.Timer;
+import fly.util.Cookie;
 using thx.format.NumberFormat;
 
 class Main {
@@ -28,22 +29,29 @@ class Main {
 // send score on level
 // send score on game over
 // rename user
-    socket.on('news', function (data) {
-      trace(data);
-      socket.emit('my other event', { my: 'data' });
-    });
-
     wireSockets();
   }
 
-  static function sendId() {
-    
+  static function sendId(id : String, name : String) {
+    socket.emit("id:confirm", { id : id, name : name });
   }
+
+  static var id : String;
+  static var name : String;
 
   static function wireSockets() {
     socket.on("request:id", function (_) {
       trace("REQUEST:ID");
-      trace(data);
+      id = Cookie.read("fmid");
+      if(null == id) {
+        id = thx.core.UUID.create();
+        name = fly.util.Persona.create();
+        Cookie.create("fmid", id);
+        Cookie.create("fmname", name);
+      } else {
+        name = Cookie.read("fmname");
+      }
+      sendId(id, name);
     });
 
     socket.on("leaderboard:top", function (data) {
@@ -137,8 +145,6 @@ score:final
       p.x = w * Math.random();
       p.y = h * Math.random();
       f.id++;
-      trace(p.x + " " + p.y);
-      trace(f.id);
       flowers.update(p, f);
       if(p.x < s) {
         double = true;
@@ -157,7 +163,7 @@ score:final
       if(double)
         flowers.update(p, f);
     }
-    //mini.fill(0xFFFFFFCC);
+    mini.fill(0xFFFFFFCC);
 
     el.style.backgroundImage = 'url(${mini.canvas.toDataURL("image/png")})';
     el.style.backgroundSize = '${w}px ${h}px';
