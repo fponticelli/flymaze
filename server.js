@@ -9,7 +9,7 @@ app.use(static('bin/', {}));
 
 var scoreTable = [],
     players = {},
-    topPlayers = 10,
+    topScores = 20,
     gameSessions = {};
 
 function getPlayerName(id) {
@@ -25,7 +25,7 @@ function playerExists(id) {
 }
 
 function getTopLen() {
-  return scoreTable.length < topPlayers ? scoreTable.length : topPlayers;
+  return scoreTable.length < topScores ? scoreTable.length : topScores;
 }
 
 function isTopPlayer(id) {
@@ -37,36 +37,41 @@ function isTopPlayer(id) {
 }
 
 function isTopScore(score) {
-  var len = getTopLen();
+  if(scoreTable.length < topScores)
+    return true;
   for(var i = 0; i < scoreTable.length; i++)
     if(scoreTable[i].score > score)
       return true;
   return false;
 }
 
-function scoreScoreTable() {
+function sortScoreTable() {
   scoreTable.sort(function(a, b) {
-    return a.score - b.score;
+    return b.score - a.score;
   });
 }
 
 function insertScore(data) {
   scoreTable.push(data);
-  scoreScoreTable();
+  sortScoreTable();
 }
 
 function updateScore(/*data*/) {
-  scoreScoreTable();
+  sortScoreTable();
 }
 
 function getTopPlayers() {
-  return players.slice(0, topPlayers).map(function(o) {
-    return {
-      name : o.name,
-      score : o.score,
-      level : o.level
-    };
-  });
+  var list = [],
+      i = 0;
+  while(list.length < topScores && i < scoreTable.length) {
+    var game = scoreTable[i++];
+    list.push({
+      name  : getPlayerName(game.id),
+      score : game.score,
+      level : game.level
+    });
+  }
+  return list;
 }
 
 io.on('connection', function (socket) {
@@ -77,15 +82,17 @@ io.on('connection', function (socket) {
     if(!playerExists[data.id]) {
       setPlayerName(data.id, data.name);
     }
-    // TODO this should only hit the current player
     socket.emit('leaderboard:top', getTopPlayers());
   });
 
   socket.on('id:change', function(data) {
     if(getPlayerName(data.id) === data.name)
       return;
+    setPlayerName(data.id, data.name);
     if(isTopPlayer(data.id)) {
-      socket.emit('leaderboard:top', getTopPlayers());
+      var players = getTopPlayers();
+      socket.broadcast.emit('leaderboard:top', players);
+      socket.emit('leaderboard:top', players);
     }
   });
 
@@ -102,16 +109,21 @@ io.on('connection', function (socket) {
       updateScore(data);
     }
     if(isTopScore(data.score)) {
-      socket.emit('leaderboard:top', getTopPlayers());
+      var players = getTopPlayers();
+      socket.broadcast.emit('leaderboard:top', players);
+      socket.emit('leaderboard:top', players);
     }
   });
 
   // id, score, level, time, gameid
-  socket.on('score:finale', function (data) {
+  socket.on('score:end', function (data) {
     if(!gameSessions[data.gameid]) return;
     updateScore(data);
+    delete gameSessions[data.gameid];
     if(isTopScore(data.score)) {
-      socket.emit('leaderboard:top', getTopPlayers());
+      var players = getTopPlayers();
+      socket.broadcast.emit('leaderboard:top', players);
+      socket.emit('leaderboard:top', players);
     }
   });
 });
