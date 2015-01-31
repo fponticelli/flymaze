@@ -25,7 +25,7 @@ class Game {
           (config.startCol + 0.5) * config.cellSize,
           (config.startRow + 1) * config.cellSize - 2),
         direction = new Direction(-Math.PI / 2),
-        velocity = new Velocity(2.2),
+        velocity = new Velocity(4.4),
         m = new amaze.Maze(config.cols, config.rows, config.gen);
     m.generate(config.startRow, config.startCol);
     m.cells[config.startRow][config.startCol].top = true;
@@ -44,9 +44,9 @@ class Game {
       }
     }
 
-    world = new World();
+    world = new World(30);
     engine = world.engine;
-    var snake = new Snake(60, p),
+    var snake = new Snake(40, p),
         snakeEntity = new Entity([
           p,
           direction,
@@ -63,7 +63,7 @@ class Game {
     for(i in 0...config.flowers)
       createFlower(engine, config);
 
-    var steering = ONE_DEGREE * 6;
+    var steering = ONE_DEGREE * 10;
 
     // TODO, consider adding a phase specific for input?
     world.physics.add(new KeyboardInput(function(e) for(key in e.keys) switch key {

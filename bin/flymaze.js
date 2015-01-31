@@ -868,7 +868,7 @@ var fly_Game = function(mini,config,gameInfo,endLevel) {
 	var _g = this;
 	var p = new fly_components_Position((config.startCol + 0.5) * config.cellSize,(config.startRow + 1) * config.cellSize - 2);
 	var direction = new fly_components_Direction(-Math.PI / 2);
-	var velocity = new fly_components_Velocity(2.2);
+	var velocity = new fly_components_Velocity(4.4);
 	var m = new amaze_Maze(config.cols,config.rows,config.gen);
 	m.generate(config.startRow,config.startCol);
 	m.cells[config.startRow][config.startCol] = m.cells[config.startRow][config.startCol] | 1;
@@ -881,9 +881,9 @@ var fly_Game = function(mini,config,gameInfo,endLevel) {
 			if(_g.world.running) _g.stop(); else _g.start();
 		} else if(e.keyCode == 77) gameInfo.mute = !gameInfo.mute;
 	};
-	this.world = new edge_World();
+	this.world = new edge_World(30);
 	this.engine = this.world.engine;
-	var snake = new fly_components_Snake(60,p);
+	var snake = new fly_components_Snake(40,p);
 	var snakeEntity = new edge_Entity([p,direction,velocity,snake,this.maze]);
 	this.engine.add(snakeEntity);
 	var _g1 = 0;
@@ -898,7 +898,7 @@ var fly_Game = function(mini,config,gameInfo,endLevel) {
 		var i1 = _g11++;
 		this.createFlower(this.engine,config);
 	}
-	var steering = fly_Game.ONE_DEGREE * 6;
+	var steering = fly_Game.ONE_DEGREE * 10;
 	this.world.physics.add(new fly_systems_KeyboardInput(function(e1) {
 		var _g4 = 0;
 		var _g12 = e1.keys;
@@ -1895,8 +1895,8 @@ fly_systems_SnakeEats.prototype = {
 			if(dx * dx + dy * dy <= this.sqdistance) {
 				this.engine.remove(o.entity);
 				if(o.edible.makeJump) snake.jumping.push(0);
-				if(o.edible.makeDroplet) this.engine.add(new edge_Entity([new fly_components_Position(position.x,position.y),new fly_components_DelayedComponents(50,[fly_components_Droplet.create()],[fly_components_DelayedComponents])]));
-				this.engine.add(new edge_Entity([new fly_components_DelayedComponents(50,[fly_components_Audio.poop],[])]));
+				if(o.edible.makeDroplet) this.engine.add(new edge_Entity([new fly_components_Position(position.x,position.y),new fly_components_DelayedComponents(35,[fly_components_Droplet.create()],[fly_components_DelayedComponents])]));
+				this.engine.add(new edge_Entity([new fly_components_DelayedComponents(35,[fly_components_Audio.poop],[])]));
 				this.gameInfo.score += o.edible.score;
 				if(o.edible.countToPassLevel) {
 					this.gameInfo.toPassLevel--;

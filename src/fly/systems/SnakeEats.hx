@@ -27,14 +27,14 @@ class SnakeEats implements ISystem {
           engine.add(new Entity([
             new Position(position.x, position.y),
             new DelayedComponents(
-              50,
+              35,
               [Droplet.create()],
               [DelayedComponents]
             )
           ]));
           engine.add(new Entity([
             new DelayedComponents(
-              50,
+              35,
               [Audio.poop],
               []
             )
