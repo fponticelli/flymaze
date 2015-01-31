@@ -41,8 +41,10 @@ class PlayAudio implements ISystem {
   }
 
   public static function playSound(name : String) {
+    var b = sounds.get(name);
+    if(null == b) return;
     var source = context.createBufferSource();
-    source.buffer = sounds.get(name);
+    source.buffer = b;
     source.connect(context.destination, 0, 0);
     source.start(0);
   }
