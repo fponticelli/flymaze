@@ -2142,7 +2142,7 @@ fly_util_Cookie.read = function(name) {
 var fly_util_Persona = function() { };
 fly_util_Persona.__name__ = ["fly","util","Persona"];
 fly_util_Persona.create = function() {
-	var n = Math.floor(Math.random() * 3);
+	var n = Math.floor(Math.random() * 2) + 1;
 	return ((function($this) {
 		var $r;
 		var _g = [];
@@ -3435,7 +3435,7 @@ fly_components_Explosion.maxStage = 30;
 fly_components_Explosion.peak = 20;
 fly_components_Explosion.radius = 50;
 fly_components_Detonation.instance = new fly_components_Detonation(fly_components_Explosion.radius);
-fly_components_Droplet.maxLife = 300;
+fly_components_Droplet.maxLife = 200;
 js_Boot.__toStr = {}.toString;
 fly_systems_PlayAudio.sounds = new haxe_ds_StringMap();
 fly_systems_PlayAudio.context = (function() {
