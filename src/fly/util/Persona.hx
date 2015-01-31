@@ -7,7 +7,7 @@ class Persona {
   public static var nouns = Macro.fileToArray("src/fly/util/nouns.txt");
 
   public static function create() {
-    var n = Math.floor(Math.random() * 3);
+    var n = Math.floor(Math.random() * 2) + 1;
     return [for(_ in 0...n) adjectives.sampleOne()].concat([nouns.sampleOne()]).join(" ");
   }
 }
