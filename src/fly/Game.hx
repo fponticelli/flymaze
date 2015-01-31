@@ -16,7 +16,7 @@ class Game {
   var config : Config;
   var maze : Maze;
 
-  public var running(default, null) : Bool = false;
+  public var running(get, null) : Bool;
 
   static var ONE_DEGREE = Math.PI / 180;
 
@@ -89,7 +89,6 @@ class Game {
     world.physics.add(new UpdateDetonation(gameInfo, 10));
     world.physics.add(new UpdateFly(Config.width, Config.height, config.gen));
 
-
     world.physics.add(new UpdateCountDown(function() {
       world.physics.add(new UpdateGameInfo(gameInfo, function(nextLevel) {
         js.Browser.window.removeEventListener("keyup", keyUp);
@@ -141,6 +140,9 @@ class Game {
         );
     engine.add(new Entity([p, new Flower(config.gen.int()), edibleFlower]));
   }
+
+  function get_running()
+    return world.running;
 
   public function start()
     world.start();
