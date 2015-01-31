@@ -64,8 +64,8 @@ class Main {
     });
   }
 
-  static function sendScore(final = false) {
-    var event = "score:" + (final ? "end" : "play");
+  static function sendScore(status : ScoreUpdate) {
+    var event = "score:" + status;
     socket.emit(
       event,
       {
@@ -107,9 +107,10 @@ class Main {
 
     if(info.level == 1) {
       gameid = UUID.create();
+      sendScore(start);
       cancelGame = Timer.repeat(function() {
         if(game.running) {
-          sendScore(false);
+          sendScore(update);
         }
       }, 5000);
     }
@@ -132,7 +133,7 @@ class Main {
   static function gameOver(info : GameInfo) {
     background();
     cancelGame();
-    sendScore(true);
+    sendScore(end);
     write("Game Over!", 48, Config.width / 2, Config.height / 2);
     write("Final Score " + info.score.number(0) + ' (level ${info.level})', 24, Config.width / 2, Config.height / 4 * 3);
     write("(press bar to start a new game)", 16, Config.width / 2, Config.height / 4 * 3.5);
@@ -286,4 +287,11 @@ class Main {
     if(old == rows) return;
     el.innerHTML = old = rows;
   }
+}
+
+@:enum
+abstract ScoreUpdate(String) {
+  public var start = "start";
+  public var update = "update";
+  public var end = "end";
 }

@@ -115,10 +115,8 @@ Main.wireSockets = function() {
 		Main.updateLeaderboard(data);
 	});
 };
-Main.sendScore = function($final) {
-	if($final == null) $final = false;
-	var event;
-	event = "score:" + ($final?"end":"play");
+Main.sendScore = function(status) {
+	var event = "score:" + status;
 	Main.socket.emit(event,{ id : Main.id, gameid : Main.gameid, score : Main.info.score, level : Main.info.level, time : (function($this) {
 		var $r;
 		var _this = new Date();
@@ -150,8 +148,9 @@ Main.playLevel = function(info) {
 	game.start();
 	if(info.level == 1) {
 		Main.gameid = thx_core_UUID.create();
+		Main.sendScore("start");
 		Main.cancelGame = thx_core_Timer.repeat(function() {
-			if(game.get_running()) Main.sendScore(false);
+			if(game.get_running()) Main.sendScore("update");
 		},5000);
 	}
 };
@@ -171,7 +170,7 @@ Main.intermediateScreen = function(info) {
 Main.gameOver = function(info) {
 	Main.background();
 	Main.cancelGame();
-	Main.sendScore(true);
+	Main.sendScore("end");
 	Main.write("Game Over!",48,fly_Config.width / 2,fly_Config.height / 2);
 	Main.write("Final Score " + thx_format_NumberFormat.number(info.score,0) + (" (level " + info.level + ")"),24,fly_Config.width / 2,fly_Config.height / 4 * 3);
 	Main.write("(press bar to start a new game)",16,fly_Config.width / 2,fly_Config.height / 4 * 3.5);

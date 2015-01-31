@@ -150,8 +150,13 @@ io.on('connection', function (socket) {
     }
   });
 
+  socket.on('score:start', function (data) {
+    latestScore = data;
+    insertScore(data);
+  });
+
   // id, score, level, time, gameid
-  socket.on('score:play', function (data) {
+  socket.on('score:update', function (data) {
     if(!latestScore) {
       insertScore(data);
       latestScore = data;
