@@ -36,6 +36,14 @@ EReg.prototype = {
 };
 var HxOverrides = function() { };
 HxOverrides.__name__ = ["HxOverrides"];
+HxOverrides.dateStr = function(date) {
+	var m = date.getMonth() + 1;
+	var d = date.getDate();
+	var h = date.getHours();
+	var mi = date.getMinutes();
+	var s = date.getSeconds();
+	return date.getFullYear() + "-" + (m < 10?"0" + m:"" + m) + "-" + (d < 10?"0" + d:"" + d) + " " + (h < 10?"0" + h:"" + h) + ":" + (mi < 10?"0" + mi:"" + mi) + ":" + (s < 10?"0" + s:"" + s);
+};
 HxOverrides.cca = function(s,index) {
 	var x = s.charCodeAt(index);
 	if(x != x) return undefined;
@@ -79,6 +87,7 @@ var Main = function() { };
 Main.__name__ = ["Main"];
 Main.main = function() {
 	Main.mini = minicanvas_MiniCanvas.create(fly_Config.width,fly_Config.height).display("flymaze");
+	Main.mini.canvas.setAttribute("tabIndex","1");
 	Main.instructions();
 	Main.decorateBackground();
 	Main.startScreen();
@@ -87,22 +96,35 @@ Main.main = function() {
 Main.sendId = function(id,name) {
 	Main.socket.emit("id:confirm",{ id : id, name : name});
 };
+Main.changeName = function(id,name) {
+	Main.socket.emit("id:change",{ id : id, name : name});
+};
 Main.wireSockets = function() {
 	Main.socket.on("request:id",function(_) {
-		console.log("REQUEST:ID");
 		Main.id = fly_util_Cookie.read("fmid");
 		if(null == Main.id) {
 			Main.id = thx_core_UUID.create();
 			Main.$name = fly_util_Persona.create();
-			fly_util_Cookie.create("fmid",Main.id);
-			fly_util_Cookie.create("fmname",Main.$name);
+			fly_util_Cookie.create("fmid",Main.id,1000);
+			fly_util_Cookie.create("fmname",Main.$name,1000);
 		} else Main.$name = fly_util_Cookie.read("fmname");
+		Main.leaderboard(Main.$name);
 		Main.sendId(Main.id,Main.$name);
 	});
 	Main.socket.on("leaderboard:top",function(data) {
-		console.log("LEADERBOARD:TOP");
-		console.log(data);
+		Main.updateLeaderboard(data);
 	});
+};
+Main.sendScore = function($final) {
+	if($final == null) $final = false;
+	var event;
+	event = "score:" + ($final?"end":"play");
+	Main.socket.emit(event,{ id : Main.id, gameid : Main.gameid, score : Main.info.score, level : Main.info.level, time : (function($this) {
+		var $r;
+		var _this = new Date();
+		$r = HxOverrides.dateStr(_this);
+		return $r;
+	}(this))});
 };
 Main.startScreen = function() {
 	Main.background();
@@ -111,9 +133,9 @@ Main.startScreen = function() {
 	thx_core_Timer.delay(function() {
 		Main.mini.onKeyUp(function(e) {
 			if(e.keyCode != 32) return;
+			Main.info = new fly_components_GameInfo(0,0,0,0,false);
 			Main.mini.offKeyUp();
-			var info = new fly_components_GameInfo(0,0,0,0,false);
-			Main.playLevel(info);
+			Main.playLevel(Main.info);
 		});
 	},250);
 };
@@ -126,6 +148,12 @@ Main.playLevel = function(info) {
 		if(nextLevel) Main.intermediateScreen(info); else Main.gameOver(info);
 	});
 	game.start();
+	if(info.level == 1) {
+		Main.gameid = thx_core_UUID.create();
+		Main.cancelGame = thx_core_Timer.repeat(function() {
+			if(game.get_running()) Main.sendScore(false);
+		},5000);
+	}
 };
 Main.intermediateScreen = function(info) {
 	Main.background();
@@ -142,6 +170,8 @@ Main.intermediateScreen = function(info) {
 };
 Main.gameOver = function(info) {
 	Main.background();
+	Main.cancelGame();
+	Main.sendScore(true);
 	Main.write("Game Over!",48,fly_Config.width / 2,fly_Config.height / 2);
 	Main.write("Final Score " + thx_format_NumberFormat.number(info.score,0) + (" (level " + info.level + ")"),24,fly_Config.width / 2,fly_Config.height / 4 * 3);
 	Main.write("(press bar to start a new game)",16,fly_Config.width / 2,fly_Config.height / 4 * 3.5);
@@ -218,8 +248,36 @@ Main.background = function() {
 };
 Main.instructions = function() {
 	var el = window.document.querySelector("figcaption");
-	var message = "\n<p>Use <i class=\"fa fa-caret-square-o-left\"></i> <i class=\"fa fa-caret-square-o-right\"></i> (or A/D) to turn.</p>\n<p>Kill all the flies within 2 minutes to pass to a new level.</p>\n<p>When you eat a flower or a fly, you leave a <em>droplet</em>.<br>They explode after a few seconds and they help to clean-up the area.</p>\n<p><em>Pause</em> with spacebar or (P), Mute audio</em> with M.</p>\n<p></p>\n<p>Sounds Effect Credits go to Gabriel and Matilde Ponticelli</p>\n<p>Realized with <a href=\"http://haxe.org\">Haxe</a> and the library <a href=\"http://github.com/fponticelli/edge\">edge</a>. Source code <a href=\"https://github.com/fponticelli/flymaze\">available here</a>.</p>\n<p>Copyright © <a href=\"https://github.com/fponticelli\">Franco Ponticelli</a></p>\n";
+	var message = "<div class=\"instructions\">\n<p>Use <i class=\"fa fa-caret-square-o-left\"></i> <i class=\"fa fa-caret-square-o-right\"></i> (or A/D) to turn.</p>\n<p>Kill all the flies within 2 minutes to pass to a new level.</p>\n<p>When you eat a flower or a fly, you leave a <em>droplet</em>.<br>They explode after a few seconds and they help to clean-up the area.</p>\n<p><em>Pause</em> with spacebar or (P), Mute audio</em> with M.</p>\n<p></p>\n<p>Sounds Effect Credits go to Gabriel and Matilde Ponticelli</p>\n<p>Realized with <a href=\"http://haxe.org\">Haxe</a> and the library <a href=\"http://github.com/fponticelli/edge\">edge</a>. Source code <a href=\"https://github.com/fponticelli/flymaze\">available here</a>.</p>\n<p>Copyright © <a href=\"https://github.com/fponticelli\">Franco Ponticelli</a></p>\n</div>";
 	el.innerHTML = message;
+};
+Main.leaderboard = function(n) {
+	var el = window.document.querySelector("figcaption");
+	var l;
+	var _this = window.document;
+	l = _this.createElement("div");
+	l.className = "leaderboard";
+	l.innerHTML = "\n      <div class=\"table\">\n      <table>\n        <thead>\n          <th>#</th>\n          <th>name</th>\n          <th>level</th>\n          <th>score</th>\n        </thead>\n        <tbody>\n        </tbody>\n      </table>\n      </div>\n      <div class=\"player\">\n        your alias is:<br>\n        <span class=\"name\">" + StringTools.htmlEscape(n) + "</span>\n        <br>\n        <button>change name</button>\n      </div>";
+	el.appendChild(l);
+	el.appendChild(window.document.createElement("BR"));
+	Main.leaderboardElement = el.querySelector(".leaderboard tbody");
+	Main.playerNameElement = el.querySelector(".player span.name");
+	Main.playerNameButton = el.querySelector(".player button");
+	Main.playerNameButton.addEventListener("click",function(_) {
+		var newname = window.prompt("input your new name:");
+		if(newname == null || (newname = StringTools.trim(newname)) == "") return;
+		Main.playerNameElement.innerHTML = Main.$name = StringTools.htmlEscape(newname);
+		fly_util_Cookie.create("fmname",Main.$name,1000);
+		Main.changeName(Main.id,Main.$name);
+	});
+};
+Main.updateLeaderboard = function(data) {
+	var el = Main.leaderboardElement;
+	var rows = thx_core_Arrays.mapi(data,function(o,i) {
+		return "<tr class=\"" + (o.name == Main.$name?"selected":"") + "\">\n<td>" + (i + 1) + "</td>\n<td>" + StringTools.htmlEscape(o.name) + "</td>\n<td>" + thx_format_NumberFormat.number(o.level,0) + "</td>\n<td>" + thx_format_NumberFormat.number(o.score,0) + "</td></tr>";
+	}).join("");
+	if(Main.old == rows) return;
+	el.innerHTML = Main.old = rows;
 };
 Math.__name__ = ["Math"];
 var Reflect = function() { };
@@ -259,6 +317,29 @@ Std.random = function(x) {
 };
 var StringTools = function() { };
 StringTools.__name__ = ["StringTools"];
+StringTools.htmlEscape = function(s,quotes) {
+	s = s.split("&").join("&amp;").split("<").join("&lt;").split(">").join("&gt;");
+	if(quotes) return s.split("\"").join("&quot;").split("'").join("&#039;"); else return s;
+};
+StringTools.isSpace = function(s,pos) {
+	var c = HxOverrides.cca(s,pos);
+	return c > 8 && c < 14 || c == 32;
+};
+StringTools.ltrim = function(s) {
+	var l = s.length;
+	var r = 0;
+	while(r < l && StringTools.isSpace(s,r)) r++;
+	if(r > 0) return HxOverrides.substr(s,r,l - r); else return s;
+};
+StringTools.rtrim = function(s) {
+	var l = s.length;
+	var r = 0;
+	while(r < l && StringTools.isSpace(s,l - r - 1)) r++;
+	if(r > 0) return HxOverrides.substr(s,0,l - r); else return s;
+};
+StringTools.trim = function(s) {
+	return StringTools.ltrim(StringTools.rtrim(s));
+};
 StringTools.rpad = function(s,c,l) {
 	if(c.length <= 0) return s;
 	while(s.length < l) s = s + c;
@@ -879,6 +960,9 @@ fly_Game.prototype = {
 	,createFlower: function(engine,config) {
 		var p = new fly_components_Position(fly_Config.width * config.gen["float"](),fly_Config.height * config.gen["float"]());
 		engine.add(new edge_Entity([p,new fly_components_Flower(config.gen["int"]()),fly_Game.edibleFlower]));
+	}
+	,get_running: function() {
+		return this.world.running;
 	}
 	,start: function() {
 		this.world.start();
@@ -2754,6 +2838,16 @@ thx_core_Arrays.contains = function(array,element,eq) {
 		return false;
 	}
 };
+thx_core_Arrays.mapi = function(array,callback) {
+	var r = [];
+	var _g1 = 0;
+	var _g = array.length;
+	while(_g1 < _g) {
+		var i = _g1++;
+		r.push(callback(array[i],i));
+	}
+	return r;
+};
 thx_core_Arrays.sampleOne = function(array) {
 	return array[Std.random(array.length)];
 };
@@ -2870,6 +2964,13 @@ thx_core_Strings.underscore = function(s) {
 };
 var thx_core_Timer = function() { };
 thx_core_Timer.__name__ = ["thx","core","Timer"];
+thx_core_Timer.repeat = function(callback,delayms) {
+	return (function(f,id) {
+		return function() {
+			f(id);
+		};
+	})(thx_core_Timer.clear,setInterval(callback,delayms));
+};
 thx_core_Timer.delay = function(callback,delayms) {
 	return (function(f,id) {
 		return function() {

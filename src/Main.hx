@@ -5,30 +5,31 @@ import fly.Game;
 import fly.components.Position;
 import fly.components.Flower;
 import fly.systems.RenderFlower;
+import js.html.Element;
+import js.html.InputElement;
 import thx.core.Timer;
+import thx.core.UUID;
 import fly.util.Cookie;
 using thx.format.NumberFormat;
+using thx.core.Arrays;
+using thx.core.Strings;
 
 class Main {
   static var mini : MiniCanvas;
   static var socket : Dynamic = untyped io.connect(js.Browser.location.origin);
+  static var cancelGame : Void -> Void;
+  static var gameid : String;
+  static var info : GameInfo;
   public static function main() {
     mini = MiniCanvas
       .create(Config.width, Config.height)
       .display("flymaze");
+    mini.canvas.setAttribute("tabIndex", "1");
     instructions();
 
     decorateBackground();
     startScreen();
 
-
-// connect
-// on 'games/leaderboard' display
-// on 'games/active' display
-// send score every N seconds
-// send score on level
-// send score on game over
-// rename user
     wireSockets();
   }
 
@@ -36,38 +37,45 @@ class Main {
     socket.emit("id:confirm", { id : id, name : name });
   }
 
+  static function changeName(id : String, name : String) {
+    socket.emit("id:change", { id : id, name : name });
+  }
+
   static var id : String;
   static var name : String;
 
   static function wireSockets() {
     socket.on("request:id", function (_) {
-      trace("REQUEST:ID");
       id = Cookie.read("fmid");
       if(null == id) {
         id = thx.core.UUID.create();
         name = fly.util.Persona.create();
-        Cookie.create("fmid", id);
-        Cookie.create("fmname", name);
+        Cookie.create("fmid", id, 1000);
+        Cookie.create("fmname", name, 1000);
       } else {
         name = Cookie.read("fmname");
       }
+      leaderboard(name);
       sendId(id, name);
     });
 
     socket.on("leaderboard:top", function (data) {
-      trace("LEADERBOARD:TOP");
-      trace(data);
+      updateLeaderboard(data);
     });
   }
 
-/*
-request:id
-leaderboard:top
-
-id:confirm
-score:play
-score:final
-*/
+  static function sendScore(final = false) {
+    var event = "score:" + (final ? "end" : "play");
+    socket.emit(
+      event,
+      {
+        id     : id,
+        gameid : gameid,
+        score  : info.score,
+        level  : info.level,
+        time   : Date.now().toString()
+      });
+  }
 
   static function startScreen() {
     background();
@@ -76,8 +84,8 @@ score:final
     Timer.delay(function() {
       mini.onKeyUp(function(e) {
         if(e.keyCode != 32) return;
+        info = new GameInfo(0, 0, 0, 0, false);
         mini.offKeyUp();
-        var info = new GameInfo(0, 0, 0, 0, false);
         playLevel(info);
       });
     }, 250);
@@ -85,6 +93,7 @@ score:final
 
   static function playLevel(info : GameInfo) {
     info.level++;
+
     var config = new Config(info.level);
     info.timeLeft = config.timePerLevel;
     info.toPassLevel = config.flies;
@@ -95,6 +104,15 @@ score:final
             gameOver(info);
         });
     game.start();
+
+    if(info.level == 1) {
+      gameid = UUID.create();
+      cancelGame = Timer.repeat(function() {
+        if(game.running) {
+          sendScore(false);
+        }
+      }, 5000);
+    }
   }
 
   static function intermediateScreen(info : GameInfo) {
@@ -113,6 +131,8 @@ score:final
 
   static function gameOver(info : GameInfo) {
     background();
+    cancelGame();
+    sendScore(true);
     write("Game Over!", 48, Config.width / 2, Config.height / 2);
     write("Final Score " + info.score.number(0) + ' (level ${info.level})', 24, Config.width / 2, Config.height / 4 * 3);
     write("(press bar to start a new game)", 16, Config.width / 2, Config.height / 4 * 3.5);
@@ -196,7 +216,7 @@ score:final
   static function instructions() {
     var el = js.Browser.document.querySelector('figcaption');
 
-    var message = '
+    var message = '<div class="instructions">
 <p>Use <i class="fa fa-caret-square-o-left"></i> <i class="fa fa-caret-square-o-right"></i> (or A/D) to turn.</p>
 <p>Kill all the flies within 2 minutes to pass to a new level.</p>
 <p>When you eat a flower or a fly, you leave a <em>droplet</em>.<br>They explode after a few seconds and they help to clean-up the area.</p>
@@ -205,7 +225,63 @@ score:final
 <p>Sounds Effect Credits go to Gabriel and Matilde Ponticelli</p>
 <p>Realized with <a href="http://haxe.org">Haxe</a> and the library <a href="http://github.com/fponticelli/edge">edge</a>. Source code <a href="https://github.com/fponticelli/flymaze">available here</a>.</p>
 <p>Copyright © <a href="https://github.com/fponticelli">Franco Ponticelli</a></p>
-';
+</div>';
     el.innerHTML = message;
+  }
+
+  static var leaderboardElement : Element;
+  static var playerNameElement : Element;
+  static var playerNameButton : InputElement;
+  static function leaderboard(n : String) {
+    var el = js.Browser.document.querySelector('figcaption'),
+        l  = js.Browser.document.createDivElement();
+
+    l.className = "leaderboard";
+    l.innerHTML = '
+      <div class="table">
+      <table>
+        <thead>
+          <th>#</th>
+          <th>name</th>
+          <th>level</th>
+          <th>score</th>
+        </thead>
+        <tbody>
+        </tbody>
+      </table>
+      </div>
+      <div class="player">
+        your alias is:<br>
+        <span class="name">${n.htmlEscape()}</span>
+        <br>
+        <button>change name</button>
+      </div>';
+    el.appendChild(l);
+    el.appendChild(js.Browser.document.createElement("BR"));
+    leaderboardElement = el.querySelector(".leaderboard tbody");
+    playerNameElement = el.querySelector(".player span.name");
+    playerNameButton = cast el.querySelector(".player button");
+    playerNameButton.addEventListener("click", function(_) {
+      var newname = js.Browser.window.prompt("input your new name:");
+      if(newname == null || (newname = newname.trim()) == "")
+        return;
+      playerNameElement.innerHTML = name = newname.htmlEscape();
+      Cookie.create("fmname", name, 1000);
+      changeName(id, name);
+    });
+  }
+
+  static var old : String;
+  static function updateLeaderboard(data : Array<{ name : String, level : Int, score : Int }>) {
+    var el = leaderboardElement,
+        rows = data.mapi(function(o, i) {
+          return '<tr class="${o.name == name ? "selected" : ""}">
+<td>${i+1}</td>
+<td>${o.name.htmlEscape()}</td>
+<td>${o.level.number(0)}</td>
+<td>${o.score.number(0)}</td></tr>';
+        }).join("");
+    if(old == rows) return;
+    el.innerHTML = old = rows;
   }
 }
