@@ -109,7 +109,7 @@ MongoClient.connect(process.env.MONGOSOUP_URL || "mongodb://localhost", function
         return console.error(err)
       }
       docs.forEach(function(doc) {
-        players[doc.id] = doc;;
+        playersCache[doc.id] = doc;
       });
     });
 
