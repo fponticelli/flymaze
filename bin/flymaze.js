@@ -256,18 +256,24 @@ Main.leaderboard = function(n) {
 	var _this = window.document;
 	l = _this.createElement("div");
 	l.className = "leaderboard";
-	l.innerHTML = "\n      <div class=\"table\">\n      <table>\n        <thead>\n          <th>#</th>\n          <th>name</th>\n          <th>level</th>\n          <th>score</th>\n        </thead>\n        <tbody>\n        </tbody>\n      </table>\n      </div>\n      <div class=\"player\">\n        your alias is:<br>\n        <span class=\"name\">" + StringTools.htmlEscape(n) + "</span>\n        <br>\n        <button>change name</button>\n      </div>";
+	l.innerHTML = "\n      <div class=\"table\">\n      <table>\n        <thead>\n          <th>#</th>\n          <th>name</th>\n          <th>level</th>\n          <th>score</th>\n        </thead>\n        <tbody>\n        </tbody>\n      </table>\n      </div>\n      <div class=\"player\">\n        your alias is:<br>\n        <span class=\"name\">" + StringTools.htmlEscape(n) + "</span>\n        <br>\n        <button class=\"change\">change name</button>\n        <button class=\"random\">random name</button>\n      </div>";
 	el.appendChild(l);
 	el.appendChild(window.document.createElement("BR"));
 	Main.leaderboardElement = el.querySelector(".leaderboard tbody");
 	Main.playerNameElement = el.querySelector(".player span.name");
-	Main.playerNameButton = el.querySelector(".player button");
+	Main.playerNameButton = el.querySelector(".player button.change");
 	Main.playerNameButton.addEventListener("click",function(_) {
 		var newname = window.prompt("input your new name:");
 		if(newname == null || (newname = StringTools.trim(newname)) == "") return;
 		Main.playerNameElement.innerHTML = Main.$name = StringTools.htmlEscape(newname);
 		fly_util_Cookie.create("fmname",Main.$name,1000);
 		Main.changeName(Main.id,Main.$name);
+	});
+	el.querySelector(".player button.random").addEventListener("click",function(_1) {
+		var name = fly_util_Persona.create();
+		Main.playerNameElement.innerHTML = name;
+		fly_util_Cookie.create("fmname",name,1000);
+		Main.changeName(Main.id,name);
 	});
 };
 Main.updateLeaderboard = function(data) {
@@ -498,8 +504,8 @@ edge_Engine.prototype = {
 		var $it1 = this.mapInfo.keys();
 		while( $it1.hasNext() ) {
 			var system1 = $it1.next();
-			var this2 = this.mapInfo.h[system1.__id__].entities;
-			this2.remove(entity);
+			var this11 = this.mapInfo.h[system1.__id__].entities;
+			this11.remove(entity);
 		}
 		this.mapEntities.remove(entity);
 		entity.engine = null;

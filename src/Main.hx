@@ -255,18 +255,25 @@ class Main {
         your alias is:<br>
         <span class="name">${n.htmlEscape()}</span>
         <br>
-        <button>change name</button>
+        <button class="change">change name</button>
+        <button class="random">random name</button>
       </div>';
     el.appendChild(l);
     el.appendChild(js.Browser.document.createElement("BR"));
     leaderboardElement = el.querySelector(".leaderboard tbody");
     playerNameElement = el.querySelector(".player span.name");
-    playerNameButton = cast el.querySelector(".player button");
+    playerNameButton = cast el.querySelector(".player button.change");
     playerNameButton.addEventListener("click", function(_) {
       var newname = js.Browser.window.prompt("input your new name:");
       if(newname == null || (newname = newname.trim()) == "")
         return;
       playerNameElement.innerHTML = name = newname.htmlEscape();
+      Cookie.create("fmname", name, 1000);
+      changeName(id, name);
+    });
+    el.querySelector(".player button.random").addEventListener("click", function(_) {
+      var name = fly.util.Persona.create();
+      playerNameElement.innerHTML = name;
       Cookie.create("fmname", name, 1000);
       changeName(id, name);
     });
