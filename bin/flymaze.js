@@ -295,9 +295,6 @@ Reflect.field = function(o,field) {
 		return null;
 	}
 };
-Reflect.setField = function(o,field,value) {
-	o[field] = value;
-};
 Reflect.callMethod = function(o,func,args) {
 	return func.apply(o,args);
 };
@@ -504,8 +501,7 @@ edge_Engine.prototype = {
 		var $it1 = this.mapInfo.keys();
 		while( $it1.hasNext() ) {
 			var system1 = $it1.next();
-			var this11 = this.mapInfo.h[system1.__id__].entities;
-			this11.remove(entity);
+			this.mapInfo.h[system1.__id__].entities.remove(entity);
 		}
 		this.mapEntities.remove(entity);
 		entity.engine = null;
@@ -520,7 +516,7 @@ edge_Engine.prototype = {
 	}
 	,addSystem: function(phase,system) {
 		if(this.mapInfo.h.__keys__[system.__id__] != null) throw "System \"" + Std.string(system) + "\" already exists in Engine";
-		var info = { hasComponents : null != system.componentRequirements && system.componentRequirements.length > 0, hasDelta : edge_Engine.hasField(system,"timeDelta"), hasEngine : edge_Engine.hasField(system,"engine"), hasEntity : edge_Engine.hasField(system,"entity"), hasBefore : edge_Engine.hasField(system,"before"), hasEntities : null != system.entityRequirements, update : Reflect.field(system,"update"), phase : phase, before : null, components : new haxe_ds_ObjectMap(), entities : new haxe_ds_ObjectMap()};
+		var info = { hasComponents : null != system.componentRequirements && system.componentRequirements.length > 0, hasDelta : edge_Engine.hasField(system,"timeDelta"), hasEngine : edge_Engine.hasField(system,"engine"), hasEntity : edge_Engine.hasField(system,"entity"), hasBefore : edge_Engine.hasField(system,"before"), hasEntities : null != system.entityRequirements, update : Reflect.field(system,"update"), phase : phase, before : null, components : new haxe_ds_ObjectMap(), entities : new edge_View()};
 		if(info.hasBefore) info.before = Reflect.field(system,"before");
 		this.mapInfo.set(system,info);
 		if(info.hasComponents) {
@@ -547,7 +543,7 @@ edge_Engine.prototype = {
 		if(info == null) return;
 		if(info.hasEngine) system.engine = this;
 		if(info.hasDelta) system.timeDelta = t;
-		if(info.hasEntities) Reflect.setField(system,"entities",info.entities.iterator());
+		if(info.hasEntities) system.entities = info.entities;
 		if(info.hasComponents) {
 			if(info.hasBefore) Reflect.callMethod(system,info.update,this.emptyArgs);
 			var $it0 = info.components.keys();
@@ -599,7 +595,7 @@ edge_Engine.prototype = {
 				o1[system.entityRequirements[i].name] = components[i];
 			}
 			o1.entity = entity;
-			info.entities.set(entity,o1);
+			info.entities.add(entity,o1);
 		}
 	}
 	,matchRequirements: function(entity,requirements) {
@@ -774,6 +770,39 @@ edge_NodeSystemIterator.prototype = {
 		return system;
 	}
 	,__class__: edge_NodeSystemIterator
+};
+var edge_View = function() {
+	this.map = new haxe_ds_ObjectMap();
+	this.count = 0;
+};
+edge_View.__name__ = ["edge","View"];
+edge_View.prototype = {
+	count: null
+	,map: null
+	,iterator: function() {
+		var _g = this;
+		var keys = this.map.keys();
+		var holder = { entity : null, data : null};
+		return { hasNext : function() {
+			return keys.hasNext();
+		}, next : function() {
+			var key = keys.next();
+			holder.entity = key;
+			holder.data = _g.map.h[key.__id__];
+			return holder;
+		}};
+	}
+	,add: function(entity,data) {
+		if(this.map.h.__keys__[entity.__id__] != null) return;
+		this.map.set(entity,data);
+		this.count++;
+	}
+	,remove: function(entity) {
+		if(!(this.map.h.__keys__[entity.__id__] != null)) return;
+		this.map.remove(entity);
+		this.count--;
+	}
+	,__class__: edge_View
 };
 var edge_World = function(delta,schedule) {
 	if(delta == null) delta = 16;
@@ -1212,7 +1241,7 @@ fly_systems_BackgroundBuzz.prototype = {
 	,delay: null
 	,entities: null
 	,update: function() {
-		if(this.entities.hasNext()) this.counter = 0; else {
+		if(this.entities.count == 0) this.counter = 0; else {
 			this.counter++;
 			if(this.counter >= this.delay) {
 				this.engine.add(new edge_Entity([fly_components_Audio.buzzing]));
@@ -1365,71 +1394,6 @@ fly_systems_MazeCollision.prototype = {
 	,componentRequirements: null
 	,entityRequirements: null
 	,__class__: fly_systems_MazeCollision
-};
-var haxe_IMap = function() { };
-haxe_IMap.__name__ = ["haxe","IMap"];
-haxe_IMap.prototype = {
-	remove: null
-	,__class__: haxe_IMap
-};
-var haxe_ds_StringMap = function() {
-	this.h = { };
-};
-haxe_ds_StringMap.__name__ = ["haxe","ds","StringMap"];
-haxe_ds_StringMap.__interfaces__ = [haxe_IMap];
-haxe_ds_StringMap.prototype = {
-	h: null
-	,rh: null
-	,set: function(key,value) {
-		if(__map_reserved[key] != null) this.setReserved(key,value); else this.h[key] = value;
-	}
-	,get: function(key) {
-		if(__map_reserved[key] != null) return this.getReserved(key);
-		return this.h[key];
-	}
-	,exists: function(key) {
-		if(__map_reserved[key] != null) return this.existsReserved(key);
-		return this.h.hasOwnProperty(key);
-	}
-	,setReserved: function(key,value) {
-		if(this.rh == null) this.rh = { };
-		this.rh["$" + key] = value;
-	}
-	,getReserved: function(key) {
-		if(this.rh == null) return null; else return this.rh["$" + key];
-	}
-	,existsReserved: function(key) {
-		if(this.rh == null) return false;
-		return this.rh.hasOwnProperty("$" + key);
-	}
-	,remove: function(key) {
-		if(__map_reserved[key] != null) {
-			key = "$" + key;
-			if(this.rh == null || !this.rh.hasOwnProperty(key)) return false;
-			delete(this.rh[key]);
-			return true;
-		} else {
-			if(!this.h.hasOwnProperty(key)) return false;
-			delete(this.h[key]);
-			return true;
-		}
-	}
-	,arrayKeys: function() {
-		var out = [];
-		for( var key in this.h ) {
-		if(this.h.hasOwnProperty(key)) out.push(key);
-		}
-		if(this.rh != null) {
-			for( var key in this.rh ) {
-			if(key.charCodeAt(0) == 36) out.push(key.substr(1));
-			}
-		}
-		return out;
-	}
-	,iterator: function() {
-		return new haxe_ds__$StringMap_StringMapIterator(this,this.arrayKeys());
-	}
-	,__class__: haxe_ds_StringMap
 };
 var js_Boot = function() { };
 js_Boot.__name__ = ["js","Boot"];
@@ -1895,9 +1859,11 @@ fly_systems_SnakeEats.prototype = {
 	,update: function(position,snake) {
 		var dx;
 		var dy;
-		var $it0 = this.entities;
+		var o;
+		var $it0 = this.entities.iterator();
 		while( $it0.hasNext() ) {
-			var o = $it0.next();
+			var item = $it0.next();
+			o = item.data;
 			dx = position.x - o.position.x;
 			dy = position.y - o.position.y;
 			if(dx * dx + dy * dy <= this.sqdistance) {
@@ -1975,9 +1941,11 @@ fly_systems_UpdateDetonation.prototype = {
 		var sqdistance = detonation.radius * detonation.radius;
 		var dx;
 		var dy;
-		var $it0 = this.entities;
+		var o;
+		var $it0 = this.entities.iterator();
 		while( $it0.hasNext() ) {
-			var o = $it0.next();
+			var item = $it0.next();
+			o = item.data;
 			dx = position.x - o.position.x;
 			dy = position.y - o.position.y;
 			if(dx * dx + dy * dy <= sqdistance) {
@@ -2165,6 +2133,12 @@ fly_util_Persona.create = function() {
 		return $r;
 	}(this))).concat([thx_core_Arrays.sampleOne(fly_util_Persona.nouns)]).join(" ");
 };
+var haxe_IMap = function() { };
+haxe_IMap.__name__ = ["haxe","IMap"];
+haxe_IMap.prototype = {
+	remove: null
+	,__class__: haxe_IMap
+};
 var haxe_ds_ObjectMap = function() {
 	this.h = { };
 	this.h.__keys__ = { };
@@ -2192,14 +2166,6 @@ haxe_ds_ObjectMap.prototype = {
 		}
 		return HxOverrides.iter(a);
 	}
-	,iterator: function() {
-		return { ref : this.h, it : this.keys(), hasNext : function() {
-			return this.it.hasNext();
-		}, next : function() {
-			var i = this.it.next();
-			return this.ref[i.__id__];
-		}};
-	}
 	,__class__: haxe_ds_ObjectMap
 };
 var haxe_ds__$StringMap_StringMapIterator = function(map,keys) {
@@ -2221,6 +2187,65 @@ haxe_ds__$StringMap_StringMapIterator.prototype = {
 		return this.map.get(this.keys[this.index++]);
 	}
 	,__class__: haxe_ds__$StringMap_StringMapIterator
+};
+var haxe_ds_StringMap = function() {
+	this.h = { };
+};
+haxe_ds_StringMap.__name__ = ["haxe","ds","StringMap"];
+haxe_ds_StringMap.__interfaces__ = [haxe_IMap];
+haxe_ds_StringMap.prototype = {
+	h: null
+	,rh: null
+	,set: function(key,value) {
+		if(__map_reserved[key] != null) this.setReserved(key,value); else this.h[key] = value;
+	}
+	,get: function(key) {
+		if(__map_reserved[key] != null) return this.getReserved(key);
+		return this.h[key];
+	}
+	,exists: function(key) {
+		if(__map_reserved[key] != null) return this.existsReserved(key);
+		return this.h.hasOwnProperty(key);
+	}
+	,setReserved: function(key,value) {
+		if(this.rh == null) this.rh = { };
+		this.rh["$" + key] = value;
+	}
+	,getReserved: function(key) {
+		if(this.rh == null) return null; else return this.rh["$" + key];
+	}
+	,existsReserved: function(key) {
+		if(this.rh == null) return false;
+		return this.rh.hasOwnProperty("$" + key);
+	}
+	,remove: function(key) {
+		if(__map_reserved[key] != null) {
+			key = "$" + key;
+			if(this.rh == null || !this.rh.hasOwnProperty(key)) return false;
+			delete(this.rh[key]);
+			return true;
+		} else {
+			if(!this.h.hasOwnProperty(key)) return false;
+			delete(this.h[key]);
+			return true;
+		}
+	}
+	,arrayKeys: function() {
+		var out = [];
+		for( var key in this.h ) {
+		if(this.h.hasOwnProperty(key)) out.push(key);
+		}
+		if(this.rh != null) {
+			for( var key in this.rh ) {
+			if(key.charCodeAt(0) == 36) out.push(key.substr(1));
+			}
+		}
+		return out;
+	}
+	,iterator: function() {
+		return new haxe_ds__$StringMap_StringMapIterator(this,this.arrayKeys());
+	}
+	,__class__: haxe_ds_StringMap
 };
 var minicanvas_MiniCanvas = function(width,height,scaleMode) {
 	this.scaleMode = scaleMode;
@@ -3342,7 +3367,6 @@ if(Array.prototype.map == null) Array.prototype.map = function(f) {
 	}
 	return a;
 };
-var __map_reserved = {}
 fly_systems_PlayAudio.loadSound("exp1","sound/Buff.mp3");
 fly_systems_PlayAudio.loadSound("exp2","sound/Buffs.mp3");
 fly_systems_PlayAudio.loadSound("exp3","sound/Burf.mp3");
@@ -3355,6 +3379,7 @@ fly_systems_PlayAudio.loadSound("poop","sound/Poop.mp3");
 fly_systems_PlayAudio.loadSound("start","sound/Start.mp3");
 fly_systems_PlayAudio.loadSound("success","sound/Tadada.mp3");
 fly_systems_PlayAudio.loadSound("gameover","sound/Game over.mp3");
+var __map_reserved = {}
 
       // Production steps of ECMA-262, Edition 5, 15.4.4.21
       // Reference: http://es5.github.io/#x15.4.4.21

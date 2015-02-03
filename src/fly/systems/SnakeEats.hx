@@ -7,7 +7,7 @@ import thx.math.random.Random;
 class SnakeEats implements ISystem {
   var engine : Engine;
   var sqdistance : Float;
-  var entities : Iterator<{ position : Position, edible : Edible, entity : Entity }>;
+  var entities : View<{ position : Position, edible : Edible, entity : Entity }>;
   var gameInfo : GameInfo;
   public function new(gameInfo : GameInfo, distance : Float) {
     this.sqdistance = distance * distance;
@@ -15,8 +15,9 @@ class SnakeEats implements ISystem {
   }
 
   function update(position : Position, snake : Snake) {
-    var dx, dy;
-    for(o in entities) {
+    var dx, dy, o;
+    for(item in entities) {
+      o = item.data;
       dx = position.x - o.position.x;
       dy = position.y - o.position.y;
       if(dx * dx + dy * dy <= sqdistance) {

@@ -8,7 +8,7 @@ using thx.core.Floats;
 class UpdateDetonation implements ISystem {
   var entity : Entity;
   var engine : Engine;
-  var entities : Iterator<{ position : Position, edible : Edible, entity : Entity }>;
+  var entities : View<{ position : Position, edible : Edible, entity : Entity }>;
   var gameInfo : GameInfo;
   var scoreDivisor : Int;
   public function new(gameInfo : GameInfo, scoreDivisor : Int) {
@@ -18,8 +18,9 @@ class UpdateDetonation implements ISystem {
 
   function update(detonation : Detonation, position : Position) {
     var sqdistance = detonation.radius * detonation.radius,
-        dx, dy;
-    for(o in entities) {
+        dx, dy, o;
+    for(item in entities) {
+      o = item.data;
       dx = position.x - o.position.x;
       dy = position.y - o.position.y;
       if(dx * dx + dy * dy <= sqdistance) {
