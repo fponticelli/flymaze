@@ -1,4 +1,5 @@
 (function (console) { "use strict";
+var $estr = function() { return js_Boot.__string_rec(this,''); };
 function $extend(from, fields) {
 	function Inherit() {} Inherit.prototype = from; var proto = new Inherit();
 	for (var name in fields) proto[name] = fields[name];
@@ -471,9 +472,6 @@ var edge_Engine = function() {
 	this.listPhases = [];
 };
 edge_Engine.__name__ = ["edge","Engine"];
-edge_Engine.hasField = function(o,field) {
-	return thx_core_Arrays.contains(Type.getInstanceFields(Type.getClass(o)),field);
-};
 edge_Engine.prototype = {
 	mapInfo: null
 	,mapEntities: null
@@ -516,8 +514,7 @@ edge_Engine.prototype = {
 	}
 	,addSystem: function(phase,system) {
 		if(this.mapInfo.h.__keys__[system.__id__] != null) throw "System \"" + Std.string(system) + "\" already exists in Engine";
-		var info = { hasComponents : null != system.componentRequirements && system.componentRequirements.length > 0, hasDelta : edge_Engine.hasField(system,"timeDelta"), hasEngine : edge_Engine.hasField(system,"engine"), hasEntity : edge_Engine.hasField(system,"entity"), hasBefore : edge_Engine.hasField(system,"before"), hasEntities : null != system.entityRequirements, update : Reflect.field(system,"update"), phase : phase, before : null, components : new haxe_ds_ObjectMap(), entities : new edge_View()};
-		if(info.hasBefore) info.before = Reflect.field(system,"before");
+		var info = new edge_SystemInfo(system,phase);
 		this.mapInfo.set(system,info);
 		if(info.hasComponents) {
 			var $it0 = this.mapEntities.keys();
@@ -770,6 +767,40 @@ edge_NodeSystemIterator.prototype = {
 		return system;
 	}
 	,__class__: edge_NodeSystemIterator
+};
+var edge_SystemInfo = function(system,phase) {
+	this.system = system;
+	this.hasComponents = null != system.componentRequirements && system.componentRequirements.length > 0;
+	this.hasDelta = edge_SystemInfo.hasField(system,"timeDelta");
+	this.hasEngine = edge_SystemInfo.hasField(system,"engine");
+	this.hasEntity = edge_SystemInfo.hasField(system,"entity");
+	this.hasBefore = edge_SystemInfo.hasField(system,"before");
+	this.hasEntities = null != system.entityRequirements;
+	this.update = Reflect.field(system,"update");
+	this.phase = phase;
+	this.before = null;
+	this.components = new haxe_ds_ObjectMap();
+	this.entities = new edge_View();
+	if(this.hasBefore) this.before = Reflect.field(system,"before");
+};
+edge_SystemInfo.__name__ = ["edge","SystemInfo"];
+edge_SystemInfo.hasField = function(o,field) {
+	return thx_core_Arrays.contains(Type.getInstanceFields(Type.getClass(o)),field);
+};
+edge_SystemInfo.prototype = {
+	hasComponents: null
+	,hasDelta: null
+	,hasEngine: null
+	,hasEntity: null
+	,hasEntities: null
+	,hasBefore: null
+	,phase: null
+	,before: null
+	,update: null
+	,components: null
+	,entities: null
+	,system: null
+	,__class__: edge_SystemInfo
 };
 var edge_View = function() {
 	this.map = new haxe_ds_ObjectMap();
@@ -2376,10 +2407,12 @@ minicanvas_MiniCanvas.prototype = {
 };
 var minicanvas_ScaleMode = { __ename__ : true, __constructs__ : ["NoScale","Auto","Scaled"] };
 minicanvas_ScaleMode.NoScale = ["NoScale",0];
+minicanvas_ScaleMode.NoScale.toString = $estr;
 minicanvas_ScaleMode.NoScale.__enum__ = minicanvas_ScaleMode;
 minicanvas_ScaleMode.Auto = ["Auto",1];
+minicanvas_ScaleMode.Auto.toString = $estr;
 minicanvas_ScaleMode.Auto.__enum__ = minicanvas_ScaleMode;
-minicanvas_ScaleMode.Scaled = function(v) { var $x = ["Scaled",2,v]; $x.__enum__ = minicanvas_ScaleMode; return $x; };
+minicanvas_ScaleMode.Scaled = function(v) { var $x = ["Scaled",2,v]; $x.__enum__ = minicanvas_ScaleMode; $x.toString = $estr; return $x; };
 var minicanvas_BrowserCanvas = function(width,height,scaleMode) {
 	this.isNode = false;
 	this.isBrowser = true;
@@ -2852,12 +2885,12 @@ thx_color_parse_ColorInfo.prototype = {
 	,__class__: thx_color_parse_ColorInfo
 };
 var thx_color_parse_ChannelInfo = { __ename__ : true, __constructs__ : ["CIPercent","CIFloat","CIDegree","CIInt8","CIInt","CIBool"] };
-thx_color_parse_ChannelInfo.CIPercent = function(value) { var $x = ["CIPercent",0,value]; $x.__enum__ = thx_color_parse_ChannelInfo; return $x; };
-thx_color_parse_ChannelInfo.CIFloat = function(value) { var $x = ["CIFloat",1,value]; $x.__enum__ = thx_color_parse_ChannelInfo; return $x; };
-thx_color_parse_ChannelInfo.CIDegree = function(value) { var $x = ["CIDegree",2,value]; $x.__enum__ = thx_color_parse_ChannelInfo; return $x; };
-thx_color_parse_ChannelInfo.CIInt8 = function(value) { var $x = ["CIInt8",3,value]; $x.__enum__ = thx_color_parse_ChannelInfo; return $x; };
-thx_color_parse_ChannelInfo.CIInt = function(value) { var $x = ["CIInt",4,value]; $x.__enum__ = thx_color_parse_ChannelInfo; return $x; };
-thx_color_parse_ChannelInfo.CIBool = function(value) { var $x = ["CIBool",5,value]; $x.__enum__ = thx_color_parse_ChannelInfo; return $x; };
+thx_color_parse_ChannelInfo.CIPercent = function(value) { var $x = ["CIPercent",0,value]; $x.__enum__ = thx_color_parse_ChannelInfo; $x.toString = $estr; return $x; };
+thx_color_parse_ChannelInfo.CIFloat = function(value) { var $x = ["CIFloat",1,value]; $x.__enum__ = thx_color_parse_ChannelInfo; $x.toString = $estr; return $x; };
+thx_color_parse_ChannelInfo.CIDegree = function(value) { var $x = ["CIDegree",2,value]; $x.__enum__ = thx_color_parse_ChannelInfo; $x.toString = $estr; return $x; };
+thx_color_parse_ChannelInfo.CIInt8 = function(value) { var $x = ["CIInt8",3,value]; $x.__enum__ = thx_color_parse_ChannelInfo; $x.toString = $estr; return $x; };
+thx_color_parse_ChannelInfo.CIInt = function(value) { var $x = ["CIInt",4,value]; $x.__enum__ = thx_color_parse_ChannelInfo; $x.toString = $estr; return $x; };
+thx_color_parse_ChannelInfo.CIBool = function(value) { var $x = ["CIBool",5,value]; $x.__enum__ = thx_color_parse_ChannelInfo; $x.toString = $estr; return $x; };
 var thx_core_Arrays = function() { };
 thx_core_Arrays.__name__ = ["thx","core","Arrays"];
 thx_core_Arrays.contains = function(array,element,eq) {
