@@ -11,7 +11,7 @@ class UpdateExplosion implements ISystem {
   function update(explosion : Explosion) {
     if(explosion.stage == Explosion.maxStage) {
       entity.add(Detonation.instance);
-      engine.add(new Entity([Audio.explosion]));
+      engine.create([Audio.explosion]);
     }
     explosion.stage--;
     if(explosion.stage <= 0)

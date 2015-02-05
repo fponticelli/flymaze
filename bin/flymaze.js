@@ -1,5 +1,4 @@
 (function (console) { "use strict";
-var $estr = function() { return js_Boot.__string_rec(this,''); };
 function $extend(from, fields) {
 	function Inherit() {} Inherit.prototype = from; var proto = new Inherit();
 	for (var name in fields) proto[name] = fields[name];
@@ -476,11 +475,12 @@ edge_Engine.prototype = {
 	mapInfo: null
 	,mapEntities: null
 	,listPhases: null
-	,add: function(entity) {
-		entity.engine = this;
+	,create: function(components) {
+		var entity = new edge_Entity(this,components);
 		this.mapEntities.set(entity,true);
 		this.matchSystems(entity);
 		this.matchEntities(entity);
+		return entity;
 	}
 	,clear: function() {
 		var $it0 = this.mapEntities.keys();
@@ -614,7 +614,8 @@ edge_Engine.prototype = {
 	}
 	,__class__: edge_Engine
 };
-var edge_Entity = function(components) {
+var edge_Entity = function(engine,components) {
+	this.engine = engine;
 	this.map = new haxe_ds_StringMap();
 	if(null != components) this.addMany(components);
 };
@@ -624,7 +625,7 @@ edge_Entity.prototype = {
 	,engine: null
 	,add: function(component) {
 		this._add(component);
-		if(null != this.engine) this.engine.matchSystems(this);
+		this.engine.matchSystems(this);
 	}
 	,addMany: function(components) {
 		var _g = this;
@@ -632,11 +633,11 @@ edge_Entity.prototype = {
 			_g._add(_);
 			return;
 		});
-		if(null != this.engine) this.engine.matchSystems(this);
+		this.engine.matchSystems(this);
 	}
 	,remove: function(component) {
 		this._remove(component);
-		if(null != this.engine) this.engine.matchSystems(this);
+		this.engine.matchSystems(this);
 	}
 	,removeTypes: function(types) {
 		var _g = this;
@@ -644,7 +645,7 @@ edge_Entity.prototype = {
 			_g._removeTypeName(Type.getClassName(_));
 			return;
 		});
-		if(null != this.engine) this.engine.matchSystems(this);
+		this.engine.matchSystems(this);
 	}
 	,_add: function(component) {
 		var type = Type.getClassName(Type.getClass(component));
@@ -950,8 +951,7 @@ var fly_Game = function(mini,config,gameInfo,endLevel) {
 	this.world = new edge_World(30);
 	this.engine = this.world.engine;
 	var snake = new fly_components_Snake(40,p);
-	var snakeEntity = new edge_Entity([p,direction,velocity,snake,this.maze]);
-	this.engine.add(snakeEntity);
+	var snakeEntity = this.engine.create([p,direction,velocity,snake,this.maze]);
 	var _g1 = 0;
 	var _g2 = config.flies;
 	while(_g1 < _g2) {
@@ -981,8 +981,8 @@ var fly_Game = function(mini,config,gameInfo,endLevel) {
 			}
 		}
 	}));
-	this.engine.add(new edge_Entity([new fly_components_CountDown(3)]));
-	this.engine.add(new edge_Entity([fly_components_Audio.start]));
+	this.engine.create([new fly_components_CountDown(3)]);
+	this.engine.create([fly_components_Audio.start]);
 	this.world.physics.add(new fly_systems_UpdateDelayedComponents());
 	this.world.physics.add(new fly_systems_MazeCollision(config.cellSize));
 	this.world.physics.add(new fly_systems_UpdateDroplet());
@@ -1021,11 +1021,11 @@ fly_Game.prototype = {
 	,createFly: function(engine,config) {
 		var a = config.gen["float"]() * Math.PI * 2;
 		var p = new fly_components_Position(config.gen["float"]() * fly_Config.width,config.gen["float"]() * fly_Config.height);
-		engine.add(new edge_Entity([p,fly_components_Fly.create(config.gen),fly_Game.edibleFly]));
+		engine.create([p,fly_components_Fly.create(config.gen),fly_Game.edibleFly]);
 	}
 	,createFlower: function(engine,config) {
 		var p = new fly_components_Position(fly_Config.width * config.gen["float"](),fly_Config.height * config.gen["float"]());
-		engine.add(new edge_Entity([p,new fly_components_Flower(config.gen["int"]()),fly_Game.edibleFlower]));
+		engine.create([p,new fly_components_Flower(config.gen["int"]()),fly_Game.edibleFlower]);
 	}
 	,get_running: function() {
 		return this.world.running;
@@ -1275,7 +1275,7 @@ fly_systems_BackgroundBuzz.prototype = {
 		if(this.entities.count == 0) this.counter = 0; else {
 			this.counter++;
 			if(this.counter >= this.delay) {
-				this.engine.add(new edge_Entity([fly_components_Audio.buzzing]));
+				this.engine.create([fly_components_Audio.buzzing]);
 				this.counter = 0;
 			}
 		}
@@ -1417,7 +1417,7 @@ fly_systems_MazeCollision.prototype = {
 		}
 	}
 	,addSound: function() {
-		this.engine.add(new edge_Entity([fly_components_Audio.get_boing()]));
+		this.engine.create([fly_components_Audio.get_boing()]);
 	}
 	,pos: function(x,y,ax,ay,bx,by) {
 		if((bx - ax) * (y - ay) - (by - ay) * (x - ax) < 0) return -1; else return 1;
@@ -1425,6 +1425,71 @@ fly_systems_MazeCollision.prototype = {
 	,componentRequirements: null
 	,entityRequirements: null
 	,__class__: fly_systems_MazeCollision
+};
+var haxe_IMap = function() { };
+haxe_IMap.__name__ = ["haxe","IMap"];
+haxe_IMap.prototype = {
+	remove: null
+	,__class__: haxe_IMap
+};
+var haxe_ds_StringMap = function() {
+	this.h = { };
+};
+haxe_ds_StringMap.__name__ = ["haxe","ds","StringMap"];
+haxe_ds_StringMap.__interfaces__ = [haxe_IMap];
+haxe_ds_StringMap.prototype = {
+	h: null
+	,rh: null
+	,set: function(key,value) {
+		if(__map_reserved[key] != null) this.setReserved(key,value); else this.h[key] = value;
+	}
+	,get: function(key) {
+		if(__map_reserved[key] != null) return this.getReserved(key);
+		return this.h[key];
+	}
+	,exists: function(key) {
+		if(__map_reserved[key] != null) return this.existsReserved(key);
+		return this.h.hasOwnProperty(key);
+	}
+	,setReserved: function(key,value) {
+		if(this.rh == null) this.rh = { };
+		this.rh["$" + key] = value;
+	}
+	,getReserved: function(key) {
+		if(this.rh == null) return null; else return this.rh["$" + key];
+	}
+	,existsReserved: function(key) {
+		if(this.rh == null) return false;
+		return this.rh.hasOwnProperty("$" + key);
+	}
+	,remove: function(key) {
+		if(__map_reserved[key] != null) {
+			key = "$" + key;
+			if(this.rh == null || !this.rh.hasOwnProperty(key)) return false;
+			delete(this.rh[key]);
+			return true;
+		} else {
+			if(!this.h.hasOwnProperty(key)) return false;
+			delete(this.h[key]);
+			return true;
+		}
+	}
+	,arrayKeys: function() {
+		var out = [];
+		for( var key in this.h ) {
+		if(this.h.hasOwnProperty(key)) out.push(key);
+		}
+		if(this.rh != null) {
+			for( var key in this.rh ) {
+			if(key.charCodeAt(0) == 36) out.push(key.substr(1));
+			}
+		}
+		return out;
+	}
+	,iterator: function() {
+		return new haxe_ds__$StringMap_StringMapIterator(this,this.arrayKeys());
+	}
+	,__class__: haxe_ds_StringMap
 };
 var js_Boot = function() { };
 js_Boot.__name__ = ["js","Boot"];
@@ -1900,13 +1965,13 @@ fly_systems_SnakeEats.prototype = {
 			if(dx * dx + dy * dy <= this.sqdistance) {
 				this.engine.remove(o.entity);
 				if(o.edible.makeJump) snake.jumping.push(0);
-				if(o.edible.makeDroplet) this.engine.add(new edge_Entity([new fly_components_Position(position.x,position.y),new fly_components_DelayedComponents(35,[fly_components_Droplet.create()],[fly_components_DelayedComponents])]));
-				this.engine.add(new edge_Entity([new fly_components_DelayedComponents(35,[fly_components_Audio.poop],[])]));
+				if(o.edible.makeDroplet) this.engine.create([new fly_components_Position(position.x,position.y),new fly_components_DelayedComponents(35,[fly_components_Droplet.create()],[fly_components_DelayedComponents])]);
+				this.engine.create([new fly_components_DelayedComponents(35,[fly_components_Audio.poop],[])]);
 				this.gameInfo.score += o.edible.score;
 				if(o.edible.countToPassLevel) {
 					this.gameInfo.toPassLevel--;
-					this.engine.add(new edge_Entity([fly_components_Audio.eatFly]));
-				} else this.engine.add(new edge_Entity([fly_components_Audio.eatFlower]));
+					this.engine.create([fly_components_Audio.eatFly]);
+				} else this.engine.create([fly_components_Audio.eatFlower]);
 			}
 		}
 	}
@@ -2022,7 +2087,7 @@ fly_systems_UpdateExplosion.prototype = {
 	,update: function(explosion) {
 		if(explosion.stage == fly_components_Explosion.maxStage) {
 			this.entity.add(fly_components_Detonation.instance);
-			this.engine.add(new edge_Entity([fly_components_Audio.get_explosion()]));
+			this.engine.create([fly_components_Audio.get_explosion()]);
 		}
 		explosion.stage--;
 		if(explosion.stage <= 0) this.engine.remove(this.entity);
@@ -2164,12 +2229,6 @@ fly_util_Persona.create = function() {
 		return $r;
 	}(this))).concat([thx_core_Arrays.sampleOne(fly_util_Persona.nouns)]).join(" ");
 };
-var haxe_IMap = function() { };
-haxe_IMap.__name__ = ["haxe","IMap"];
-haxe_IMap.prototype = {
-	remove: null
-	,__class__: haxe_IMap
-};
 var haxe_ds_ObjectMap = function() {
 	this.h = { };
 	this.h.__keys__ = { };
@@ -2218,65 +2277,6 @@ haxe_ds__$StringMap_StringMapIterator.prototype = {
 		return this.map.get(this.keys[this.index++]);
 	}
 	,__class__: haxe_ds__$StringMap_StringMapIterator
-};
-var haxe_ds_StringMap = function() {
-	this.h = { };
-};
-haxe_ds_StringMap.__name__ = ["haxe","ds","StringMap"];
-haxe_ds_StringMap.__interfaces__ = [haxe_IMap];
-haxe_ds_StringMap.prototype = {
-	h: null
-	,rh: null
-	,set: function(key,value) {
-		if(__map_reserved[key] != null) this.setReserved(key,value); else this.h[key] = value;
-	}
-	,get: function(key) {
-		if(__map_reserved[key] != null) return this.getReserved(key);
-		return this.h[key];
-	}
-	,exists: function(key) {
-		if(__map_reserved[key] != null) return this.existsReserved(key);
-		return this.h.hasOwnProperty(key);
-	}
-	,setReserved: function(key,value) {
-		if(this.rh == null) this.rh = { };
-		this.rh["$" + key] = value;
-	}
-	,getReserved: function(key) {
-		if(this.rh == null) return null; else return this.rh["$" + key];
-	}
-	,existsReserved: function(key) {
-		if(this.rh == null) return false;
-		return this.rh.hasOwnProperty("$" + key);
-	}
-	,remove: function(key) {
-		if(__map_reserved[key] != null) {
-			key = "$" + key;
-			if(this.rh == null || !this.rh.hasOwnProperty(key)) return false;
-			delete(this.rh[key]);
-			return true;
-		} else {
-			if(!this.h.hasOwnProperty(key)) return false;
-			delete(this.h[key]);
-			return true;
-		}
-	}
-	,arrayKeys: function() {
-		var out = [];
-		for( var key in this.h ) {
-		if(this.h.hasOwnProperty(key)) out.push(key);
-		}
-		if(this.rh != null) {
-			for( var key in this.rh ) {
-			if(key.charCodeAt(0) == 36) out.push(key.substr(1));
-			}
-		}
-		return out;
-	}
-	,iterator: function() {
-		return new haxe_ds__$StringMap_StringMapIterator(this,this.arrayKeys());
-	}
-	,__class__: haxe_ds_StringMap
 };
 var minicanvas_MiniCanvas = function(width,height,scaleMode) {
 	this.scaleMode = scaleMode;
@@ -2407,12 +2407,10 @@ minicanvas_MiniCanvas.prototype = {
 };
 var minicanvas_ScaleMode = { __ename__ : true, __constructs__ : ["NoScale","Auto","Scaled"] };
 minicanvas_ScaleMode.NoScale = ["NoScale",0];
-minicanvas_ScaleMode.NoScale.toString = $estr;
 minicanvas_ScaleMode.NoScale.__enum__ = minicanvas_ScaleMode;
 minicanvas_ScaleMode.Auto = ["Auto",1];
-minicanvas_ScaleMode.Auto.toString = $estr;
 minicanvas_ScaleMode.Auto.__enum__ = minicanvas_ScaleMode;
-minicanvas_ScaleMode.Scaled = function(v) { var $x = ["Scaled",2,v]; $x.__enum__ = minicanvas_ScaleMode; $x.toString = $estr; return $x; };
+minicanvas_ScaleMode.Scaled = function(v) { var $x = ["Scaled",2,v]; $x.__enum__ = minicanvas_ScaleMode; return $x; };
 var minicanvas_BrowserCanvas = function(width,height,scaleMode) {
 	this.isNode = false;
 	this.isBrowser = true;
@@ -2885,12 +2883,12 @@ thx_color_parse_ColorInfo.prototype = {
 	,__class__: thx_color_parse_ColorInfo
 };
 var thx_color_parse_ChannelInfo = { __ename__ : true, __constructs__ : ["CIPercent","CIFloat","CIDegree","CIInt8","CIInt","CIBool"] };
-thx_color_parse_ChannelInfo.CIPercent = function(value) { var $x = ["CIPercent",0,value]; $x.__enum__ = thx_color_parse_ChannelInfo; $x.toString = $estr; return $x; };
-thx_color_parse_ChannelInfo.CIFloat = function(value) { var $x = ["CIFloat",1,value]; $x.__enum__ = thx_color_parse_ChannelInfo; $x.toString = $estr; return $x; };
-thx_color_parse_ChannelInfo.CIDegree = function(value) { var $x = ["CIDegree",2,value]; $x.__enum__ = thx_color_parse_ChannelInfo; $x.toString = $estr; return $x; };
-thx_color_parse_ChannelInfo.CIInt8 = function(value) { var $x = ["CIInt8",3,value]; $x.__enum__ = thx_color_parse_ChannelInfo; $x.toString = $estr; return $x; };
-thx_color_parse_ChannelInfo.CIInt = function(value) { var $x = ["CIInt",4,value]; $x.__enum__ = thx_color_parse_ChannelInfo; $x.toString = $estr; return $x; };
-thx_color_parse_ChannelInfo.CIBool = function(value) { var $x = ["CIBool",5,value]; $x.__enum__ = thx_color_parse_ChannelInfo; $x.toString = $estr; return $x; };
+thx_color_parse_ChannelInfo.CIPercent = function(value) { var $x = ["CIPercent",0,value]; $x.__enum__ = thx_color_parse_ChannelInfo; return $x; };
+thx_color_parse_ChannelInfo.CIFloat = function(value) { var $x = ["CIFloat",1,value]; $x.__enum__ = thx_color_parse_ChannelInfo; return $x; };
+thx_color_parse_ChannelInfo.CIDegree = function(value) { var $x = ["CIDegree",2,value]; $x.__enum__ = thx_color_parse_ChannelInfo; return $x; };
+thx_color_parse_ChannelInfo.CIInt8 = function(value) { var $x = ["CIInt8",3,value]; $x.__enum__ = thx_color_parse_ChannelInfo; return $x; };
+thx_color_parse_ChannelInfo.CIInt = function(value) { var $x = ["CIInt",4,value]; $x.__enum__ = thx_color_parse_ChannelInfo; return $x; };
+thx_color_parse_ChannelInfo.CIBool = function(value) { var $x = ["CIBool",5,value]; $x.__enum__ = thx_color_parse_ChannelInfo; return $x; };
 var thx_core_Arrays = function() { };
 thx_core_Arrays.__name__ = ["thx","core","Arrays"];
 thx_core_Arrays.contains = function(array,element,eq) {
@@ -3400,6 +3398,7 @@ if(Array.prototype.map == null) Array.prototype.map = function(f) {
 	}
 	return a;
 };
+var __map_reserved = {}
 fly_systems_PlayAudio.loadSound("exp1","sound/Buff.mp3");
 fly_systems_PlayAudio.loadSound("exp2","sound/Buffs.mp3");
 fly_systems_PlayAudio.loadSound("exp3","sound/Burf.mp3");
@@ -3412,7 +3411,6 @@ fly_systems_PlayAudio.loadSound("poop","sound/Poop.mp3");
 fly_systems_PlayAudio.loadSound("start","sound/Start.mp3");
 fly_systems_PlayAudio.loadSound("success","sound/Tadada.mp3");
 fly_systems_PlayAudio.loadSound("gameover","sound/Game over.mp3");
-var __map_reserved = {}
 
       // Production steps of ECMA-262, Edition 5, 15.4.4.21
       // Reference: http://es5.github.io/#x15.4.4.21

@@ -25,27 +25,27 @@ class SnakeEats implements ISystem {
         if(o.edible.makeJump)
           snake.jumping.push(0);
         if(o.edible.makeDroplet)
-          engine.add(new Entity([
+          engine.create([
             new Position(position.x, position.y),
             new DelayedComponents(
               35,
               [Droplet.create()],
               [DelayedComponents]
             )
-          ]));
-          engine.add(new Entity([
+          ]);
+          engine.create([
             new DelayedComponents(
               35,
               [Audio.poop],
               []
             )
-          ]));
+          ]);
         gameInfo.score += o.edible.score;
         if(o.edible.countToPassLevel) {
           gameInfo.toPassLevel--;
-          engine.add(new Entity([Audio.eatFly]));
+          engine.create([Audio.eatFly]);
         } else {
-          engine.add(new Entity([Audio.eatFlower]));
+          engine.create([Audio.eatFlower]);
         }
       }
     }

@@ -47,15 +47,13 @@ class Game {
     world = new World(30);
     engine = world.engine;
     var snake = new Snake(40, p),
-        snakeEntity = new Entity([
+        snakeEntity = engine.create([
           p,
           direction,
           velocity,
           snake,
           maze
         ]);
-
-    engine.add(snakeEntity);
 
     for(i in 0...config.flies)
       createFly(engine, config);
@@ -79,8 +77,8 @@ class Game {
     }));
 
 
-    engine.add(new Entity([new CountDown(3)]));
-    engine.add(new Entity([Audio.start]));
+    engine.create([new CountDown(3)]);
+    engine.create([Audio.start]);
 
     world.physics.add(new UpdateDelayedComponents());
     world.physics.add(new MazeCollision(config.cellSize));
@@ -130,7 +128,7 @@ class Game {
           config.gen.float() * Config.width, //Math.cos(a) * config.gen.float() * config.flyCircleRadius + config.width / 2,
           config.gen.float() * Config.height //Math.sin(a) * config.gen.float() * config.flyCircleRadius + config.height / 2
         );
-    engine.add(new Entity([p, Fly.create(config.gen), edibleFly]));
+    engine.create([p, Fly.create(config.gen), edibleFly]);
   }
 
   function createFlower(engine : Engine, config : Config) {
@@ -138,7 +136,7 @@ class Game {
           Config.width * config.gen.float(),
           Config.height * config.gen.float()
         );
-    engine.add(new Entity([p, new Flower(config.gen.int()), edibleFlower]));
+    engine.create([p, new Flower(config.gen.int()), edibleFlower]);
   }
 
   function get_running()

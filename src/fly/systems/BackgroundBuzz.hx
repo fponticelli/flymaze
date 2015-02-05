@@ -14,7 +14,7 @@ class BackgroundBuzz implements ISystem {
     else {
       counter++;
       if(counter >= delay) {
-        engine.add(new Entity([Audio.buzzing]));
+        engine.create([Audio.buzzing]);
         counter = 0;
       }
     }

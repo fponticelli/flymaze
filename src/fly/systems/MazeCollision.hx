@@ -141,7 +141,7 @@ class MazeCollision implements ISystem {
   }
 
   function addSound()
-    engine.add(new Entity([Audio.boing]));
+    engine.create([Audio.boing]);
 
   function pos(x : Float, y : Float, ax : Float, ay : Float, bx : Float, by : Float)
     return ((bx - ax) * (y - ay) - (by - ay) * (x - ax)).sign();
