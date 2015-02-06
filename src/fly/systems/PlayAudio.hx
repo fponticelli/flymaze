@@ -7,7 +7,6 @@ import fly.components.*;
 
 class PlayAudio implements ISystem {
   var entity : Entity;
-  var engine : Engine;
   var info : GameInfo;
   public function new(info : GameInfo) {
     this.info = info;
@@ -16,7 +15,7 @@ class PlayAudio implements ISystem {
   function update(audio : Audio) {
     if(!info.mute)
       playSound(audio.name);
-    engine.remove(entity);
+    entity.destroy();
   }
 
   static var sounds = new Map();

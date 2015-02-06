@@ -24,11 +24,10 @@ class UpdateDetonation implements ISystem {
       dx = position.x - o.position.x;
       dy = position.y - o.position.y;
       if(dx * dx + dy * dy <= sqdistance) {
-        engine.remove(o.entity);
+        o.entity.destroy();
         gameInfo.score += Math.round(o.edible.score / scoreDivisor);
         if(o.edible.countToPassLevel)
           gameInfo.toPassLevel--;
-        //engine.add(new Entity([o.position, Droplet.create()]));
       }
     }
     entity.remove(detonation);

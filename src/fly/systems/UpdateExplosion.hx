@@ -15,6 +15,6 @@ class UpdateExplosion implements ISystem {
     }
     explosion.stage--;
     if(explosion.stage <= 0)
-      engine.remove(entity);
+      entity.destroy();
   }
 }

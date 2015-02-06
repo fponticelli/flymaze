@@ -1,4 +1,5 @@
 (function (console) { "use strict";
+var $estr = function() { return js_Boot.__string_rec(this,''); };
 function $extend(from, fields) {
 	function Inherit() {} Inherit.prototype = from; var proto = new Inherit();
 	for (var name in fields) proto[name] = fields[name];
@@ -624,16 +625,23 @@ edge_Entity.prototype = {
 	map: null
 	,engine: null
 	,add: function(component) {
+		if(null == this.engine) return;
 		this._add(component);
 		this.engine.matchSystems(this);
 	}
 	,addMany: function(components) {
 		var _g = this;
+		if(null == this.engine) return;
 		components.map(function(_) {
 			_g._add(_);
 			return;
 		});
 		this.engine.matchSystems(this);
+	}
+	,destroy: function() {
+		if(null == this.engine) return;
+		this.engine.remove(this);
+		this.map = new haxe_ds_StringMap();
 	}
 	,remove: function(component) {
 		this._remove(component);
@@ -1426,71 +1434,6 @@ fly_systems_MazeCollision.prototype = {
 	,entityRequirements: null
 	,__class__: fly_systems_MazeCollision
 };
-var haxe_IMap = function() { };
-haxe_IMap.__name__ = ["haxe","IMap"];
-haxe_IMap.prototype = {
-	remove: null
-	,__class__: haxe_IMap
-};
-var haxe_ds_StringMap = function() {
-	this.h = { };
-};
-haxe_ds_StringMap.__name__ = ["haxe","ds","StringMap"];
-haxe_ds_StringMap.__interfaces__ = [haxe_IMap];
-haxe_ds_StringMap.prototype = {
-	h: null
-	,rh: null
-	,set: function(key,value) {
-		if(__map_reserved[key] != null) this.setReserved(key,value); else this.h[key] = value;
-	}
-	,get: function(key) {
-		if(__map_reserved[key] != null) return this.getReserved(key);
-		return this.h[key];
-	}
-	,exists: function(key) {
-		if(__map_reserved[key] != null) return this.existsReserved(key);
-		return this.h.hasOwnProperty(key);
-	}
-	,setReserved: function(key,value) {
-		if(this.rh == null) this.rh = { };
-		this.rh["$" + key] = value;
-	}
-	,getReserved: function(key) {
-		if(this.rh == null) return null; else return this.rh["$" + key];
-	}
-	,existsReserved: function(key) {
-		if(this.rh == null) return false;
-		return this.rh.hasOwnProperty("$" + key);
-	}
-	,remove: function(key) {
-		if(__map_reserved[key] != null) {
-			key = "$" + key;
-			if(this.rh == null || !this.rh.hasOwnProperty(key)) return false;
-			delete(this.rh[key]);
-			return true;
-		} else {
-			if(!this.h.hasOwnProperty(key)) return false;
-			delete(this.h[key]);
-			return true;
-		}
-	}
-	,arrayKeys: function() {
-		var out = [];
-		for( var key in this.h ) {
-		if(this.h.hasOwnProperty(key)) out.push(key);
-		}
-		if(this.rh != null) {
-			for( var key in this.rh ) {
-			if(key.charCodeAt(0) == 36) out.push(key.substr(1));
-			}
-		}
-		return out;
-	}
-	,iterator: function() {
-		return new haxe_ds__$StringMap_StringMapIterator(this,this.arrayKeys());
-	}
-	,__class__: haxe_ds_StringMap
-};
 var js_Boot = function() { };
 js_Boot.__name__ = ["js","Boot"];
 js_Boot.getClass = function(o) {
@@ -1609,11 +1552,10 @@ fly_systems_PlayAudio.playSound = function(name) {
 };
 fly_systems_PlayAudio.prototype = {
 	entity: null
-	,engine: null
 	,info: null
 	,update: function(audio) {
 		if(!this.info.mute) fly_systems_PlayAudio.playSound(audio.name);
-		this.engine.remove(this.entity);
+		this.entity.destroy();
 	}
 	,componentRequirements: null
 	,entityRequirements: null
@@ -1963,7 +1905,7 @@ fly_systems_SnakeEats.prototype = {
 			dx = position.x - o.position.x;
 			dy = position.y - o.position.y;
 			if(dx * dx + dy * dy <= this.sqdistance) {
-				this.engine.remove(o.entity);
+				o.entity.destroy();
 				if(o.edible.makeJump) snake.jumping.push(0);
 				if(o.edible.makeDroplet) this.engine.create([new fly_components_Position(position.x,position.y),new fly_components_DelayedComponents(35,[fly_components_Droplet.create()],[fly_components_DelayedComponents])]);
 				this.engine.create([new fly_components_DelayedComponents(35,[fly_components_Audio.poop],[])]);
@@ -1989,12 +1931,11 @@ fly_systems_UpdateCountDown.__interfaces__ = [edge_ISystem];
 fly_systems_UpdateCountDown.prototype = {
 	timeDelta: null
 	,entity: null
-	,engine: null
 	,callback: null
 	,update: function(countDown) {
 		countDown.time -= this.timeDelta / 1000;
 		if(countDown.time > 0) return;
-		this.engine.remove(this.entity);
+		this.entity.destroy();
 		this.callback();
 	}
 	,componentRequirements: null
@@ -2029,7 +1970,6 @@ fly_systems_UpdateDetonation.__name__ = ["fly","systems","UpdateDetonation"];
 fly_systems_UpdateDetonation.__interfaces__ = [edge_ISystem];
 fly_systems_UpdateDetonation.prototype = {
 	entity: null
-	,engine: null
 	,entities: null
 	,gameInfo: null
 	,scoreDivisor: null
@@ -2045,7 +1985,7 @@ fly_systems_UpdateDetonation.prototype = {
 			dx = position.x - o.position.x;
 			dy = position.y - o.position.y;
 			if(dx * dx + dy * dy <= sqdistance) {
-				this.engine.remove(o.entity);
+				o.entity.destroy();
 				this.gameInfo.score += Math.round(o.edible.score / this.scoreDivisor);
 				if(o.edible.countToPassLevel) this.gameInfo.toPassLevel--;
 			}
@@ -2090,7 +2030,7 @@ fly_systems_UpdateExplosion.prototype = {
 			this.engine.create([fly_components_Audio.get_explosion()]);
 		}
 		explosion.stage--;
-		if(explosion.stage <= 0) this.engine.remove(this.entity);
+		if(explosion.stage <= 0) this.entity.destroy();
 	}
 	,componentRequirements: null
 	,entityRequirements: null
@@ -2229,6 +2169,12 @@ fly_util_Persona.create = function() {
 		return $r;
 	}(this))).concat([thx_core_Arrays.sampleOne(fly_util_Persona.nouns)]).join(" ");
 };
+var haxe_IMap = function() { };
+haxe_IMap.__name__ = ["haxe","IMap"];
+haxe_IMap.prototype = {
+	remove: null
+	,__class__: haxe_IMap
+};
 var haxe_ds_ObjectMap = function() {
 	this.h = { };
 	this.h.__keys__ = { };
@@ -2277,6 +2223,65 @@ haxe_ds__$StringMap_StringMapIterator.prototype = {
 		return this.map.get(this.keys[this.index++]);
 	}
 	,__class__: haxe_ds__$StringMap_StringMapIterator
+};
+var haxe_ds_StringMap = function() {
+	this.h = { };
+};
+haxe_ds_StringMap.__name__ = ["haxe","ds","StringMap"];
+haxe_ds_StringMap.__interfaces__ = [haxe_IMap];
+haxe_ds_StringMap.prototype = {
+	h: null
+	,rh: null
+	,set: function(key,value) {
+		if(__map_reserved[key] != null) this.setReserved(key,value); else this.h[key] = value;
+	}
+	,get: function(key) {
+		if(__map_reserved[key] != null) return this.getReserved(key);
+		return this.h[key];
+	}
+	,exists: function(key) {
+		if(__map_reserved[key] != null) return this.existsReserved(key);
+		return this.h.hasOwnProperty(key);
+	}
+	,setReserved: function(key,value) {
+		if(this.rh == null) this.rh = { };
+		this.rh["$" + key] = value;
+	}
+	,getReserved: function(key) {
+		if(this.rh == null) return null; else return this.rh["$" + key];
+	}
+	,existsReserved: function(key) {
+		if(this.rh == null) return false;
+		return this.rh.hasOwnProperty("$" + key);
+	}
+	,remove: function(key) {
+		if(__map_reserved[key] != null) {
+			key = "$" + key;
+			if(this.rh == null || !this.rh.hasOwnProperty(key)) return false;
+			delete(this.rh[key]);
+			return true;
+		} else {
+			if(!this.h.hasOwnProperty(key)) return false;
+			delete(this.h[key]);
+			return true;
+		}
+	}
+	,arrayKeys: function() {
+		var out = [];
+		for( var key in this.h ) {
+		if(this.h.hasOwnProperty(key)) out.push(key);
+		}
+		if(this.rh != null) {
+			for( var key in this.rh ) {
+			if(key.charCodeAt(0) == 36) out.push(key.substr(1));
+			}
+		}
+		return out;
+	}
+	,iterator: function() {
+		return new haxe_ds__$StringMap_StringMapIterator(this,this.arrayKeys());
+	}
+	,__class__: haxe_ds_StringMap
 };
 var minicanvas_MiniCanvas = function(width,height,scaleMode) {
 	this.scaleMode = scaleMode;
@@ -2407,10 +2412,12 @@ minicanvas_MiniCanvas.prototype = {
 };
 var minicanvas_ScaleMode = { __ename__ : true, __constructs__ : ["NoScale","Auto","Scaled"] };
 minicanvas_ScaleMode.NoScale = ["NoScale",0];
+minicanvas_ScaleMode.NoScale.toString = $estr;
 minicanvas_ScaleMode.NoScale.__enum__ = minicanvas_ScaleMode;
 minicanvas_ScaleMode.Auto = ["Auto",1];
+minicanvas_ScaleMode.Auto.toString = $estr;
 minicanvas_ScaleMode.Auto.__enum__ = minicanvas_ScaleMode;
-minicanvas_ScaleMode.Scaled = function(v) { var $x = ["Scaled",2,v]; $x.__enum__ = minicanvas_ScaleMode; return $x; };
+minicanvas_ScaleMode.Scaled = function(v) { var $x = ["Scaled",2,v]; $x.__enum__ = minicanvas_ScaleMode; $x.toString = $estr; return $x; };
 var minicanvas_BrowserCanvas = function(width,height,scaleMode) {
 	this.isNode = false;
 	this.isBrowser = true;
@@ -2883,12 +2890,12 @@ thx_color_parse_ColorInfo.prototype = {
 	,__class__: thx_color_parse_ColorInfo
 };
 var thx_color_parse_ChannelInfo = { __ename__ : true, __constructs__ : ["CIPercent","CIFloat","CIDegree","CIInt8","CIInt","CIBool"] };
-thx_color_parse_ChannelInfo.CIPercent = function(value) { var $x = ["CIPercent",0,value]; $x.__enum__ = thx_color_parse_ChannelInfo; return $x; };
-thx_color_parse_ChannelInfo.CIFloat = function(value) { var $x = ["CIFloat",1,value]; $x.__enum__ = thx_color_parse_ChannelInfo; return $x; };
-thx_color_parse_ChannelInfo.CIDegree = function(value) { var $x = ["CIDegree",2,value]; $x.__enum__ = thx_color_parse_ChannelInfo; return $x; };
-thx_color_parse_ChannelInfo.CIInt8 = function(value) { var $x = ["CIInt8",3,value]; $x.__enum__ = thx_color_parse_ChannelInfo; return $x; };
-thx_color_parse_ChannelInfo.CIInt = function(value) { var $x = ["CIInt",4,value]; $x.__enum__ = thx_color_parse_ChannelInfo; return $x; };
-thx_color_parse_ChannelInfo.CIBool = function(value) { var $x = ["CIBool",5,value]; $x.__enum__ = thx_color_parse_ChannelInfo; return $x; };
+thx_color_parse_ChannelInfo.CIPercent = function(value) { var $x = ["CIPercent",0,value]; $x.__enum__ = thx_color_parse_ChannelInfo; $x.toString = $estr; return $x; };
+thx_color_parse_ChannelInfo.CIFloat = function(value) { var $x = ["CIFloat",1,value]; $x.__enum__ = thx_color_parse_ChannelInfo; $x.toString = $estr; return $x; };
+thx_color_parse_ChannelInfo.CIDegree = function(value) { var $x = ["CIDegree",2,value]; $x.__enum__ = thx_color_parse_ChannelInfo; $x.toString = $estr; return $x; };
+thx_color_parse_ChannelInfo.CIInt8 = function(value) { var $x = ["CIInt8",3,value]; $x.__enum__ = thx_color_parse_ChannelInfo; $x.toString = $estr; return $x; };
+thx_color_parse_ChannelInfo.CIInt = function(value) { var $x = ["CIInt",4,value]; $x.__enum__ = thx_color_parse_ChannelInfo; $x.toString = $estr; return $x; };
+thx_color_parse_ChannelInfo.CIBool = function(value) { var $x = ["CIBool",5,value]; $x.__enum__ = thx_color_parse_ChannelInfo; $x.toString = $estr; return $x; };
 var thx_core_Arrays = function() { };
 thx_core_Arrays.__name__ = ["thx","core","Arrays"];
 thx_core_Arrays.contains = function(array,element,eq) {
@@ -3256,6 +3263,11 @@ thx_culture_Culture.prototype = {
 };
 var thx_culture_Pattern = function() { };
 thx_culture_Pattern.__name__ = ["thx","culture","Pattern"];
+var thx_format_Format = function() { };
+thx_format_Format.__name__ = ["thx","format","Format"];
+thx_format_Format.get_defaultCulture = function() {
+	if(null != thx_format_Format.defaultCulture) return thx_format_Format.defaultCulture; else return thx_culture_Culture.invariant;
+};
 var thx_format_NumberFormat = function() { };
 thx_format_NumberFormat.__name__ = ["thx","format","NumberFormat"];
 thx_format_NumberFormat.number = function(f,precision,culture) {
@@ -3296,7 +3308,7 @@ thx_format_NumberFormat.intPart = function(s,groupSizes,groupSeparator) {
 	return buf.join(groupSeparator);
 };
 thx_format_NumberFormat.numberFormat = function(culture) {
-	if(null != culture && null != culture.number) return culture.number; else return thx_culture_Culture.invariant.number;
+	if(null != culture && null != culture.number) return culture.number; else return thx_format_Format.get_defaultCulture().number;
 };
 thx_format_NumberFormat.pad = function(s,len,round) {
 	var t;
@@ -3398,7 +3410,6 @@ if(Array.prototype.map == null) Array.prototype.map = function(f) {
 	}
 	return a;
 };
-var __map_reserved = {}
 fly_systems_PlayAudio.loadSound("exp1","sound/Buff.mp3");
 fly_systems_PlayAudio.loadSound("exp2","sound/Buffs.mp3");
 fly_systems_PlayAudio.loadSound("exp3","sound/Burf.mp3");
@@ -3411,6 +3422,7 @@ fly_systems_PlayAudio.loadSound("poop","sound/Poop.mp3");
 fly_systems_PlayAudio.loadSound("start","sound/Start.mp3");
 fly_systems_PlayAudio.loadSound("success","sound/Tadada.mp3");
 fly_systems_PlayAudio.loadSound("gameover","sound/Game over.mp3");
+var __map_reserved = {}
 
       // Production steps of ECMA-262, Edition 5, 15.4.4.21
       // Reference: http://es5.github.io/#x15.4.4.21
