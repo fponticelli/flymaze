@@ -642,34 +642,42 @@ edge_Phase.prototype = {
 	}
 	,__class__: edge_Phase
 };
-var edge_View = function() {
+var edge_View = function(added,removed) {
 	this.map = new haxe_ds_ObjectMap();
 	this.count = 0;
+	this.holder = { entity : null, data : null};
+	if(added != null) this.added = added; else this.added = function(_) {
+	};
+	if(removed != null) this.removed = removed; else this.removed = function(_1) {
+	};
 };
 edge_View.__name__ = ["edge","View"];
 edge_View.prototype = {
 	iterator: function() {
 		var _g = this;
 		var keys = this.map.keys();
-		var holder = { entity : null, data : null};
 		return { hasNext : function() {
 			return keys.hasNext();
 		}, next : function() {
 			var key = keys.next();
-			holder.entity = key;
-			holder.data = _g.map.h[key.__id__];
-			return holder;
+			_g.holder.entity = key;
+			_g.holder.data = _g.map.h[key.__id__];
+			return _g.holder;
 		}};
 	}
 	,add: function(entity,data) {
 		if(this.map.h.__keys__[entity.__id__] != null) return;
 		this.map.set(entity,data);
 		this.count++;
+		this.holder.entity = entity;
+		this.holder.data = data;
+		this.added(this.holder);
 	}
 	,remove: function(entity) {
 		if(!(this.map.h.__keys__[entity.__id__] != null)) return;
 		this.map.remove(entity);
 		this.count--;
+		this.removed(entity);
 	}
 	,__class__: edge_View
 };
@@ -1086,7 +1094,7 @@ fly_systems_BackgroundBuzz.prototype = {
 };
 var fly_systems_BackgroundBuzz_$SystemProcess = function(system) {
 	this.system = system;
-	system.entities = new edge_View();
+	system.entities = new edge_View(null,null);
 };
 fly_systems_BackgroundBuzz_$SystemProcess.__name__ = ["fly","systems","BackgroundBuzz_SystemProcess"];
 fly_systems_BackgroundBuzz_$SystemProcess.__interfaces__ = [edge_core_ISystemProcess];
@@ -1263,7 +1271,7 @@ fly_systems_MazeCollision.prototype = {
 };
 var fly_systems_MazeCollision_$SystemProcess = function(system) {
 	this.system = system;
-	this.updateItems = new edge_View();
+	this.updateItems = new edge_View(null,null);
 };
 fly_systems_MazeCollision_$SystemProcess.__name__ = ["fly","systems","MazeCollision_SystemProcess"];
 fly_systems_MazeCollision_$SystemProcess.__interfaces__ = [edge_core_ISystemProcess];
@@ -1311,6 +1319,65 @@ fly_systems_MazeCollision_$SystemProcess.prototype = {
 		if(count == 0) this.updateItems.add(entity,o);
 	}
 	,__class__: fly_systems_MazeCollision_$SystemProcess
+};
+var haxe_IMap = function() { };
+haxe_IMap.__name__ = ["haxe","IMap"];
+var haxe_ds_StringMap = function() {
+	this.h = { };
+};
+haxe_ds_StringMap.__name__ = ["haxe","ds","StringMap"];
+haxe_ds_StringMap.__interfaces__ = [haxe_IMap];
+haxe_ds_StringMap.prototype = {
+	set: function(key,value) {
+		if(__map_reserved[key] != null) this.setReserved(key,value); else this.h[key] = value;
+	}
+	,get: function(key) {
+		if(__map_reserved[key] != null) return this.getReserved(key);
+		return this.h[key];
+	}
+	,exists: function(key) {
+		if(__map_reserved[key] != null) return this.existsReserved(key);
+		return this.h.hasOwnProperty(key);
+	}
+	,setReserved: function(key,value) {
+		if(this.rh == null) this.rh = { };
+		this.rh["$" + key] = value;
+	}
+	,getReserved: function(key) {
+		if(this.rh == null) return null; else return this.rh["$" + key];
+	}
+	,existsReserved: function(key) {
+		if(this.rh == null) return false;
+		return this.rh.hasOwnProperty("$" + key);
+	}
+	,remove: function(key) {
+		if(__map_reserved[key] != null) {
+			key = "$" + key;
+			if(this.rh == null || !this.rh.hasOwnProperty(key)) return false;
+			delete(this.rh[key]);
+			return true;
+		} else {
+			if(!this.h.hasOwnProperty(key)) return false;
+			delete(this.h[key]);
+			return true;
+		}
+	}
+	,arrayKeys: function() {
+		var out = [];
+		for( var key in this.h ) {
+		if(this.h.hasOwnProperty(key)) out.push(key);
+		}
+		if(this.rh != null) {
+			for( var key in this.rh ) {
+			if(key.charCodeAt(0) == 36) out.push(key.substr(1));
+			}
+		}
+		return out;
+	}
+	,iterator: function() {
+		return new haxe_ds__$StringMap_StringMapIterator(this,this.arrayKeys());
+	}
+	,__class__: haxe_ds_StringMap
 };
 var js_Boot = function() { };
 js_Boot.__name__ = ["js","Boot"];
@@ -1483,7 +1550,7 @@ fly_systems_PlayAudio.prototype = {
 };
 var fly_systems_PlayAudio_$SystemProcess = function(system) {
 	this.system = system;
-	this.updateItems = new edge_View();
+	this.updateItems = new edge_View(null,null);
 };
 fly_systems_PlayAudio_$SystemProcess.__name__ = ["fly","systems","PlayAudio_SystemProcess"];
 fly_systems_PlayAudio_$SystemProcess.__interfaces__ = [edge_core_ISystemProcess];
@@ -1570,7 +1637,7 @@ fly_systems_RenderCountDown.prototype = {
 };
 var fly_systems_RenderCountDown_$SystemProcess = function(system) {
 	this.system = system;
-	this.updateItems = new edge_View();
+	this.updateItems = new edge_View(null,null);
 };
 fly_systems_RenderCountDown_$SystemProcess.__name__ = ["fly","systems","RenderCountDown_SystemProcess"];
 fly_systems_RenderCountDown_$SystemProcess.__interfaces__ = [edge_core_ISystemProcess];
@@ -1621,7 +1688,7 @@ fly_systems_RenderDroplet.prototype = {
 };
 var fly_systems_RenderDroplet_$SystemProcess = function(system) {
 	this.system = system;
-	this.updateItems = new edge_View();
+	this.updateItems = new edge_View(null,null);
 };
 fly_systems_RenderDroplet_$SystemProcess.__name__ = ["fly","systems","RenderDroplet_SystemProcess"];
 fly_systems_RenderDroplet_$SystemProcess.__interfaces__ = [edge_core_ISystemProcess];
@@ -1675,7 +1742,7 @@ fly_systems_RenderExplosion.prototype = {
 };
 var fly_systems_RenderExplosion_$SystemProcess = function(system) {
 	this.system = system;
-	this.updateItems = new edge_View();
+	this.updateItems = new edge_View(null,null);
 };
 fly_systems_RenderExplosion_$SystemProcess.__name__ = ["fly","systems","RenderExplosion_SystemProcess"];
 fly_systems_RenderExplosion_$SystemProcess.__interfaces__ = [edge_core_ISystemProcess];
@@ -1765,7 +1832,7 @@ fly_systems_RenderFlower.prototype = {
 };
 var fly_systems_RenderFlower_$SystemProcess = function(system) {
 	this.system = system;
-	this.updateItems = new edge_View();
+	this.updateItems = new edge_View(null,null);
 };
 fly_systems_RenderFlower_$SystemProcess.__name__ = ["fly","systems","RenderFlower_SystemProcess"];
 fly_systems_RenderFlower_$SystemProcess.__interfaces__ = [edge_core_ISystemProcess];
@@ -1823,7 +1890,7 @@ fly_systems_RenderFly.prototype = {
 };
 var fly_systems_RenderFly_$SystemProcess = function(system) {
 	this.system = system;
-	this.updateItems = new edge_View();
+	this.updateItems = new edge_View(null,null);
 };
 fly_systems_RenderFly_$SystemProcess.__name__ = ["fly","systems","RenderFly_SystemProcess"];
 fly_systems_RenderFly_$SystemProcess.__interfaces__ = [edge_core_ISystemProcess];
@@ -2003,7 +2070,7 @@ fly_systems_RenderMaze.prototype = {
 };
 var fly_systems_RenderMaze_$SystemProcess = function(system) {
 	this.system = system;
-	this.updateItems = new edge_View();
+	this.updateItems = new edge_View(null,null);
 };
 fly_systems_RenderMaze_$SystemProcess.__name__ = ["fly","systems","RenderMaze_SystemProcess"];
 fly_systems_RenderMaze_$SystemProcess.__interfaces__ = [edge_core_ISystemProcess];
@@ -2072,7 +2139,7 @@ fly_systems_RenderSnake.prototype = {
 };
 var fly_systems_RenderSnake_$SystemProcess = function(system) {
 	this.system = system;
-	this.updateItems = new edge_View();
+	this.updateItems = new edge_View(null,null);
 };
 fly_systems_RenderSnake_$SystemProcess.__name__ = ["fly","systems","RenderSnake_SystemProcess"];
 fly_systems_RenderSnake_$SystemProcess.__interfaces__ = [edge_core_ISystemProcess];
@@ -2147,8 +2214,8 @@ fly_systems_SnakeEats.prototype = {
 };
 var fly_systems_SnakeEats_$SystemProcess = function(system) {
 	this.system = system;
-	this.updateItems = new edge_View();
-	system.targets = new edge_View();
+	this.updateItems = new edge_View(null,null);
+	system.targets = new edge_View(null,null);
 };
 fly_systems_SnakeEats_$SystemProcess.__name__ = ["fly","systems","SnakeEats_SystemProcess"];
 fly_systems_SnakeEats_$SystemProcess.__interfaces__ = [edge_core_ISystemProcess];
@@ -2226,7 +2293,7 @@ fly_systems_UpdateCountDown.prototype = {
 };
 var fly_systems_UpdateCountDown_$SystemProcess = function(system) {
 	this.system = system;
-	this.updateItems = new edge_View();
+	this.updateItems = new edge_View(null,null);
 };
 fly_systems_UpdateCountDown_$SystemProcess.__name__ = ["fly","systems","UpdateCountDown_SystemProcess"];
 fly_systems_UpdateCountDown_$SystemProcess.__interfaces__ = [edge_core_ISystemProcess];
@@ -2280,7 +2347,7 @@ fly_systems_UpdateDelayedComponents.prototype = {
 };
 var fly_systems_UpdateDelayedComponents_$SystemProcess = function(system) {
 	this.system = system;
-	this.updateItems = new edge_View();
+	this.updateItems = new edge_View(null,null);
 };
 fly_systems_UpdateDelayedComponents_$SystemProcess.__name__ = ["fly","systems","UpdateDelayedComponents_SystemProcess"];
 fly_systems_UpdateDelayedComponents_$SystemProcess.__interfaces__ = [edge_core_ISystemProcess];
@@ -2348,8 +2415,8 @@ fly_systems_UpdateDetonation.prototype = {
 };
 var fly_systems_UpdateDetonation_$SystemProcess = function(system) {
 	this.system = system;
-	this.updateItems = new edge_View();
-	system.targets = new edge_View();
+	this.updateItems = new edge_View(null,null);
+	system.targets = new edge_View(null,null);
 };
 fly_systems_UpdateDetonation_$SystemProcess.__name__ = ["fly","systems","UpdateDetonation_SystemProcess"];
 fly_systems_UpdateDetonation_$SystemProcess.__interfaces__ = [edge_core_ISystemProcess];
@@ -2428,7 +2495,7 @@ fly_systems_UpdateDroplet.prototype = {
 };
 var fly_systems_UpdateDroplet_$SystemProcess = function(system) {
 	this.system = system;
-	this.updateItems = new edge_View();
+	this.updateItems = new edge_View(null,null);
 };
 fly_systems_UpdateDroplet_$SystemProcess.__name__ = ["fly","systems","UpdateDroplet_SystemProcess"];
 fly_systems_UpdateDroplet_$SystemProcess.__interfaces__ = [edge_core_ISystemProcess];
@@ -2484,7 +2551,7 @@ fly_systems_UpdateExplosion.prototype = {
 };
 var fly_systems_UpdateExplosion_$SystemProcess = function(system) {
 	this.system = system;
-	this.updateItems = new edge_View();
+	this.updateItems = new edge_View(null,null);
 };
 fly_systems_UpdateExplosion_$SystemProcess.__name__ = ["fly","systems","UpdateExplosion_SystemProcess"];
 fly_systems_UpdateExplosion_$SystemProcess.__interfaces__ = [edge_core_ISystemProcess];
@@ -2540,7 +2607,7 @@ fly_systems_UpdateFly.prototype = {
 };
 var fly_systems_UpdateFly_$SystemProcess = function(system) {
 	this.system = system;
-	this.updateItems = new edge_View();
+	this.updateItems = new edge_View(null,null);
 };
 fly_systems_UpdateFly_$SystemProcess.__name__ = ["fly","systems","UpdateFly_SystemProcess"];
 fly_systems_UpdateFly_$SystemProcess.__interfaces__ = [edge_core_ISystemProcess];
@@ -2631,7 +2698,7 @@ fly_systems_UpdatePosition.prototype = {
 };
 var fly_systems_UpdatePosition_$SystemProcess = function(system) {
 	this.system = system;
-	this.updateItems = new edge_View();
+	this.updateItems = new edge_View(null,null);
 };
 fly_systems_UpdatePosition_$SystemProcess.__name__ = ["fly","systems","UpdatePosition_SystemProcess"];
 fly_systems_UpdatePosition_$SystemProcess.__interfaces__ = [edge_core_ISystemProcess];
@@ -2700,7 +2767,7 @@ fly_systems_UpdateSnake.prototype = {
 };
 var fly_systems_UpdateSnake_$SystemProcess = function(system) {
 	this.system = system;
-	this.updateItems = new edge_View();
+	this.updateItems = new edge_View(null,null);
 };
 fly_systems_UpdateSnake_$SystemProcess.__name__ = ["fly","systems","UpdateSnake_SystemProcess"];
 fly_systems_UpdateSnake_$SystemProcess.__interfaces__ = [edge_core_ISystemProcess];
@@ -2783,8 +2850,6 @@ fly_util_Persona.create = function() {
 		return $r;
 	}(this))).concat([thx_core_Arrays.sampleOne(fly_util_Persona.nouns)]).join(" ");
 };
-var haxe_IMap = function() { };
-haxe_IMap.__name__ = ["haxe","IMap"];
 var haxe_ds_ObjectMap = function() {
 	this.h = { };
 	this.h.__keys__ = { };
@@ -2828,63 +2893,6 @@ haxe_ds__$StringMap_StringMapIterator.prototype = {
 		return this.map.get(this.keys[this.index++]);
 	}
 	,__class__: haxe_ds__$StringMap_StringMapIterator
-};
-var haxe_ds_StringMap = function() {
-	this.h = { };
-};
-haxe_ds_StringMap.__name__ = ["haxe","ds","StringMap"];
-haxe_ds_StringMap.__interfaces__ = [haxe_IMap];
-haxe_ds_StringMap.prototype = {
-	set: function(key,value) {
-		if(__map_reserved[key] != null) this.setReserved(key,value); else this.h[key] = value;
-	}
-	,get: function(key) {
-		if(__map_reserved[key] != null) return this.getReserved(key);
-		return this.h[key];
-	}
-	,exists: function(key) {
-		if(__map_reserved[key] != null) return this.existsReserved(key);
-		return this.h.hasOwnProperty(key);
-	}
-	,setReserved: function(key,value) {
-		if(this.rh == null) this.rh = { };
-		this.rh["$" + key] = value;
-	}
-	,getReserved: function(key) {
-		if(this.rh == null) return null; else return this.rh["$" + key];
-	}
-	,existsReserved: function(key) {
-		if(this.rh == null) return false;
-		return this.rh.hasOwnProperty("$" + key);
-	}
-	,remove: function(key) {
-		if(__map_reserved[key] != null) {
-			key = "$" + key;
-			if(this.rh == null || !this.rh.hasOwnProperty(key)) return false;
-			delete(this.rh[key]);
-			return true;
-		} else {
-			if(!this.h.hasOwnProperty(key)) return false;
-			delete(this.h[key]);
-			return true;
-		}
-	}
-	,arrayKeys: function() {
-		var out = [];
-		for( var key in this.h ) {
-		if(this.h.hasOwnProperty(key)) out.push(key);
-		}
-		if(this.rh != null) {
-			for( var key in this.rh ) {
-			if(key.charCodeAt(0) == 36) out.push(key.substr(1));
-			}
-		}
-		return out;
-	}
-	,iterator: function() {
-		return new haxe_ds__$StringMap_StringMapIterator(this,this.arrayKeys());
-	}
-	,__class__: haxe_ds_StringMap
 };
 var minicanvas_MiniCanvas = function(width,height,scaleMode) {
 	this.scaleMode = scaleMode;
@@ -3915,6 +3923,7 @@ if(Array.prototype.map == null) Array.prototype.map = function(f) {
 	}
 	return a;
 };
+var __map_reserved = {}
 fly_systems_PlayAudio.loadSound("exp1","sound/Buff.mp3");
 fly_systems_PlayAudio.loadSound("exp2","sound/Buffs.mp3");
 fly_systems_PlayAudio.loadSound("exp3","sound/Burf.mp3");
@@ -3927,7 +3936,6 @@ fly_systems_PlayAudio.loadSound("poop","sound/Poop.mp3");
 fly_systems_PlayAudio.loadSound("start","sound/Start.mp3");
 fly_systems_PlayAudio.loadSound("success","sound/Tadada.mp3");
 fly_systems_PlayAudio.loadSound("gameover","sound/Game over.mp3");
-var __map_reserved = {}
 
       // Production steps of ECMA-262, Edition 5, 15.4.4.21
       // Reference: http://es5.github.io/#x15.4.4.21
