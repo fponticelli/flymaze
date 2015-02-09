@@ -93,7 +93,7 @@ function getTopPlayers() {
   return list;
 }
 
-MongoClient.connect(process.env.MONGOSOUP_URL || "mongodb://localhost", function(err, db) {
+MongoClient.connect(process.env.MONGOLAB_URI || "mongodb://localhost", function(err, db) {
   if(err) {
     console.log("failed to connect to the database");
   } else {
