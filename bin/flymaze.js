@@ -669,10 +669,11 @@ edge_View.prototype = {
 		return true;
 	}
 	,tryRemove: function(entity) {
-		if(!(this.map.h.__keys__[entity.__id__] != null)) return false;
+		var o = this.map.h[entity.__id__];
+		if(null == o) return null;
 		this.map.remove(entity);
 		this.count--;
-		return true;
+		return o;
 	}
 	,__class__: edge_View
 };
