@@ -22,7 +22,7 @@ class PlayAudio implements ISystem {
   static function loadSound(name : String, url : String) {
     var request = new XMLHttpRequest();
     request.open('GET', url, true);
-    request.responseType = 'arraybuffer';
+    request.responseType = js.html.XMLHttpRequestResponseType.ARRAYBUFFER;
 
     // Decode asynchronously
     request.onload = function(_) {
@@ -31,8 +31,8 @@ class PlayAudio implements ISystem {
         function(buffer) {
           sounds.set(name, buffer);
           return false;
-        }, function(e) {
-          trace('Error: $e');
+        }, function() {
+          //trace('Error: $e');
           return false;
         });
     }

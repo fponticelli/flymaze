@@ -27,7 +27,7 @@ EReg.prototype = {
 		return this.r.m != null;
 	}
 	,matched: function(n) {
-		if(this.r.m != null && n >= 0 && n < this.r.m.length) return this.r.m[n]; else throw "EReg::matched";
+		if(this.r.m != null && n >= 0 && n < this.r.m.length) return this.r.m[n]; else throw new js__$Boot_HaxeError("EReg::matched");
 	}
 	,replace: function(s,by) {
 		return s.replace(this.r,by);
@@ -341,10 +341,6 @@ StringTools.replace = function(s,sub,by) {
 };
 var Type = function() { };
 Type.__name__ = ["Type"];
-Type.getClass = function(o) {
-	if(o == null) return null;
-	return js_Boot.getClass(o);
-};
 Type.getClassName = function(c) {
 	var a = c.__name__;
 	if(a == null) return null;
@@ -395,8 +391,8 @@ amaze_Maze.prototype = {
 	}
 	,generate: function(cx,cy) {
 		var _g1 = this;
-		if(cx < 0 || cx >= this.width) throw "cs " + cx + " is out of boundaries";
-		if(cy < 0 || cy >= this.height) throw "cs " + cy + " is out of boundaries";
+		if(cx < 0 || cx >= this.width) throw new js__$Boot_HaxeError("cs " + cx + " is out of boundaries");
+		if(cy < 0 || cy >= this.height) throw new js__$Boot_HaxeError("cs " + cy + " is out of boundaries");
 		var _g = [];
 		var _g2 = 0;
 		var _g11 = this.height;
@@ -472,9 +468,6 @@ edge_Engine.prototype = {
 		this.listPhases.push(phase);
 		return phase;
 	}
-	,phases: function() {
-		return HxOverrides.iter(this.listPhases);
-	}
 	,eachSystem: function(f) {
 		var _g = 0;
 		var _g1 = this.listPhases;
@@ -488,9 +481,9 @@ edge_Engine.prototype = {
 			}
 		}
 	}
-	,addSystem: function(phase,system) {
+	,addSystem: function(system) {
 		this.eachSystem(function(s) {
-			if(s == system) throw "System \"" + Std.string(system) + "\" already exists in Engine";
+			if(s == system) throw new js__$Boot_HaxeError("System \"" + Std.string(system) + "\" already exists in Engine");
 		});
 		var $it0 = this.mapEntities.keys();
 		while( $it0.hasNext() ) {
@@ -506,7 +499,7 @@ edge_Engine.prototype = {
 		}
 	}
 	,updateSystem: function(system,t) {
-		system.__process__.update(this,t);
+		return system.__process__.update(this,t);
 	}
 	,matchSystems: function(entity) {
 		var _g = this;
@@ -555,12 +548,12 @@ edge_Entity.prototype = {
 		this.engine.matchSystems(this);
 	}
 	,_add: function(component) {
-		var type = Type.getClassName(Type.getClass(component));
+		var type = Type.getClassName(component == null?null:js_Boot.getClass(component));
 		if(this.map.exists(type)) this.remove(this.map.get(type));
 		this.map.set(type,component);
 	}
 	,_remove: function(component) {
-		var type = Type.getClassName(Type.getClass(component));
+		var type = Type.getClassName(component == null?null:js_Boot.getClass(component));
 		this._removeTypeName(type);
 	}
 	,_removeTypeName: function(type) {
@@ -579,6 +572,8 @@ var edge_Phase = function(engine) {
 	this.engine = engine;
 	this.mapSystem = new haxe_ds_ObjectMap();
 	this.mapType = new haxe_ds_StringMap();
+	this.phases = [];
+	this.enabled = true;
 };
 edge_Phase.__name__ = ["edge","Phase"];
 edge_Phase.prototype = {
@@ -594,19 +589,12 @@ edge_Phase.prototype = {
 			this.last = node;
 		}
 	}
-	,clear: function() {
-		var $it0 = this.systems();
-		while( $it0.hasNext() ) {
-			var system = $it0.next();
-			this.remove(system);
-		}
-	}
 	,remove: function(system) {
 		var node = this.mapSystem.h[system.__id__];
 		var key = this.key(system);
 		this.mapType.remove(key);
 		if(null == node) return;
-		if(null != this.engine) this.engine.removeSystem(system);
+		this.engine.removeSystem(system);
 		this.mapSystem.remove(system);
 		if(node == this.first && node == this.last) this.first = this.last = null; else if(node == this.first) {
 			this.first = node.next;
@@ -623,11 +611,20 @@ edge_Phase.prototype = {
 		return new edge_core_NodeSystemIterator(this.first);
 	}
 	,update: function(t) {
-		if(null == this.engine) return;
+		if(!this.enabled) return;
+		var result;
 		var $it0 = this.systems();
 		while( $it0.hasNext() ) {
 			var system = $it0.next();
-			this.engine.updateSystem(system,t);
+			result = this.engine.updateSystem(system,t);
+			if(!result) return;
+		}
+		var _g = 0;
+		var _g1 = this.phases;
+		while(_g < _g1.length) {
+			var phase = _g1[_g];
+			++_g;
+			phase.update(t);
 		}
 	}
 	,createNode: function(system) {
@@ -635,11 +632,11 @@ edge_Phase.prototype = {
 		this.mapSystem.set(system,node);
 		var key = this.key(system);
 		this.mapType.set(key,system);
-		if(null != this.engine) this.engine.addSystem(this,system);
+		this.engine.addSystem(system);
 		return node;
 	}
 	,key: function(system) {
-		return Type.getClassName(Type.getClass(system));
+		return Type.getClassName(system == null?null:js_Boot.getClass(system));
 	}
 	,__class__: edge_Phase
 };
@@ -709,14 +706,6 @@ edge_World.prototype = {
 		if(!this.running) return;
 		this.running = false;
 		this.cancel();
-	}
-	,clear: function() {
-		var $it0 = this.engine.phases();
-		while( $it0.hasNext() ) {
-			var phase = $it0.next();
-			phase.clear();
-		}
-		this.engine.clear();
 	}
 	,__class__: edge_World
 };
@@ -836,7 +825,7 @@ var fly_Game = function(mini,config,gameInfo,endLevel) {
 	this.world.physics.add(new fly_systems_UpdateCountDown(function() {
 		_g.world.physics.add(new fly_systems_UpdateGameInfo(gameInfo,function(nextLevel) {
 			window.removeEventListener("keyup",keyUp);
-			_g.world.clear();
+			_g.world.engine.clear();
 			if(nextLevel) fly_systems_PlayAudio.playSound("success"); else fly_systems_PlayAudio.playSound("gameover");
 			endLevel(nextLevel);
 		}));
@@ -1085,6 +1074,7 @@ fly_systems_BackgroundBuzz.prototype = {
 				this.counter = 0;
 			}
 		}
+		return true;
 	}
 	,__class__: fly_systems_BackgroundBuzz
 };
@@ -1103,7 +1093,9 @@ fly_systems_BackgroundBuzz_$SystemProcess.prototype = {
 	}
 	,update: function(engine,delta) {
 		this.system.engine = engine;
-		this.system.update();
+		var result = true;
+		result = this.system.update();
+		return result;
 	}
 	,entitiesMatchRequirements: function(entity) {
 		var removed = this.system.entities.tryRemove(entity);
@@ -1142,6 +1134,7 @@ fly_systems_KeyboardInput.prototype = {
 			this.event.keys = thx_core__$Set_Set_$Impl_$.setToArray(this.keys);
 			this.callback(this.event);
 		}
+		return true;
 	}
 	,__class__: fly_systems_KeyboardInput
 };
@@ -1163,7 +1156,9 @@ fly_systems_KeyboardInput_$SystemProcess.prototype = {
 	,addEntity: function(entity) {
 	}
 	,update: function(engine,delta) {
-		this.system.update();
+		var result = true;
+		result = this.system.update();
+		return result;
 	}
 	,__class__: fly_systems_KeyboardInput_$SystemProcess
 };
@@ -1182,7 +1177,7 @@ fly_systems_MazeCollision.prototype = {
 		var col = Math.floor(p.x / this.cellSize);
 		var row = Math.floor(p.y / this.cellSize);
 		var cells = maze.maze.cells;
-		if(dcol == col && drow == row) return;
+		if(dcol == col && drow == row) return true;
 		var cell = cells[row][col];
 		if(dcol == col) {
 			if(drow < row && !(0 != (cell & 1)) || drow > row && !(0 != (cell & 4))) {
@@ -1256,6 +1251,7 @@ fly_systems_MazeCollision.prototype = {
 				this.addSound();
 			}
 		}
+		return true;
 	}
 	,addSound: function() {
 		this.engine.create([fly_components_Audio.get_boing()]);
@@ -1280,13 +1276,16 @@ fly_systems_MazeCollision_$SystemProcess.prototype = {
 	}
 	,update: function(engine,delta) {
 		this.system.engine = engine;
+		var result = true;
 		var data;
 		var $it0 = this.updateItems.iterator();
 		while( $it0.hasNext() ) {
 			var item = $it0.next();
 			data = item.data;
-			this.system.update(data.p,data.d,data.v,data.maze);
+			result = this.system.update(data.p,data.d,data.v,data.maze);
+			if(!result) break;
 		}
+		return result;
 	}
 	,updateMatchRequirements: function(entity) {
 		var removed = this.updateItems.tryRemove(entity);
@@ -1316,139 +1315,6 @@ fly_systems_MazeCollision_$SystemProcess.prototype = {
 	}
 	,__class__: fly_systems_MazeCollision_$SystemProcess
 };
-var js_Boot = function() { };
-js_Boot.__name__ = ["js","Boot"];
-js_Boot.getClass = function(o) {
-	if((o instanceof Array) && o.__enum__ == null) return Array; else {
-		var cl = o.__class__;
-		if(cl != null) return cl;
-		var name = js_Boot.__nativeClassName(o);
-		if(name != null) return js_Boot.__resolveNativeClass(name);
-		return null;
-	}
-};
-js_Boot.__string_rec = function(o,s) {
-	if(o == null) return "null";
-	if(s.length >= 5) return "<...>";
-	var t = typeof(o);
-	if(t == "function" && (o.__name__ || o.__ename__)) t = "object";
-	switch(t) {
-	case "object":
-		if(o instanceof Array) {
-			if(o.__enum__) {
-				if(o.length == 2) return o[0];
-				var str2 = o[0] + "(";
-				s += "\t";
-				var _g1 = 2;
-				var _g = o.length;
-				while(_g1 < _g) {
-					var i1 = _g1++;
-					if(i1 != 2) str2 += "," + js_Boot.__string_rec(o[i1],s); else str2 += js_Boot.__string_rec(o[i1],s);
-				}
-				return str2 + ")";
-			}
-			var l = o.length;
-			var i;
-			var str1 = "[";
-			s += "\t";
-			var _g2 = 0;
-			while(_g2 < l) {
-				var i2 = _g2++;
-				str1 += (i2 > 0?",":"") + js_Boot.__string_rec(o[i2],s);
-			}
-			str1 += "]";
-			return str1;
-		}
-		var tostr;
-		try {
-			tostr = o.toString;
-		} catch( e ) {
-			return "???";
-		}
-		if(tostr != null && tostr != Object.toString && typeof(tostr) == "function") {
-			var s2 = o.toString();
-			if(s2 != "[object Object]") return s2;
-		}
-		var k = null;
-		var str = "{\n";
-		s += "\t";
-		var hasp = o.hasOwnProperty != null;
-		for( var k in o ) {
-		if(hasp && !o.hasOwnProperty(k)) {
-			continue;
-		}
-		if(k == "prototype" || k == "__class__" || k == "__super__" || k == "__interfaces__" || k == "__properties__") {
-			continue;
-		}
-		if(str.length != 2) str += ", \n";
-		str += s + k + " : " + js_Boot.__string_rec(o[k],s);
-		}
-		s = s.substring(1);
-		str += "\n" + s + "}";
-		return str;
-	case "function":
-		return "<function>";
-	case "string":
-		return o;
-	default:
-		return String(o);
-	}
-};
-js_Boot.__interfLoop = function(cc,cl) {
-	if(cc == null) return false;
-	if(cc == cl) return true;
-	var intf = cc.__interfaces__;
-	if(intf != null) {
-		var _g1 = 0;
-		var _g = intf.length;
-		while(_g1 < _g) {
-			var i = _g1++;
-			var i1 = intf[i];
-			if(i1 == cl || js_Boot.__interfLoop(i1,cl)) return true;
-		}
-	}
-	return js_Boot.__interfLoop(cc.__super__,cl);
-};
-js_Boot.__instanceof = function(o,cl) {
-	if(cl == null) return false;
-	switch(cl) {
-	case Int:
-		return (o|0) === o;
-	case Float:
-		return typeof(o) == "number";
-	case Bool:
-		return typeof(o) == "boolean";
-	case String:
-		return typeof(o) == "string";
-	case Array:
-		return (o instanceof Array) && o.__enum__ == null;
-	case Dynamic:
-		return true;
-	default:
-		if(o != null) {
-			if(typeof(cl) == "function") {
-				if(o instanceof cl) return true;
-				if(js_Boot.__interfLoop(js_Boot.getClass(o),cl)) return true;
-			} else if(typeof(cl) == "object" && js_Boot.__isNativeObj(cl)) {
-				if(o instanceof cl) return true;
-			}
-		} else return false;
-		if(cl == Class && o.__name__ != null) return true;
-		if(cl == Enum && o.__ename__ != null) return true;
-		return o.__enum__ == cl;
-	}
-};
-js_Boot.__nativeClassName = function(o) {
-	var name = js_Boot.__toStr.call(o).slice(8,-1);
-	if(name == "Object" || name == "Function" || name == "Math" || name == "JSON") return null;
-	return name;
-};
-js_Boot.__isNativeObj = function(o) {
-	return js_Boot.__nativeClassName(o) != null;
-};
-js_Boot.__resolveNativeClass = function(name) {
-	if(typeof window != "undefined") return window[name]; else return global[name];
-};
 var fly_systems_PlayAudio = function(info) {
 	this.info = info;
 	this.__process__ = new fly_systems_PlayAudio_$SystemProcess(this);
@@ -1463,8 +1329,7 @@ fly_systems_PlayAudio.loadSound = function(name,url) {
 		fly_systems_PlayAudio.context.decodeAudioData(request.response,function(buffer) {
 			fly_systems_PlayAudio.sounds.set(name,buffer);
 			return false;
-		},function(e) {
-			console.log("Error: " + Std.string(e));
+		},function() {
 			return false;
 		});
 	};
@@ -1482,6 +1347,7 @@ fly_systems_PlayAudio.prototype = {
 	update: function(audio) {
 		if(!this.info.mute) fly_systems_PlayAudio.playSound(audio.name);
 		this.entity.destroy();
+		return true;
 	}
 	,__class__: fly_systems_PlayAudio
 };
@@ -1499,14 +1365,17 @@ fly_systems_PlayAudio_$SystemProcess.prototype = {
 		this.updateMatchRequirements(entity);
 	}
 	,update: function(engine,delta) {
+		var result = true;
 		var data;
 		var $it0 = this.updateItems.iterator();
 		while( $it0.hasNext() ) {
 			var item = $it0.next();
 			this.system.entity = item.entity;
 			data = item.data;
-			this.system.update(data.audio);
+			result = this.system.update(data.audio);
+			if(!result) break;
 		}
+		return result;
 	}
 	,updateMatchRequirements: function(entity) {
 		var removed = this.updateItems.tryRemove(entity);
@@ -1534,6 +1403,7 @@ fly_systems_RenderBackground.__interfaces__ = [edge_ISystem];
 fly_systems_RenderBackground.prototype = {
 	update: function() {
 		this.mini.fill(thx_color__$RGBA_RGBA_$Impl_$.fromString(this.color));
+		return true;
 	}
 	,__class__: fly_systems_RenderBackground
 };
@@ -1548,7 +1418,9 @@ fly_systems_RenderBackground_$SystemProcess.prototype = {
 	,addEntity: function(entity) {
 	}
 	,update: function(engine,delta) {
-		this.system.update();
+		var result = true;
+		result = this.system.update();
+		return result;
 	}
 	,__class__: fly_systems_RenderBackground_$SystemProcess
 };
@@ -1569,6 +1441,7 @@ fly_systems_RenderCountDown.prototype = {
 		var t = "" + Math.ceil(countDown.time);
 		this.mini.ctx.strokeText(t,fly_Config.width / 2,fly_Config.height / 2);
 		this.mini.ctx.fillText(t,fly_Config.width / 2,fly_Config.height / 2);
+		return true;
 	}
 	,__class__: fly_systems_RenderCountDown
 };
@@ -1586,13 +1459,16 @@ fly_systems_RenderCountDown_$SystemProcess.prototype = {
 		this.updateMatchRequirements(entity);
 	}
 	,update: function(engine,delta) {
+		var result = true;
 		var data;
 		var $it0 = this.updateItems.iterator();
 		while( $it0.hasNext() ) {
 			var item = $it0.next();
 			data = item.data;
-			this.system.update(data.countDown);
+			result = this.system.update(data.countDown);
+			if(!result) break;
 		}
+		return result;
 	}
 	,updateMatchRequirements: function(entity) {
 		var removed = this.updateItems.tryRemove(entity);
@@ -1620,6 +1496,7 @@ fly_systems_RenderDroplet.prototype = {
 	update: function(position,droplet) {
 		this.mini.dot(position.x + 1,position.y + 1,droplet.radius + 0.5,thx_color__$RGB_RGB_$Impl_$.toRGBA(thx_color__$RGB_RGB_$Impl_$.darker(droplet.color,0.5)));
 		this.mini.dot(position.x,position.y,droplet.radius,thx_color__$RGB_RGB_$Impl_$.toRGBA(droplet.color));
+		return true;
 	}
 	,__class__: fly_systems_RenderDroplet
 };
@@ -1637,13 +1514,16 @@ fly_systems_RenderDroplet_$SystemProcess.prototype = {
 		this.updateMatchRequirements(entity);
 	}
 	,update: function(engine,delta) {
+		var result = true;
 		var data;
 		var $it0 = this.updateItems.iterator();
 		while( $it0.hasNext() ) {
 			var item = $it0.next();
 			data = item.data;
-			this.system.update(data.position,data.droplet);
+			result = this.system.update(data.position,data.droplet);
+			if(!result) break;
 		}
+		return result;
 	}
 	,updateMatchRequirements: function(entity) {
 		var removed = this.updateItems.tryRemove(entity);
@@ -1674,6 +1554,7 @@ fly_systems_RenderExplosion.__interfaces__ = [edge_ISystem];
 fly_systems_RenderExplosion.prototype = {
 	update: function(position,explosion) {
 		explosion.draw(explosion.stage,position,this.mini);
+		return true;
 	}
 	,__class__: fly_systems_RenderExplosion
 };
@@ -1691,13 +1572,16 @@ fly_systems_RenderExplosion_$SystemProcess.prototype = {
 		this.updateMatchRequirements(entity);
 	}
 	,update: function(engine,delta) {
+		var result = true;
 		var data;
 		var $it0 = this.updateItems.iterator();
 		while( $it0.hasNext() ) {
 			var item = $it0.next();
 			data = item.data;
-			this.system.update(data.position,data.explosion);
+			result = this.system.update(data.position,data.explosion);
+			if(!result) break;
 		}
+		return result;
 	}
 	,updateMatchRequirements: function(entity) {
 		var removed = this.updateItems.tryRemove(entity);
@@ -1764,6 +1648,7 @@ fly_systems_RenderFlower.prototype = {
 	update: function(position,f) {
 		var image = this.images[f.id % this.images.length];
 		this.mini.ctx.drawImage(image,position.x - this.size / 2,position.y - this.size / 2,this.size,this.size);
+		return true;
 	}
 	,__class__: fly_systems_RenderFlower
 };
@@ -1781,13 +1666,16 @@ fly_systems_RenderFlower_$SystemProcess.prototype = {
 		this.updateMatchRequirements(entity);
 	}
 	,update: function(engine,delta) {
+		var result = true;
 		var data;
 		var $it0 = this.updateItems.iterator();
 		while( $it0.hasNext() ) {
 			var item = $it0.next();
 			data = item.data;
-			this.system.update(data.position,data.f);
+			result = this.system.update(data.position,data.f);
+			if(!result) break;
 		}
+		return result;
 	}
 	,updateMatchRequirements: function(entity) {
 		var removed = this.updateItems.tryRemove(entity);
@@ -1822,6 +1710,7 @@ fly_systems_RenderFly.prototype = {
 		this.mini.dot(position.x - 4.5 - p / 3,position.y + p,2,-285217025);
 		this.mini.dot(position.x + 4.5 + p / 3,position.y + p,2,-285217025);
 		this.mini.dot(position.x,position.y,1.5,255);
+		return true;
 	}
 	,__class__: fly_systems_RenderFly
 };
@@ -1839,13 +1728,16 @@ fly_systems_RenderFly_$SystemProcess.prototype = {
 		this.updateMatchRequirements(entity);
 	}
 	,update: function(engine,delta) {
+		var result = true;
 		var data;
 		var $it0 = this.updateItems.iterator();
 		while( $it0.hasNext() ) {
 			var item = $it0.next();
 			data = item.data;
-			this.system.update(data.position,data.f);
+			result = this.system.update(data.position,data.f);
+			if(!result) break;
 		}
+		return result;
 	}
 	,updateMatchRequirements: function(entity) {
 		var removed = this.updateItems.tryRemove(entity);
@@ -1901,6 +1793,7 @@ fly_systems_RenderGameInfo.prototype = {
 			this.mini.ctx.strokeText(message2,fly_Config.width - 27,34);
 			this.mini.ctx.fillText(message2,fly_Config.width - 27,34);
 		}
+		return true;
 	}
 	,__class__: fly_systems_RenderGameInfo
 };
@@ -1915,7 +1808,9 @@ fly_systems_RenderGameInfo_$SystemProcess.prototype = {
 	,addEntity: function(entity) {
 	}
 	,update: function(engine,delta) {
-		this.system.update();
+		var result = true;
+		result = this.system.update();
+		return result;
 	}
 	,__class__: fly_systems_RenderGameInfo_$SystemProcess
 };
@@ -1936,6 +1831,7 @@ fly_systems_RenderMaze.prototype = {
 			this.render(maze);
 		}
 		this.ctx.drawImage(this.mini.canvas,0,0,this.mini.width,this.mini.height);
+		return true;
 	}
 	,render: function(maze) {
 		var ctx = this.mini.ctx;
@@ -2019,13 +1915,16 @@ fly_systems_RenderMaze_$SystemProcess.prototype = {
 		this.updateMatchRequirements(entity);
 	}
 	,update: function(engine,delta) {
+		var result = true;
 		var data;
 		var $it0 = this.updateItems.iterator();
 		while( $it0.hasNext() ) {
 			var item = $it0.next();
 			data = item.data;
-			this.system.update(data.maze);
+			result = this.system.update(data.maze);
+			if(!result) break;
 		}
+		return result;
 	}
 	,updateMatchRequirements: function(entity) {
 		var removed = this.updateItems.tryRemove(entity);
@@ -2061,6 +1960,7 @@ fly_systems_RenderSnake.prototype = {
 			pos++;
 		});
 		this.mini.dot(position.x,position.y,snake.headWidth * this.sizeMult(0,snake.jumping) / 1.5,thx_color__$RGBA_RGBA_$Impl_$.fromString(snake.colors[pos % snake.colors.length]));
+		return true;
 	}
 	,sizeMult: function(p,jumpings) {
 		var m = 1.0;
@@ -2088,13 +1988,16 @@ fly_systems_RenderSnake_$SystemProcess.prototype = {
 		this.updateMatchRequirements(entity);
 	}
 	,update: function(engine,delta) {
+		var result = true;
 		var data;
 		var $it0 = this.updateItems.iterator();
 		while( $it0.hasNext() ) {
 			var item = $it0.next();
 			data = item.data;
-			this.system.update(data.position,data.snake);
+			result = this.system.update(data.position,data.snake);
+			if(!result) break;
 		}
+		return result;
 	}
 	,updateMatchRequirements: function(entity) {
 		var removed = this.updateItems.tryRemove(entity);
@@ -2146,6 +2049,7 @@ fly_systems_SnakeEats.prototype = {
 				} else this.engine.create([fly_components_Audio.eatFlower]);
 			}
 		}
+		return true;
 	}
 	,__class__: fly_systems_SnakeEats
 };
@@ -2167,13 +2071,16 @@ fly_systems_SnakeEats_$SystemProcess.prototype = {
 	}
 	,update: function(engine,delta) {
 		this.system.engine = engine;
+		var result = true;
 		var data;
 		var $it0 = this.updateItems.iterator();
 		while( $it0.hasNext() ) {
 			var item = $it0.next();
 			data = item.data;
-			this.system.update(data.position,data.snake);
+			result = this.system.update(data.position,data.snake);
+			if(!result) break;
 		}
+		return result;
 	}
 	,targetsMatchRequirements: function(entity) {
 		var removed = this.system.targets.tryRemove(entity);
@@ -2222,9 +2129,10 @@ fly_systems_UpdateCountDown.__interfaces__ = [edge_ISystem];
 fly_systems_UpdateCountDown.prototype = {
 	update: function(countDown) {
 		countDown.time -= this.timeDelta / 1000;
-		if(countDown.time > 0) return;
+		if(countDown.time > 0) return true;
 		this.entity.destroy();
 		this.callback();
+		return true;
 	}
 	,__class__: fly_systems_UpdateCountDown
 };
@@ -2243,14 +2151,17 @@ fly_systems_UpdateCountDown_$SystemProcess.prototype = {
 	}
 	,update: function(engine,delta) {
 		this.system.timeDelta = delta;
+		var result = true;
 		var data;
 		var $it0 = this.updateItems.iterator();
 		while( $it0.hasNext() ) {
 			var item = $it0.next();
 			this.system.entity = item.entity;
 			data = item.data;
-			this.system.update(data.countDown);
+			result = this.system.update(data.countDown);
+			if(!result) break;
 		}
+		return result;
 	}
 	,updateMatchRequirements: function(entity) {
 		var removed = this.updateItems.tryRemove(entity);
@@ -2279,6 +2190,7 @@ fly_systems_UpdateDelayedComponents.prototype = {
 			this.entity.removeTypes(item.toRemove);
 			this.entity.addMany(item.toAdd);
 		} else item.ticks--;
+		return true;
 	}
 	,__class__: fly_systems_UpdateDelayedComponents
 };
@@ -2296,14 +2208,17 @@ fly_systems_UpdateDelayedComponents_$SystemProcess.prototype = {
 		this.updateMatchRequirements(entity);
 	}
 	,update: function(engine,delta) {
+		var result = true;
 		var data;
 		var $it0 = this.updateItems.iterator();
 		while( $it0.hasNext() ) {
 			var item = $it0.next();
 			this.system.entity = item.entity;
 			data = item.data;
-			this.system.update(data.item);
+			result = this.system.update(data.item);
+			if(!result) break;
 		}
+		return result;
 	}
 	,updateMatchRequirements: function(entity) {
 		var removed = this.updateItems.tryRemove(entity);
@@ -2347,6 +2262,7 @@ fly_systems_UpdateDetonation.prototype = {
 			}
 		}
 		this.entity.remove(detonation);
+		return true;
 	}
 	,__class__: fly_systems_UpdateDetonation
 };
@@ -2368,14 +2284,17 @@ fly_systems_UpdateDetonation_$SystemProcess.prototype = {
 	}
 	,update: function(engine,delta) {
 		this.system.engine = engine;
+		var result = true;
 		var data;
 		var $it0 = this.updateItems.iterator();
 		while( $it0.hasNext() ) {
 			var item = $it0.next();
 			this.system.entity = item.entity;
 			data = item.data;
-			this.system.update(data.detonation,data.position);
+			result = this.system.update(data.detonation,data.position);
+			if(!result) break;
 		}
+		return result;
 	}
 	,targetsMatchRequirements: function(entity) {
 		var removed = this.system.targets.tryRemove(entity);
@@ -2427,6 +2346,7 @@ fly_systems_UpdateDroplet.prototype = {
 			this.entity.remove(droplet);
 			this.entity.add(fly_components_Explosion.create());
 		}
+		return true;
 	}
 	,__class__: fly_systems_UpdateDroplet
 };
@@ -2445,14 +2365,17 @@ fly_systems_UpdateDroplet_$SystemProcess.prototype = {
 	}
 	,update: function(engine,delta) {
 		this.system.engine = engine;
+		var result = true;
 		var data;
 		var $it0 = this.updateItems.iterator();
 		while( $it0.hasNext() ) {
 			var item = $it0.next();
 			this.system.entity = item.entity;
 			data = item.data;
-			this.system.update(data.droplet);
+			result = this.system.update(data.droplet);
+			if(!result) break;
 		}
+		return result;
 	}
 	,updateMatchRequirements: function(entity) {
 		var removed = this.updateItems.tryRemove(entity);
@@ -2483,6 +2406,7 @@ fly_systems_UpdateExplosion.prototype = {
 		}
 		explosion.stage--;
 		if(explosion.stage <= 0) this.entity.destroy();
+		return true;
 	}
 	,__class__: fly_systems_UpdateExplosion
 };
@@ -2501,14 +2425,17 @@ fly_systems_UpdateExplosion_$SystemProcess.prototype = {
 	}
 	,update: function(engine,delta) {
 		this.system.engine = engine;
+		var result = true;
 		var data;
 		var $it0 = this.updateItems.iterator();
 		while( $it0.hasNext() ) {
 			var item = $it0.next();
 			this.system.entity = item.entity;
 			data = item.data;
-			this.system.update(data.explosion);
+			result = this.system.update(data.explosion);
+			if(!result) break;
 		}
+		return result;
 	}
 	,updateMatchRequirements: function(entity) {
 		var removed = this.updateItems.tryRemove(entity);
@@ -2539,6 +2466,7 @@ fly_systems_UpdateFly.prototype = {
 		position.x = Math.min(Math.max(0,position.x + 2 - this.gen["float"]() * 4),this.width);
 		position.y = Math.min(Math.max(0,position.y + 2 - this.gen["float"]() * 4),this.height);
 		fly1.height = Math.min(Math.max(0,fly1.height + this.gen["float"]() - 0.5),6);
+		return true;
 	}
 	,__class__: fly_systems_UpdateFly
 };
@@ -2556,13 +2484,16 @@ fly_systems_UpdateFly_$SystemProcess.prototype = {
 		this.updateMatchRequirements(entity);
 	}
 	,update: function(engine,delta) {
+		var result = true;
 		var data;
 		var $it0 = this.updateItems.iterator();
 		while( $it0.hasNext() ) {
 			var item = $it0.next();
 			data = item.data;
-			this.system.update(data.position,data.fly);
+			result = this.system.update(data.position,data.fly);
+			if(!result) break;
 		}
+		return result;
 	}
 	,updateMatchRequirements: function(entity) {
 		var removed = this.updateItems.tryRemove(entity);
@@ -2602,6 +2533,7 @@ fly_systems_UpdateGameInfo.prototype = {
 			this.gameInfo.timeLeft = 0;
 			this.endLevel(false);
 		}
+		return true;
 	}
 	,__class__: fly_systems_UpdateGameInfo
 };
@@ -2617,7 +2549,9 @@ fly_systems_UpdateGameInfo_$SystemProcess.prototype = {
 	}
 	,update: function(engine,delta) {
 		this.system.timeDelta = delta;
-		this.system.update();
+		var result = true;
+		result = this.system.update();
+		return result;
 	}
 	,__class__: fly_systems_UpdateGameInfo_$SystemProcess
 };
@@ -2630,6 +2564,7 @@ fly_systems_UpdatePosition.prototype = {
 	update: function(position,direction,velocity) {
 		position.x += direction.get_dx() * velocity.value;
 		position.y += direction.get_dy() * velocity.value;
+		return true;
 	}
 	,__class__: fly_systems_UpdatePosition
 };
@@ -2647,13 +2582,16 @@ fly_systems_UpdatePosition_$SystemProcess.prototype = {
 		this.updateMatchRequirements(entity);
 	}
 	,update: function(engine,delta) {
+		var result = true;
 		var data;
 		var $it0 = this.updateItems.iterator();
 		while( $it0.hasNext() ) {
 			var item = $it0.next();
 			data = item.data;
-			this.system.update(data.position,data.direction,data.velocity);
+			result = this.system.update(data.position,data.direction,data.velocity);
+			if(!result) break;
 		}
+		return result;
 	}
 	,updateMatchRequirements: function(entity) {
 		var removed = this.updateItems.tryRemove(entity);
@@ -2699,6 +2637,7 @@ fly_systems_UpdateSnake.prototype = {
 			snake.jumping[i]++;
 			if(snake.jumping[i] == snake.trail.length) snake.jumping.pop();
 		}
+		return true;
 	}
 	,__class__: fly_systems_UpdateSnake
 };
@@ -2716,13 +2655,16 @@ fly_systems_UpdateSnake_$SystemProcess.prototype = {
 		this.updateMatchRequirements(entity);
 	}
 	,update: function(engine,delta) {
+		var result = true;
 		var data;
 		var $it0 = this.updateItems.iterator();
 		while( $it0.hasNext() ) {
 			var item = $it0.next();
 			data = item.data;
-			this.system.update(data.position,data.snake);
+			result = this.system.update(data.position,data.snake);
+			if(!result) break;
 		}
+		return result;
 	}
 	,updateMatchRequirements: function(entity) {
 		var removed = this.updateItems.tryRemove(entity);
@@ -2890,6 +2832,151 @@ haxe_ds_StringMap.prototype = {
 	}
 	,__class__: haxe_ds_StringMap
 };
+var js__$Boot_HaxeError = function(val) {
+	Error.call(this);
+	this.val = val;
+	this.message = String(val);
+	if(Error.captureStackTrace) Error.captureStackTrace(this,js__$Boot_HaxeError);
+};
+js__$Boot_HaxeError.__name__ = ["js","_Boot","HaxeError"];
+js__$Boot_HaxeError.__super__ = Error;
+js__$Boot_HaxeError.prototype = $extend(Error.prototype,{
+	__class__: js__$Boot_HaxeError
+});
+var js_Boot = function() { };
+js_Boot.__name__ = ["js","Boot"];
+js_Boot.getClass = function(o) {
+	if((o instanceof Array) && o.__enum__ == null) return Array; else {
+		var cl = o.__class__;
+		if(cl != null) return cl;
+		var name = js_Boot.__nativeClassName(o);
+		if(name != null) return js_Boot.__resolveNativeClass(name);
+		return null;
+	}
+};
+js_Boot.__string_rec = function(o,s) {
+	if(o == null) return "null";
+	if(s.length >= 5) return "<...>";
+	var t = typeof(o);
+	if(t == "function" && (o.__name__ || o.__ename__)) t = "object";
+	switch(t) {
+	case "object":
+		if(o instanceof Array) {
+			if(o.__enum__) {
+				if(o.length == 2) return o[0];
+				var str2 = o[0] + "(";
+				s += "\t";
+				var _g1 = 2;
+				var _g = o.length;
+				while(_g1 < _g) {
+					var i1 = _g1++;
+					if(i1 != 2) str2 += "," + js_Boot.__string_rec(o[i1],s); else str2 += js_Boot.__string_rec(o[i1],s);
+				}
+				return str2 + ")";
+			}
+			var l = o.length;
+			var i;
+			var str1 = "[";
+			s += "\t";
+			var _g2 = 0;
+			while(_g2 < l) {
+				var i2 = _g2++;
+				str1 += (i2 > 0?",":"") + js_Boot.__string_rec(o[i2],s);
+			}
+			str1 += "]";
+			return str1;
+		}
+		var tostr;
+		try {
+			tostr = o.toString;
+		} catch( e ) {
+			if (e instanceof js__$Boot_HaxeError) e = e.val;
+			return "???";
+		}
+		if(tostr != null && tostr != Object.toString && typeof(tostr) == "function") {
+			var s2 = o.toString();
+			if(s2 != "[object Object]") return s2;
+		}
+		var k = null;
+		var str = "{\n";
+		s += "\t";
+		var hasp = o.hasOwnProperty != null;
+		for( var k in o ) {
+		if(hasp && !o.hasOwnProperty(k)) {
+			continue;
+		}
+		if(k == "prototype" || k == "__class__" || k == "__super__" || k == "__interfaces__" || k == "__properties__") {
+			continue;
+		}
+		if(str.length != 2) str += ", \n";
+		str += s + k + " : " + js_Boot.__string_rec(o[k],s);
+		}
+		s = s.substring(1);
+		str += "\n" + s + "}";
+		return str;
+	case "function":
+		return "<function>";
+	case "string":
+		return o;
+	default:
+		return String(o);
+	}
+};
+js_Boot.__interfLoop = function(cc,cl) {
+	if(cc == null) return false;
+	if(cc == cl) return true;
+	var intf = cc.__interfaces__;
+	if(intf != null) {
+		var _g1 = 0;
+		var _g = intf.length;
+		while(_g1 < _g) {
+			var i = _g1++;
+			var i1 = intf[i];
+			if(i1 == cl || js_Boot.__interfLoop(i1,cl)) return true;
+		}
+	}
+	return js_Boot.__interfLoop(cc.__super__,cl);
+};
+js_Boot.__instanceof = function(o,cl) {
+	if(cl == null) return false;
+	switch(cl) {
+	case Int:
+		return (o|0) === o;
+	case Float:
+		return typeof(o) == "number";
+	case Bool:
+		return typeof(o) == "boolean";
+	case String:
+		return typeof(o) == "string";
+	case Array:
+		return (o instanceof Array) && o.__enum__ == null;
+	case Dynamic:
+		return true;
+	default:
+		if(o != null) {
+			if(typeof(cl) == "function") {
+				if(o instanceof cl) return true;
+				if(js_Boot.__interfLoop(js_Boot.getClass(o),cl)) return true;
+			} else if(typeof(cl) == "object" && js_Boot.__isNativeObj(cl)) {
+				if(o instanceof cl) return true;
+			}
+		} else return false;
+		if(cl == Class && o.__name__ != null) return true;
+		if(cl == Enum && o.__ename__ != null) return true;
+		return o.__enum__ == cl;
+	}
+};
+js_Boot.__nativeClassName = function(o) {
+	var name = js_Boot.__toStr.call(o).slice(8,-1);
+	if(name == "Object" || name == "Function" || name == "Math" || name == "JSON") return null;
+	return name;
+};
+js_Boot.__isNativeObj = function(o) {
+	return js_Boot.__nativeClassName(o) != null;
+};
+js_Boot.__resolveNativeClass = function(name) {
+	if(typeof window != "undefined") return window[name]; else return global[name];
+};
 var minicanvas_MiniCanvas = function(width,height,scaleMode) {
 	this.scaleMode = scaleMode;
 	this.width = width;
@@ -2980,17 +3067,17 @@ minicanvas_MiniCanvas.prototype = {
 		return this;
 	}
 	,getDevicePixelRatio: function() {
-		throw "abstract method getDevicePixelRatio()";
+		throw new js__$Boot_HaxeError("abstract method getDevicePixelRatio()");
 	}
 	,getBackingStoreRatio: function() {
-		throw "abstract method getBackingStoreRatio()";
+		throw new js__$Boot_HaxeError("abstract method getBackingStoreRatio()");
 	}
 	,init: function() {
-		throw "abstract method init()";
+		throw new js__$Boot_HaxeError("abstract method init()");
 		return;
 	}
 	,nativeDisplay: function(name) {
-		throw "abstract method nativeDisplay()";
+		throw new js__$Boot_HaxeError("abstract method nativeDisplay()");
 		return;
 	}
 	,processScale: function() {
@@ -3028,7 +3115,7 @@ minicanvas_BrowserCanvas.backingStoreRatio = function() {
 		var canvas;
 		var _this = window.document;
 		canvas = _this.createElement("canvas");
-		var context = canvas.getContext("2d");
+		var context = canvas.getContext("2d",null);
 		minicanvas_BrowserCanvas._backingStoreRatio = (function(c) {
         return c.webkitBackingStorePixelRatio ||
           c.mozBackingStorePixelRatio ||
@@ -3063,13 +3150,13 @@ minicanvas_BrowserCanvas.prototype = $extend(minicanvas_MiniCanvas.prototype,{
 				this.canvas.height = Math.round(this.height * v);
 				this.canvas.style.width = "" + this.width + "px";
 				this.canvas.style.height = "" + this.height + "px";
-				this.ctx = this.canvas.getContext("2d");
+				this.ctx = this.canvas.getContext("2d",null);
 				this.ctx.scale(v,v);
 				break;
 			default:
 				this.canvas.width = this.width;
 				this.canvas.height = this.height;
-				this.ctx = this.canvas.getContext("2d");
+				this.ctx = this.canvas.getContext("2d",null);
 			}
 		}
 	}
@@ -3112,12 +3199,12 @@ minicanvas_NodeCanvas.prototype = $extend(minicanvas_MiniCanvas.prototype,{
 			case 2:
 				var v = _g[2];
 				this.canvas = new Canvas(this.width * v,this.height * v);
-				this.ctx = this.canvas.getContext("2d");
+				this.ctx = this.canvas.getContext("2d",null);
 				this.ctx.scale(v,v);
 				break;
 			default:
 				this.canvas = new Canvas(this.width,this.height);
-				this.ctx = this.canvas.getContext("2d");
+				this.ctx = this.canvas.getContext("2d",null);
 			}
 		}
 	}
@@ -3300,6 +3387,7 @@ thx_color__$RGBA_RGBA_$Impl_$.fromString = function(color) {
 			return null;
 		}
 	} catch( e ) {
+		if (e instanceof js__$Boot_HaxeError) e = e.val;
 		return null;
 	}
 };
@@ -3346,7 +3434,7 @@ thx_color_parse_ColorParser.parseHex = function(s) {
 	return thx_color_parse_ColorParser.parser.processHex(s);
 };
 thx_color_parse_ColorParser.getInt8Channels = function(channels,length) {
-	if(length != channels.length) throw "invalid number of channels, expected " + length + " but it is " + channels.length;
+	if(length != channels.length) throw new js__$Boot_HaxeError("invalid number of channels, expected " + length + " but it is " + channels.length);
 	return channels.map(thx_color_parse_ColorParser.getInt8Channel);
 };
 thx_color_parse_ColorParser.getFloatChannel = function(channel,useInt8) {
@@ -3390,7 +3478,7 @@ thx_color_parse_ColorParser.getInt8Channel = function(channel) {
 		var v2 = channel[2];
 		return Math.round(255 * v2 / 100);
 	default:
-		throw "unable to extract a valid int8 value";
+		throw new js__$Boot_HaxeError("unable to extract a valid int8 value");
 	}
 };
 thx_color_parse_ColorParser.prototype = {
@@ -3459,6 +3547,7 @@ thx_color_parse_ColorParser.prototype = {
 				return null;
 			}
 		} catch( e ) {
+			if (e instanceof js__$Boot_HaxeError) e = e.val;
 			return null;
 		}
 	}
@@ -3550,7 +3639,7 @@ thx_core_Ints.range = function(start,stop,step) {
 		stop = start;
 		start = 0;
 	}
-	if((stop - start) / step == Infinity) throw "infinite range";
+	if((stop - start) / step == Infinity) throw new js__$Boot_HaxeError("infinite range");
 	var range = [];
 	var i = -1;
 	var j;
@@ -4023,7 +4112,6 @@ fly_components_Explosion.peak = 20;
 fly_components_Explosion.radius = 50;
 fly_components_Detonation.instance = new fly_components_Detonation(fly_components_Explosion.radius);
 fly_components_Droplet.maxLife = 200;
-js_Boot.__toStr = {}.toString;
 fly_systems_PlayAudio.sounds = new haxe_ds_StringMap();
 fly_systems_PlayAudio.context = (function() {
     window.AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -4032,6 +4120,7 @@ fly_systems_PlayAudio.context = (function() {
 fly_util_Persona.adjectives = ["abandoned","able","absolute","adorable","adventurous","academic","acceptable","acclaimed","accomplished","accurate","aching","acidic","acrobatic","active","actual","adept","admirable","admired","adolescent","adorable","adored","advanced","afraid","affectionate","aged","aggravating","aggressive","agile","agitated","agonizing","agreeable","ajar","alarmed","alarming","alert","alienated","alive","all","altruistic","amazing","ambitious","ample","amused","amusing","anchored","ancient","angelic","angry","anguished","animated","annual","another","antique","anxious","any","apprehensive","appropriate","apt","arctic","arid","aromatic","artistic","ashamed","assured","astonishing","athletic","attached","attentive","attractive","austere","authentic","authorized","automatic","avaricious","average","aware","awesome","awful","awkward","babyish","bad","back","baggy","bare","barren","basic","beautiful","belated","beloved","beneficial","better","best","bewitched","big","big-hearted","biodegradable","bite-sized","bitter","black","black-and-white","bland","blank","blaring","bleak","blind","blissful","blond","blue","blushing","bogus","boiling","bold","bony","boring","bossy","both","bouncy","bountiful","bowed","brave","breakable","brief","bright","brilliant","brisk","broken","bronze","brown","bruised","bubbly","bulky","bumpy","buoyant","burdensome","burly","bustling","busy","buttery","buzzing","calculating","calm","candid","canine","capital","carefree","careful","careless","caring","cautious","cavernous","celebrated","charming","cheap","cheerful","cheery","chief","chilly","chubby","circular","classic","clean","clear","clear-cut","clever","close","closed","cloudy","clueless","clumsy","cluttered","coarse","cold","colorful","colorless","colossal","comfortable","common","compassionate","competent","complete","complex","complicated","composed","concerned","concrete","confused","conscious","considerate","constant","content","conventional","cooked","cool","cooperative","coordinated","corny","corrupt","costly","courageous","courteous","crafty","crazy","creamy","creative","creepy","criminal","crisp","critical","crooked","crowded","cruel","crushing","cuddly","cultivated","cultured","cumbersome","curly","curvy","cute","cylindrical","damaged","damp","dangerous","dapper","daring","darling","dark","dazzling","dead","deadly","deafening","dear","dearest","decent","decimal","decisive","deep","defenseless","defensive","defiant","deficient","definite","definitive","delayed","delectable","delicious","delightful","delirious","demanding","dense","dental","dependable","dependent","descriptive","deserted","detailed","determined","devoted","different","difficult","digital","diligent","dim","dimpled","dimwitted","direct","disastrous","discrete","disfigured","disgusting","disloyal","dismal","distant","downright","dreary","dirty","disguised","dishonest","dismal","distant","distinct","distorted","dizzy","dopey","doting","double","downright","drab","drafty","dramatic","dreary","droopy","dry","dual","dull","dutiful","each","eager","earnest","early","easy","easy-going","ecstatic","edible","educated","elaborate","elastic","elated","elderly","electric","elegant","elementary","elliptical","embarrassed","embellished","eminent","emotional","empty","enchanted","enchanting","energetic","enlightened","enormous","enraged","entire","envious","equal","equatorial","essential","esteemed","ethical","euphoric","even","evergreen","everlasting","every","evil","exalted","excellent","exemplary","exhausted","excitable","excited","exciting","exotic","expensive","experienced","expert","extraneous","extroverted","extra-large","extra-small","fabulous","failing","faint","fair","faithful","fake","false","familiar","famous","fancy","fantastic","far","faraway","far-flung","far-off","fast","fat","fatal","fatherly","favorable","favorite","fearful","fearless","feisty","feline","female","feminine","few","fickle","filthy","fine","finished","firm","first","firsthand","fitting","fixed","flaky","flamboyant","flashy","flat","flawed","flawless","flickering","flimsy","flippant","flowery","fluffy","fluid","flustered","focused","fond","foolhardy","foolish","forceful","forked","formal","forsaken","forthright","fortunate","fragrant","frail","frank","frayed","free","French","fresh","frequent","friendly","frightened","frightening","frigid","frilly","frizzy","frivolous","front","frosty","frozen","frugal","fruitful","full","fumbling","functional","funny","fussy","fuzzy","gargantuan","gaseous","general","generous","gentle","genuine","giant","giddy","gigantic","gifted","giving","glamorous","glaring","glass","gleaming","gleeful","glistening","glittering","gloomy","glorious","glossy","glum","golden","good","good-natured","gorgeous","graceful","gracious","grand","grandiose","granular","grateful","grave","gray","great","greedy","green","gregarious","grim","grimy","gripping","grizzled","gross","grotesque","grouchy","grounded","growing","growling","grown","grubby","gruesome","grumpy","guilty","gullible","gummy","hairy","half","handmade","handsome","handy","happy","happy-go-lucky","hard","hard-to-find","harmful","harmless","harmonious","harsh","hasty","hateful","haunting","healthy","heartfelt","hearty","heavenly","heavy","hefty","helpful","helpless","hidden","hideous","high","high-level","hilarious","hoarse","hollow","homely","honest","honorable","honored","hopeful","horrible","hospitable","hot","huge","humble","humiliating","humming","humongous","hungry","hurtful","husky","icky","icy","ideal","idealistic","identical","idle","idiotic","idolized","ignorant","ill","illegal","ill-fated","ill-informed","illiterate","illustrious","imaginary","imaginative","immaculate","immaterial","immediate","immense","impassioned","impeccable","impartial","imperfect","imperturbable","impish","impolite","important","impossible","impractical","impressionable","impressive","improbable","impure","inborn","incomparable","incompatible","incomplete","inconsequential","incredible","indelible","inexperienced","indolent","infamous","infantile","infatuated","inferior","infinite","informal","innocent","insecure","insidious","insignificant","insistent","instructive","insubstantial","intelligent","intent","intentional","interesting","internal","international","intrepid","ironclad","irresponsible","irritating","itchy","jaded","jagged","jam-packed","jaunty","jealous","jittery","joint","jolly","jovial","joyful","joyous","jubilant","judicious","juicy","jumbo","junior","jumpy","juvenile","kaleidoscopic","keen","key","kind","kindhearted","kindly","klutzy","knobby","knotty","knowledgeable","knowing","known","kooky","kosher","lame","lanky","large","last","lasting","late","lavish","lawful","lazy","leading","lean","leafy","left","legal","legitimate","light","lighthearted","likable","likely","limited","limp","limping","linear","lined","liquid","little","live","lively","livid","loathsome","lone","lonely","long","long-term","loose","lopsided","lost","loud","lovable","lovely","loving","low","loyal","lucky","lumbering","luminous","lumpy","lustrous","luxurious","mad","made-up","magnificent","majestic","major","male","mammoth","married","marvelous","masculine","massive","mature","meager","mealy","mean","measly","meaty","medical","mediocre","medium","meek","mellow","melodic","memorable","menacing","merry","messy","metallic","mild","milky","mindless","miniature","minor","minty","miserable","miserly","misguided","misty","mixed","modern","modest","moist","monstrous","monthly","monumental","moral","mortified","motherly","motionless","mountainous","muddy","muffled","multicolored","mundane","murky","mushy","musty","muted","mysterious","naive","narrow","nasty","natural","naughty","nautical","near","neat","necessary","needy","negative","neglected","negligible","neighboring","nervous","new","next","nice","nifty","nimble","nippy","nocturnal","noisy","nonstop","normal","notable","noted","noteworthy","novel","noxious","numb","nutritious","nutty","obedient","obese","oblong","oily","oblong","obvious","occasional","odd","oddball","offbeat","offensive","official","old","old-fashioned","only","open","optimal","optimistic","opulent","orange","orderly","organic","ornate","ornery","ordinary","original","other","our","outlying","outgoing","outlandish","outrageous","outstanding","oval","overcooked","overdue","overjoyed","overlooked","palatable","pale","paltry","parallel","parched","partial","passionate","past","pastel","peaceful","peppery","perfect","perfumed","periodic","perky","personal","pertinent","pesky","pessimistic","petty","phony","physical","piercing","pink","pitiful","plain","plaintive","plastic","playful","pleasant","pleased","pleasing","plump","plush","polished","polite","political","pointed","pointless","poised","poor","popular","portly","posh","positive","possible","potable","powerful","powerless","practical","precious","present","prestigious","pretty","precious","previous","pricey","prickly","primary","prime","pristine","private","prize","probable","productive","profitable","profuse","proper","proud","prudent","punctual","pungent","puny","pure","purple","pushy","putrid","puzzled","puzzling","quaint","qualified","quarrelsome","quarterly","queasy","querulous","questionable","quick","quick-witted","quiet","quintessential","quirky","quixotic","quizzical","radiant","ragged","rapid","rare","rash","raw","recent","reckless","rectangular","ready","real","realistic","reasonable","red","reflecting","regal","regular","reliable","relieved","remarkable","remorseful","remote","repentant","required","respectful","responsible","repulsive","revolving","rewarding","rich","rigid","right","ringed","ripe","roasted","robust","rosy","rotating","rotten","rough","round","rowdy","royal","rubbery","rundown","ruddy","rude","runny","rural","rusty","sad","safe","salty","same","sandy","sane","sarcastic","sardonic","satisfied","scaly","scarce","scared","scary","scented","scholarly","scientific","scornful","scratchy","scrawny","second","secondary","second-hand","secret","self-assured","self-reliant","selfish","sentimental","separate","serene","serious","serpentine","several","severe","shabby","shadowy","shady","shallow","shameful","shameless","sharp","shimmering","shiny","shocked","shocking","shoddy","short","short-term","showy","shrill","shy","sick","silent","silky","silly","silver","similar","simple","simplistic","sinful","single","sizzling","skeletal","skinny","sleepy","slight","slim","slimy","slippery","slow","slushy","small","smart","smoggy","smooth","smug","snappy","snarling","sneaky","sniveling","snoopy","sociable","soft","soggy","solid","somber","some","spherical","sophisticated","sore","sorrowful","soulful","soupy","sour","Spanish","sparkling","sparse","specific","spectacular","speedy","spicy","spiffy","spirited","spiteful","splendid","spotless","spotted","spry","square","squeaky","squiggly","stable","staid","stained","stale","standard","starchy","stark","starry","steep","sticky","stiff","stimulating","stingy","stormy","straight","strange","steel","strict","strident","striking","striped","strong","studious","stunning","stupendous","stupid","sturdy","stylish","subdued","submissive","substantial","subtle","suburban","sudden","sugary","sunny","super","superb","superficial","superior","supportive","sure-footed","surprised","suspicious","svelte","sweaty","sweet","sweltering","swift","sympathetic","tall","talkative","tame","tan","tangible","tart","tasty","tattered","taut","tedious","teeming","tempting","tender","tense","tepid","terrible","terrific","testy","thankful","that","these","thick","thin","third","thirsty","this","thorough","thorny","those","thoughtful","threadbare","thrifty","thunderous","tidy","tight","timely","tinted","tiny","tired","torn","total","tough","traumatic","treasured","tremendous","tragic","trained","tremendous","triangular","tricky","trifling","trim","trivial","troubled","true","trusting","trustworthy","trusty","truthful","tubby","turbulent","twin","ugly","ultimate","unacceptable","unaware","uncomfortable","uncommon","unconscious","understated","unequaled","uneven","unfinished","unfit","unfolded","unfortunate","unhappy","unhealthy","uniform","unimportant","unique","united","unkempt","unknown","unlawful","unlined","unlucky","unnatural","unpleasant","unrealistic","unripe","unruly","unselfish","unsightly","unsteady","unsung","untidy","untimely","untried","untrue","unused","unusual","unwelcome","unwieldy","unwilling","unwitting","unwritten","upbeat","upright","upset","urban","usable","used","useful","useless","utilized","utter","vacant","vague","vain","valid","valuable","vapid","variable","vast","velvety","venerated","vengeful","verifiable","vibrant","vicious","victorious","vigilant","vigorous","villainous","violet","violent","virtual","virtuous","visible","vital","vivacious","vivid","voluminous","wan","warlike","warm","warmhearted","warped","wary","wasteful","watchful","waterlogged","watery","wavy","wealthy","weak","weary","webbed","wee","weekly","weepy","weighty","weird","welcome","well-documented","well-groomed","well-informed","well-lit","well-made","well-off","well-to-do","well-worn","wet","which","whimsical","whirlwind","whispered","white","whole","whopping","wicked","wide","wide-eyed","wiggly","wild","willing","wilted","winding","windy","winged","wiry","wise","witty","wobbly","woeful","wonderful","wooden","woozy","wordy","worldly","worn","worried","worrisome","worse","worst","worthless","worthwhile","worthy","wrathful","wretched","writhing","wrong","wry","yawning","yearly","yellow","yellowish","young","youthful","yummy","zany","zealous","zesty","zigzag"];
 fly_util_Persona.nouns = ["able","account","achieve","achiever","acoustics","act","action","activity","actor","addition","adjustment","advertisement","advice","aftermath","afternoon","afterthought","agreement","air","airplane","airport","alarm","amount","amusement","anger","angle","animal","answer","ant","ants","apparatus","apparel","apple","apples","appliance","approval","arch","argument","arithmetic","arm","army","art","attack","attempt","attention","attraction","aunt","authority","baby","back","badge","bag","bait","balance","ball","balloon","balls","banana","band","base","baseball","basin","basket","basketball","bat","bath","battle","bead","beam","bean","bear","bears","beast","bed","bedroom","beds","bee","beef","beetle","beggar","beginner","behavior","belief","believe","bell","bells","berry","bike","bikes","bird","birds","birth","birthday","bit","bite","blade","blood","blow","board","boat","boats","body","bomb","bone","book","books","boot","border","bottle","boundary","box","boy","boys","brain","brake","branch","brass","bread","breakfast","breath","brick","bridge","brother","brothers","brush","bubble","bucket","building","bulb","bun","burn","burst","bushes","business","butter","button","cabbage","cable","cactus","cake","cakes","calculator","calendar","camera","camp","can","cannon","canvas","cap","caption","car","card","care","carpenter","carriage","cars","cart","cast","cat","cats","cattle","cause","cave","celery","cellar","cemetery","cent","chain","chair","chairs","chalk","chance","change","channel","cheese","cherries","cherry","chess","chicken","chickens","children","chin","church","circle","clam","class","clock","clocks","cloth","cloud","clouds","clover","club","coach","coal","coast","coat","cobweb","coil","collar","color","comb","comfort","committee","company","comparison","competition","condition","connection","control","cook","copper","copy","cord","cork","corn","cough","country","cover","cow","cows","crack","cracker","crate","crayon","cream","creator","creature","credit","crib","crime","crook","crow","crowd","crown","crush","cry","cub","cup","current","curtain","curve","cushion","dad","daughter","day","death","debt","decision","deer","degree","design","desire","desk","destruction","detail","development","digestion","dime","dinner","dinosaurs","direction","dirt","discovery","discussion","disease","disgust","distance","distribution","division","dock","doctor","dog","dogs","doll","dolls","donkey","door","downtown","drain","drawer","dress","drink","driving","drop","drug","drum","duck","ducks","dust","earth","earthquake","edge","education","effect","egg","eggnog","eggs","elbow","end","engine","error","event","example","exchange","existence","expansion","experience","expert","eye","eyes","face","fact","fairies","fall","family","fan","fang","farm","farmer","father","faucet","fear","feast","feather","feeling","feet","fiction","field","fifth","fight","finger","fire","fireman","fish","flag","flame","flavor","flesh","flight","flock","floor","flower","flowers","fly","fog","fold","food","foot","force","fork","form","fowl","frame","friction","friend","friends","frog","frogs","front","fruit","fuel","furniture","galley","game","garden","gate","geese","ghost","giants","giraffe","girl","girls","glass","glove","glue","goat","gold","goldfish","good-bye","goose","government","governor","grade","grain","grandfather","grandmother","grape","grass","grip","ground","group","growth","guide","guitar","gun","hair","haircut","hall","hammer","hand","hands","harbor","harmony","hat","hate","head","health","hearing","heart","heat","help","hen","hill","history","hobbies","hole","holiday","home","honey","hook","hope","horn","horse","horses","hose","hospital","hot","hour","house","houses","humor","hydrant","icicle","idea","impulse","income","increase","industry","ink","insect","instrument","insurance","interest","invention","iron","island","jail","jam","jar","jeans","jelly","jellyfish","jewel","join","joke","journey","judge","juice","jump","kettle","key","kick","kiss","kite","kitten","kittens","kitty","knee","knife","knot","knowledge","laborer","lace","ladybug","lake","lamp","land","language","laugh","lawyer","lead","leaf","learning","leather","leg","legs","letter","letters","lettuce","level","library","lift","light","limit","line","linen","lip","liquid","list","lizards","loaf","lock","locket","look","loss","love","low","lumber","lunch","lunchroom","magic","maid","mailbox","man","manager","map","marble","mark","market","mask","mass","match","meal","measure","meat","meeting","memory","men","metal","mice","middle","milk","mind","mine","minister","mint","minute","mist","mitten","mom","money","monkey","month","moon","morning","mother","motion","mountain","mouth","move","muscle","music","name","nation","neck","need","needle","nerve","nest","net","news","night","noise","north","nose","note","notebook","number","nut eal","oatmeal","observation","ocean","offer","office","oil","operation","opinion","orange","oranges","order","organization","ornament","oven","owl","owner","page","pail","pain","paint","pan","pancake","paper","parcel","parent","park","part","partner","party","passenger","paste","patch","payment","peace","pear","pen","pencil","person","pest","pet","pets","pickle","picture","pie","pies","pig","pigs","pin","pipe","pizzas","place","plane","planes","plant","plantation","plants","plastic","plate","play","playground","pleasure","plot","plough","pocket","point","poison","police","polish","pollution","popcorn","porter","position","pot","potato","powder","power","price","print","prison","process","produce","profit","property","prose","protest","pull","pump","punishment","purpose","push  r","quartz","queen","question","quicksand","quiet","quill","quilt","quince","quiver","rabbit","rabbits","rail","railway","rain","rainstorm","rake","range","rat","rate","ray","reaction","reading","reason","receipt","recess","record","regret","relation","religion","representative","request","respect","rest","reward","rhythm","rice","riddle","rifle","ring","rings","river","road","robin","rock","rod","roll","roof","room","root","rose","route","rub","rule","run","sack","sail","salt","sand","scale","scarecrow","scarf","scene","scent","school","science","scissors","screw","sea","seashore","seat","secretary","seed","selection","self","sense","servant","shade","shake","shame","shape","sheep","sheet","shelf","ship","shirt","shock","shoe","shoes","shop","show","side","sidewalk","sign","silk","silver","sink","sister","sisters","size","skate","skin","skirt","sky","slave","sleep","sleet","slip","slope","smash","smell","smile","smoke","snail","snails","snake","snakes","sneeze","snow","soap","society","sock","soda","sofa","son","song","songs","sort","sound","soup","space","spade","spark","spiders","sponge","spoon","spot","spring","spy","square","squirrel","stage","stamp","star","start","statement","station","steam","steel","stem","step","stew","stick","sticks","stitch","stocking","stomach","stone","stop","store","story","stove","stranger","straw","stream","street","stretch","string","structure","substance","sugar","suggestion","suit","summer","sun","support","surprise","sweater","swim","swing","system","table","tail","talk","tank","taste","tax","teaching","team","teeth","temper","tendency","tent","territory","test","texture","theory","thing","things","thought","thread","thrill","throat","throne","thumb","thunder","ticket","tiger","time","tin","title","toad","toe","toes","tomatoes","tongue","tooth","toothbrush","toothpaste","top","touch","town","toy","toys","trade","trail","train","trains","tramp","transport","tray","treatment","tree","trees","trick","trip","trouble","trousers","truck","trucks","tub","turkey","turn","twig","twist","umbrella","uncle","underwear","unit","use tion","vacation","value","van","vase","vegetable","veil","vein","verse","vessel","vest","view","visitor","voice","volcano","volleyball","voyage","wall","war","wash","waste","watch","water","wave","waves","wax","way","wealth","weather","week","weight","wheel","whip","whistle","wilderness","wind","window","wine","wing","winter","wire","wish","woman","women","wood","wool","word","work","worm","wound","wren","wrench","wrist","writer","writing","yam","yard","yarn","year","yoke","zebra","zephyr","zinc","zipper","zoo"];
 haxe_ds_ObjectMap.count = 0;
+js_Boot.__toStr = {}.toString;
 minicanvas_MiniCanvas.displayGenerationTime = false;
 minicanvas_BrowserCanvas._backingStoreRatio = 0;
 minicanvas_BrowserCanvas.attachKeyEventsToCanvas = false;

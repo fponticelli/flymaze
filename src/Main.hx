@@ -5,7 +5,7 @@ import fly.Game;
 import fly.components.Position;
 import fly.components.Flower;
 import fly.systems.RenderFlower;
-import js.html.Element;
+import js.html.DOMElement;
 import js.html.InputElement;
 import thx.core.Timer;
 import thx.core.UUID;
@@ -230,8 +230,8 @@ class Main {
     el.innerHTML = message;
   }
 
-  static var leaderboardElement : Element;
-  static var playerNameElement : Element;
+  static var leaderboardElement : DOMElement;
+  static var playerNameElement : DOMElement;
   static var playerNameButton : InputElement;
   static function leaderboard(n : String) {
     var el = js.Browser.document.querySelector('figcaption'),

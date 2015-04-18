@@ -90,7 +90,7 @@ class Game {
     world.physics.add(new UpdateCountDown(function() {
       world.physics.add(new UpdateGameInfo(gameInfo, function(nextLevel) {
         js.Browser.window.removeEventListener("keyup", keyUp);
-        world.clear();
+        world.engine.clear();
         if(nextLevel) {
           PlayAudio.playSound("success");
         } else {
