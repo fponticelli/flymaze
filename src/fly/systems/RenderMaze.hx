@@ -6,7 +6,7 @@ import minicanvas.MiniCanvas;
 import fly.components.Maze;
 import amaze.Cell;
 import thx.color.HSLA;
-using thx.core.Floats;
+using thx.Floats;
 
 class RenderMaze implements ISystem {
   var ctx : CanvasRenderingContext2D;

@@ -3,7 +3,7 @@ package fly.systems;
 import edge.*;
 import fly.components.*;
 import minicanvas.MiniCanvas;
-using thx.core.Floats;
+using thx.Floats;
 
 class RenderFly implements ISystem {
   var mini : MiniCanvas;

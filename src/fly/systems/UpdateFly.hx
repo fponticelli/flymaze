@@ -2,7 +2,7 @@ package fly.systems;
 
 import edge.*;
 import fly.components.*;
-using thx.core.Floats;
+using thx.Floats;
 import thx.math.random.Random;
 
 class UpdateFly implements ISystem {

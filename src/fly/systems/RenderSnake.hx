@@ -4,7 +4,7 @@ import edge.*;
 import fly.components.Position;
 import fly.components.Snake;
 import minicanvas.MiniCanvas;
-using thx.core.Floats;
+using thx.Floats;
 
 class RenderSnake implements ISystem {
   var mini : MiniCanvas;

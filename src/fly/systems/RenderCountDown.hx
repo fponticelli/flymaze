@@ -4,7 +4,7 @@ import fly.components.CountDown;
 import edge.*;
 import fly.components.*;
 import minicanvas.MiniCanvas;
-using thx.core.Floats;
+using thx.Floats;
 using thx.format.NumberFormat;
 
 class RenderCountDown implements ISystem {

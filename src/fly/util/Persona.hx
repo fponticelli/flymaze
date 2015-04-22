@@ -1,6 +1,6 @@
 package fly.util;
 
-using thx.core.Arrays;
+using thx.Arrays;
 
 class Persona {
   public static var adjectives = Macro.fileToArray("src/fly/util/adjectives.txt");

@@ -7,12 +7,12 @@ import fly.components.Flower;
 import fly.systems.RenderFlower;
 import js.html.DOMElement;
 import js.html.InputElement;
-import thx.core.Timer;
-import thx.core.UUID;
+import thx.Timer;
+import thx.Uuid;
 import fly.util.Cookie;
 using thx.format.NumberFormat;
-using thx.core.Arrays;
-using thx.core.Strings;
+using thx.Arrays;
+using thx.Strings;
 
 class Main {
   static var mini : MiniCanvas;
@@ -48,7 +48,7 @@ class Main {
     socket.on("request:id", function (_) {
       id = Cookie.read("fmid");
       if(null == id) {
-        id = thx.core.UUID.create();
+        id = thx.Uuid.create();
         name = fly.util.Persona.create();
         Cookie.create("fmid", id, 1000);
         Cookie.create("fmname", name, 1000);
@@ -106,7 +106,7 @@ class Main {
     game.start();
 
     if(info.level == 1) {
-      gameid = UUID.create();
+      gameid = Uuid.create();
       sendScore(start);
       cancelGame = Timer.repeat(function() {
         if(game.running) {

@@ -1,9 +1,9 @@
 package fly;
 
 import fly.systems.*;
-import thx.core.Functions;
-import thx.core.Timer;
-using thx.core.Floats;
+import thx.Functions;
+import thx.Timer;
+using thx.Floats;
 
 import edge.*;
 import edge.World;

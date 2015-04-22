@@ -2,7 +2,7 @@ package fly.systems;
 
 import edge.*;
 import fly.components.*;
-using thx.core.Floats;
+using thx.Floats;
 
 class MazeCollision implements ISystem {
   static inline var E = 0.00001;

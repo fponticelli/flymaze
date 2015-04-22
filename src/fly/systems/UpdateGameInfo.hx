@@ -2,7 +2,7 @@ package fly.systems;
 
 import edge.*;
 import fly.components.*;
-using thx.core.Floats;
+using thx.Floats;
 
 class UpdateGameInfo implements ISystem {
   var gameInfo : GameInfo;

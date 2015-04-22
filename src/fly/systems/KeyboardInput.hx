@@ -2,7 +2,7 @@ package fly.systems;
 
 import edge.*;
 import js.Browser;
-import thx.core.Set;
+import thx.Set;
 
 class KeyboardInput implements ISystem {
   var callback : KeyboardEvent -> Void;

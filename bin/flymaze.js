@@ -103,7 +103,7 @@ Main.wireSockets = function() {
 	Main.socket.on("request:id",function(_) {
 		Main.id = fly_util_Cookie.read("fmid");
 		if(null == Main.id) {
-			Main.id = thx_core_UUID.create();
+			Main.id = thx_Uuid.create();
 			Main.$name = fly_util_Persona.create();
 			fly_util_Cookie.create("fmid",Main.id,1000);
 			fly_util_Cookie.create("fmname",Main.$name,1000);
@@ -128,7 +128,7 @@ Main.startScreen = function() {
 	Main.background();
 	Main.write("FlyMaze",48,fly_Config.width / 2,fly_Config.height / 2);
 	Main.write("(press bar to start)",16,fly_Config.width / 2,fly_Config.height / 4 * 3);
-	thx_core_Timer.delay(function() {
+	thx_Timer.delay(function() {
 		Main.mini.onKeyUp(function(e) {
 			if(e.keyCode != 32) return;
 			Main.info = new fly_components_GameInfo(0,0,0,0,false);
@@ -147,9 +147,9 @@ Main.playLevel = function(info) {
 	});
 	game.start();
 	if(info.level == 1) {
-		Main.gameid = thx_core_UUID.create();
+		Main.gameid = thx_Uuid.create();
 		Main.sendScore("start");
-		Main.cancelGame = thx_core_Timer.repeat(function() {
+		Main.cancelGame = thx_Timer.repeat(function() {
 			if(game.get_running()) Main.sendScore("update");
 		},5000);
 	}
@@ -159,7 +159,7 @@ Main.intermediateScreen = function(info) {
 	Main.write("Level " + info.level + " Completed!",48,fly_Config.width / 2,fly_Config.height / 2);
 	Main.write("current score " + thx_format_NumberFormat.number(info.score,0),24,fly_Config.width / 2,fly_Config.height / 4 * 3);
 	Main.write("(press bar to continue to the next level)",16,fly_Config.width / 2,fly_Config.height / 4 * 3.5);
-	thx_core_Timer.delay(function() {
+	thx_Timer.delay(function() {
 		Main.mini.onKeyUp(function(e) {
 			if(e.keyCode != 32) return;
 			Main.mini.offKeyUp();
@@ -174,7 +174,7 @@ Main.gameOver = function(info) {
 	Main.write("Game Over!",48,fly_Config.width / 2,fly_Config.height / 2);
 	Main.write("Final Score " + thx_format_NumberFormat.number(info.score,0) + (" (level " + info.level + ")"),24,fly_Config.width / 2,fly_Config.height / 4 * 3);
 	Main.write("(press bar to start a new game)",16,fly_Config.width / 2,fly_Config.height / 4 * 3.5);
-	thx_core_Timer.delay(function() {
+	thx_Timer.delay(function() {
 		Main.mini.onKeyUp(function(e) {
 			if(e.keyCode != 32) return;
 			Main.mini.offKeyUp();
@@ -278,7 +278,7 @@ Main.leaderboard = function(n) {
 };
 Main.updateLeaderboard = function(data) {
 	var el = Main.leaderboardElement;
-	var rows = thx_core_Arrays.mapi(data,function(o,i) {
+	var rows = thx_Arrays.mapi(data,function(o,i) {
 		if(o == null || o.name == null) return "";
 		return "<tr class=\"" + (o.name == Main.$name?"selected":"") + "\">\n<td>" + (i + 1) + "</td>\n<td>" + StringTools.htmlEscape(o.name) + "</td>\n<td>" + thx_format_NumberFormat.number(o.level,0) + "</td>\n<td>" + thx_format_NumberFormat.number(o.score,0) + "</td></tr>";
 	}).join("");
@@ -683,7 +683,7 @@ var edge_World = function(delta,schedule) {
 	this.remainder = 0;
 	this.running = false;
 	this.delta = delta;
-	if(null != schedule) this.schedule = schedule; else this.schedule = thx_core_Timer.frame;
+	if(null != schedule) this.schedule = schedule; else this.schedule = thx_Timer.frame;
 };
 edge_World.__name__ = ["edge","World"];
 edge_World.prototype = {
@@ -1116,10 +1116,10 @@ fly_systems_BackgroundBuzz_$SystemProcess.prototype = {
 var fly_systems_KeyboardInput = function(callback) {
 	var _g = this;
 	this.callback = callback;
-	this.keys = thx_core__$Set_Set_$Impl_$.create([]);
+	this.keys = thx__$Set_Set_$Impl_$.create([]);
 	this.event = new fly_systems_KeyboardEvent(this);
 	window.addEventListener("keydown",function(e) {
-		thx_core__$Set_Set_$Impl_$.add(_g.keys,e.keyCode);
+		thx__$Set_Set_$Impl_$.add(_g.keys,e.keyCode);
 	});
 	window.addEventListener("keyup",function(e1) {
 		HxOverrides.remove(_g.keys,e1.keyCode);
@@ -1131,7 +1131,7 @@ fly_systems_KeyboardInput.__interfaces__ = [edge_ISystem];
 fly_systems_KeyboardInput.prototype = {
 	update: function() {
 		if(this.keys.length > 0) {
-			this.event.keys = thx_core__$Set_Set_$Impl_$.setToArray(this.keys);
+			this.event.keys = thx__$Set_Set_$Impl_$.setToArray(this.keys);
 			this.callback(this.event);
 		}
 		return true;
@@ -1954,7 +1954,7 @@ fly_systems_RenderSnake.prototype = {
 		var pos = 0;
 		var len = snake.trail.length;
 		snake.map(function(a,b) {
-			var s = thx_core_Floats.interpolate(pos / len,snake.trailWidth,snake.headWidth);
+			var s = thx_Floats.interpolate(pos / len,snake.trailWidth,snake.headWidth);
 			_g.mini.ctx.lineCap = "round";
 			_g.mini.line(a.x,a.y,b.x,b.y,s * _g.sizeMult(len - pos,snake.jumping),thx_color__$RGBA_RGBA_$Impl_$.fromString(snake.colors[pos % snake.colors.length]));
 			pos++;
@@ -2722,12 +2722,12 @@ fly_util_Persona.create = function() {
 			var _g1 = 0;
 			while(_g1 < n) {
 				var _ = _g1++;
-				_g.push(thx_core_Arrays.sampleOne(fly_util_Persona.adjectives));
+				_g.push(thx_Arrays.sampleOne(fly_util_Persona.adjectives));
 			}
 		}
 		$r = _g;
 		return $r;
-	}(this))).concat([thx_core_Arrays.sampleOne(fly_util_Persona.nouns)]).join(" ");
+	}(this))).concat([thx_Arrays.sampleOne(fly_util_Persona.nouns)]).join(" ");
 };
 var haxe_IMap = function() { };
 haxe_IMap.__name__ = ["haxe","IMap"];
@@ -2996,7 +2996,7 @@ minicanvas_MiniCanvas.create = function(width,height,scaleMode) {
 minicanvas_MiniCanvas.prototype = {
 	display: function(name) {
 		this.deltaTime = performance.now() - this.startTime;
-		if(!minicanvas_MiniCanvas.displayGenerationTime) console.log("generated \"" + name + "\" in " + thx_core_Floats.roundTo(this.deltaTime,2) + "ms");
+		if(!minicanvas_MiniCanvas.displayGenerationTime) console.log("generated \"" + name + "\" in " + thx_Floats.roundTo(this.deltaTime,2) + "ms");
 		this.nativeDisplay(name);
 		return this;
 	}
@@ -3133,7 +3133,7 @@ minicanvas_BrowserCanvas.prototype = $extend(minicanvas_MiniCanvas.prototype,{
 		var caption = window.document.createElement("figcaption");
 		figure.className = "minicanvas";
 		figure.appendChild(this.canvas);
-		caption.innerHTML = thx_core_Strings.humanize(name) + (minicanvas_MiniCanvas.displayGenerationTime?" <span class=\"info\">(" + thx_core_Floats.roundTo(this.deltaTime,2) + "ms)</span>":"");
+		caption.innerHTML = thx_Strings.humanize(name) + (minicanvas_MiniCanvas.displayGenerationTime?" <span class=\"info\">(" + thx_Floats.roundTo(this.deltaTime,2) + "ms)</span>":"");
 		figure.appendChild(caption);
 		minicanvas_BrowserCanvas.parentNode.appendChild(figure);
 		if(null != this._keyUp || null != this._keyDown) this.canvas.focus();
@@ -3275,14 +3275,214 @@ minicanvas_node_PNGEncoder.prototype = {
 	}
 	,__class__: minicanvas_node_PNGEncoder
 };
+var thx_Arrays = function() { };
+thx_Arrays.__name__ = ["thx","Arrays"];
+thx_Arrays.mapi = function(array,callback) {
+	var r = [];
+	var _g1 = 0;
+	var _g = array.length;
+	while(_g1 < _g) {
+		var i = _g1++;
+		r.push(callback(array[i],i));
+	}
+	return r;
+};
+thx_Arrays.sampleOne = function(array) {
+	return array[Std.random(array.length)];
+};
+var thx_ArrayFloats = function() { };
+thx_ArrayFloats.__name__ = ["thx","ArrayFloats"];
+thx_ArrayFloats.resize = function(array,length,fill) {
+	if(fill == null) fill = 0.0;
+	while(array.length < length) array.push(fill);
+	array.splice(length,array.length - length);
+	return array;
+};
+var thx_ArrayInts = function() { };
+thx_ArrayInts.__name__ = ["thx","ArrayInts"];
+thx_ArrayInts.resize = function(array,length,fill) {
+	if(fill == null) fill = 0;
+	while(array.length < length) array.push(fill);
+	array.splice(length,array.length - length);
+	return array;
+};
+var thx_Floats = function() { };
+thx_Floats.__name__ = ["thx","Floats"];
+thx_Floats.canParse = function(s) {
+	return thx_Floats.pattern_parse.match(s);
+};
+thx_Floats.interpolate = function(f,a,b) {
+	return (b - a) * f + a;
+};
+thx_Floats.parse = function(s) {
+	if(s.substring(0,1) == "+") s = s.substring(1);
+	return parseFloat(s);
+};
+thx_Floats.roundTo = function(f,decimals) {
+	var p = Math.pow(10,decimals);
+	return Math.round(f * p) / p;
+};
+thx_Floats.wrapCircular = function(v,max) {
+	v = v % max;
+	if(v < 0) v += max;
+	return v;
+};
+var thx_Functions = function() { };
+thx_Functions.__name__ = ["thx","Functions"];
+thx_Functions.noop = function() {
+};
+var thx_Ints = function() { };
+thx_Ints.__name__ = ["thx","Ints"];
+thx_Ints.canParse = function(s) {
+	return thx_Ints.pattern_parse.match(s);
+};
+thx_Ints.parse = function(s,base) {
+	var v = parseInt(s,base);
+	if(isNaN(v)) return null; else return v;
+};
+thx_Ints.range = function(start,stop,step) {
+	if(step == null) step = 1;
+	if(null == stop) {
+		stop = start;
+		start = 0;
+	}
+	if((stop - start) / step == Infinity) throw new js__$Boot_HaxeError("infinite range");
+	var range = [];
+	var i = -1;
+	var j;
+	if(step < 0) while((j = start + step * ++i) > stop) range.push(j); else while((j = start + step * ++i) < stop) range.push(j);
+	return range;
+};
+var thx__$Set_Set_$Impl_$ = {};
+thx__$Set_Set_$Impl_$.__name__ = ["thx","_Set","Set_Impl_"];
+thx__$Set_Set_$Impl_$.arrayToSet = function(arr) {
+	var set = [];
+	var _g = 0;
+	while(_g < arr.length) {
+		var v = arr[_g];
+		++_g;
+		thx__$Set_Set_$Impl_$.push(set,v);
+	}
+	return set;
+};
+thx__$Set_Set_$Impl_$.create = function(arr) {
+	if(null == arr) return []; else return thx__$Set_Set_$Impl_$.arrayToSet(arr);
+};
+thx__$Set_Set_$Impl_$.add = function(this1,v) {
+	if(thx__$Set_Set_$Impl_$.exists(this1,v)) return false; else {
+		this1.push(v);
+		return true;
+	}
+};
+thx__$Set_Set_$Impl_$.exists = function(this1,v) {
+	var _g = 0;
+	while(_g < this1.length) {
+		var t = this1[_g];
+		++_g;
+		if(t == v) return true;
+	}
+	return false;
+};
+thx__$Set_Set_$Impl_$.push = function(this1,v) {
+	thx__$Set_Set_$Impl_$.add(this1,v);
+};
+thx__$Set_Set_$Impl_$.setToArray = function(this1) {
+	return this1.slice();
+};
+var thx_Strings = function() { };
+thx_Strings.__name__ = ["thx","Strings"];
+thx_Strings.humanize = function(s) {
+	return StringTools.replace(thx_Strings.underscore(s),"_"," ");
+};
+thx_Strings.underscore = function(s) {
+	s = new EReg("::","g").replace(s,"/");
+	s = new EReg("([A-Z]+)([A-Z][a-z])","g").replace(s,"$1_$2");
+	s = new EReg("([a-z\\d])([A-Z])","g").replace(s,"$1_$2");
+	s = new EReg("-","g").replace(s,"_");
+	return s.toLowerCase();
+};
+var thx_Timer = function() { };
+thx_Timer.__name__ = ["thx","Timer"];
+thx_Timer.repeat = function(callback,delayms) {
+	return (function(f,id) {
+		return function() {
+			f(id);
+		};
+	})(thx_Timer.clear,setInterval(callback,delayms));
+};
+thx_Timer.delay = function(callback,delayms) {
+	return (function(f,id) {
+		return function() {
+			f(id);
+		};
+	})(thx_Timer.clear,setTimeout(callback,delayms));
+};
+thx_Timer.frame = function(callback) {
+	var cancelled = false;
+	var f = thx_Functions.noop;
+	var current = performance.now();
+	var next;
+	f = function() {
+		if(cancelled) return;
+		next = performance.now();
+		callback(next - current);
+		current = next;
+		requestAnimationFrame(f);
+	};
+	requestAnimationFrame(f);
+	return function() {
+		cancelled = true;
+	};
+};
+thx_Timer.clear = function(id) {
+	clearTimeout(id);
+	return;
+};
+var thx_Uuid = function() { };
+thx_Uuid.__name__ = ["thx","Uuid"];
+thx_Uuid.create = function() {
+	var s = [];
+	var _g = 0;
+	while(_g < 8) {
+		var i = _g++;
+		s[i] = "" + Math.floor(Math.random() * 16);
+	}
+	s[8] = "-";
+	var _g1 = 9;
+	while(_g1 < 13) {
+		var i1 = _g1++;
+		s[i1] = "" + Math.floor(Math.random() * 16);
+	}
+	s[13] = "-";
+	s[14] = "4";
+	var _g2 = 15;
+	while(_g2 < 18) {
+		var i2 = _g2++;
+		s[i2] = "" + Math.floor(Math.random() * 16);
+	}
+	s[18] = "-";
+	s[19] = "" + (Math.floor(Math.random() * 16) & 3 | 8);
+	var _g3 = 20;
+	while(_g3 < 23) {
+		var i3 = _g3++;
+		s[i3] = "" + Math.floor(Math.random() * 16);
+	}
+	s[23] = "-";
+	var _g4 = 24;
+	while(_g4 < 36) {
+		var i4 = _g4++;
+		s[i4] = "" + Math.floor(Math.random() * 16);
+	}
+	return s.join("");
+};
 var thx_color__$HSL_HSL_$Impl_$ = {};
 thx_color__$HSL_HSL_$Impl_$.__name__ = ["thx","color","_HSL","HSL_Impl_"];
 thx_color__$HSL_HSL_$Impl_$.create = function(hue,saturation,lightness) {
-	var channels = [thx_core_Floats.wrapCircular(hue,360),saturation < 0?0:saturation > 1?1:saturation,lightness < 0?0:lightness > 1?1:lightness];
+	var channels = [thx_Floats.wrapCircular(hue,360),saturation < 0?0:saturation > 1?1:saturation,lightness < 0?0:lightness > 1?1:lightness];
 	return channels;
 };
 thx_color__$HSL_HSL_$Impl_$.lighter = function(this1,t) {
-	var channels = [this1[0],this1[1],thx_core_Floats.interpolate(t,this1[2],1)];
+	var channels = [this1[0],this1[1],thx_Floats.interpolate(t,this1[2],1)];
 	return channels;
 };
 thx_color__$HSL_HSL_$Impl_$.toRGB = function(this1) {
@@ -3302,17 +3502,17 @@ thx_color__$HSL_HSL_$Impl_$._c = function(d,s,l) {
 	var m2;
 	if(l <= 0.5) m2 = l * (1 + s); else m2 = l + s - l * s;
 	var m1 = 2 * l - m2;
-	d = thx_core_Floats.wrapCircular(d,360);
+	d = thx_Floats.wrapCircular(d,360);
 	if(d < 60) return m1 + (m2 - m1) * d / 60; else if(d < 180) return m2; else if(d < 240) return m1 + (m2 - m1) * (240 - d) / 60; else return m1;
 };
 var thx_color__$HSLA_HSLA_$Impl_$ = {};
 thx_color__$HSLA_HSLA_$Impl_$.__name__ = ["thx","color","_HSLA","HSLA_Impl_"];
 thx_color__$HSLA_HSLA_$Impl_$.create = function(hue,saturation,lightness,alpha) {
-	var channels = [thx_core_Floats.wrapCircular(hue,360),saturation < 0?0:saturation > 1?1:saturation,lightness < 0?0:lightness > 1?1:lightness,alpha < 0?0:alpha > 1?1:alpha];
+	var channels = [thx_Floats.wrapCircular(hue,360),saturation < 0?0:saturation > 1?1:saturation,lightness < 0?0:lightness > 1?1:lightness,alpha < 0?0:alpha > 1?1:alpha];
 	return channels;
 };
 thx_color__$HSLA_HSLA_$Impl_$.lighter = function(this1,t) {
-	var channels = [this1[0],this1[1],thx_core_Floats.interpolate(t,this1[2],1),this1[3]];
+	var channels = [this1[0],this1[1],thx_Floats.interpolate(t,this1[2],1),this1[3]];
 	return channels;
 };
 thx_color__$HSLA_HSLA_$Impl_$.toCSS3 = function(this1) {
@@ -3330,7 +3530,7 @@ thx_color__$RGB_RGB_$Impl_$.createf = function(red,green,blue) {
 	return thx_color__$RGB_RGB_$Impl_$.create(Math.round(red * 255),Math.round(green * 255),Math.round(blue * 255));
 };
 thx_color__$RGB_RGB_$Impl_$.fromInts = function(arr) {
-	thx_core_ArrayInts.resize(arr,3);
+	thx_ArrayInts.resize(arr,3);
 	return thx_color__$RGB_RGB_$Impl_$.create(arr[0],arr[1],arr[2]);
 };
 thx_color__$RGB_RGB_$Impl_$.darker = function(this1,t) {
@@ -3363,13 +3563,13 @@ thx_color__$RGBA_RGBA_$Impl_$.create = function(red,green,blue,alpha) {
 	return (red & 255) << 24 | (green & 255) << 16 | (blue & 255) << 8 | alpha & 255;
 };
 thx_color__$RGBA_RGBA_$Impl_$.fromFloats = function(arr) {
-	var ints = thx_core_ArrayFloats.resize(arr,4).map(function(_) {
+	var ints = thx_ArrayFloats.resize(arr,4).map(function(_) {
 		return Math.round(_ * 255);
 	});
 	return thx_color__$RGBA_RGBA_$Impl_$.create(ints[0],ints[1],ints[2],ints[3]);
 };
 thx_color__$RGBA_RGBA_$Impl_$.fromInts = function(arr) {
-	thx_core_ArrayInts.resize(arr,4);
+	thx_ArrayInts.resize(arr,4);
 	return thx_color__$RGBA_RGBA_$Impl_$.create(arr[0],arr[1],arr[2],arr[3]);
 };
 thx_color__$RGBA_RGBA_$Impl_$.fromString = function(color) {
@@ -3400,11 +3600,11 @@ thx_color__$RGBX_RGBX_$Impl_$.create = function(red,green,blue) {
 	return [red < 0?0:red > 1?1:red,green < 0?0:green > 1?1:green,blue < 0?0:blue > 1?1:blue];
 };
 thx_color__$RGBX_RGBX_$Impl_$.fromInts = function(arr) {
-	thx_core_ArrayInts.resize(arr,3);
+	thx_ArrayInts.resize(arr,3);
 	return thx_color__$RGBX_RGBX_$Impl_$.create(arr[0] / 255,arr[1] / 255,arr[2] / 255);
 };
 thx_color__$RGBX_RGBX_$Impl_$.darker = function(this1,t) {
-	var channels = [thx_core_Floats.interpolate(t,this1[0],0),thx_core_Floats.interpolate(t,this1[1],0),thx_core_Floats.interpolate(t,this1[2],0)];
+	var channels = [thx_Floats.interpolate(t,this1[0],0),thx_Floats.interpolate(t,this1[1],0),thx_Floats.interpolate(t,this1[2],0)];
 	return channels;
 };
 thx_color__$RGBX_RGBX_$Impl_$.withAlpha = function(this1,alpha) {
@@ -3523,25 +3723,25 @@ thx_color_parse_ColorParser.prototype = {
 		try {
 			switch(unit) {
 			case "%":
-				if(thx_core_Floats.canParse(value)) return thx_color_parse_ChannelInfo.CIPercent(thx_core_Floats.parse(value)); else return null;
+				if(thx_Floats.canParse(value)) return thx_color_parse_ChannelInfo.CIPercent(thx_Floats.parse(value)); else return null;
 				break;
 			case "deg":
-				if(thx_core_Floats.canParse(value)) return thx_color_parse_ChannelInfo.CIDegree(thx_core_Floats.parse(value)); else return null;
+				if(thx_Floats.canParse(value)) return thx_color_parse_ChannelInfo.CIDegree(thx_Floats.parse(value)); else return null;
 				break;
 			case "DEG":
-				if(thx_core_Floats.canParse(value)) return thx_color_parse_ChannelInfo.CIDegree(thx_core_Floats.parse(value)); else return null;
+				if(thx_Floats.canParse(value)) return thx_color_parse_ChannelInfo.CIDegree(thx_Floats.parse(value)); else return null;
 				break;
 			case "rad":
-				if(thx_core_Floats.canParse(value)) return thx_color_parse_ChannelInfo.CIDegree(thx_core_Floats.parse(value) * 180 / Math.PI); else return null;
+				if(thx_Floats.canParse(value)) return thx_color_parse_ChannelInfo.CIDegree(thx_Floats.parse(value) * 180 / Math.PI); else return null;
 				break;
 			case "RAD":
-				if(thx_core_Floats.canParse(value)) return thx_color_parse_ChannelInfo.CIDegree(thx_core_Floats.parse(value) * 180 / Math.PI); else return null;
+				if(thx_Floats.canParse(value)) return thx_color_parse_ChannelInfo.CIDegree(thx_Floats.parse(value) * 180 / Math.PI); else return null;
 				break;
 			case "":
-				if(thx_core_Ints.canParse(value)) {
-					var i = thx_core_Ints.parse(value);
+				if(thx_Ints.canParse(value)) {
+					var i = thx_Ints.parse(value);
 					if(i == 0) return thx_color_parse_ChannelInfo.CIBool(false); else if(i == 1) return thx_color_parse_ChannelInfo.CIBool(true); else if(i < 256) return thx_color_parse_ChannelInfo.CIInt8(i); else return thx_color_parse_ChannelInfo.CIInt(i);
-				} else if(thx_core_Floats.canParse(value)) return thx_color_parse_ChannelInfo.CIFloat(thx_core_Floats.parse(value)); else return null;
+				} else if(thx_Floats.canParse(value)) return thx_color_parse_ChannelInfo.CIFloat(thx_Floats.parse(value)); else return null;
 				break;
 			default:
 				return null;
@@ -3568,206 +3768,6 @@ thx_color_parse_ChannelInfo.CIDegree = function(value) { var $x = ["CIDegree",2,
 thx_color_parse_ChannelInfo.CIInt8 = function(value) { var $x = ["CIInt8",3,value]; $x.__enum__ = thx_color_parse_ChannelInfo; $x.toString = $estr; return $x; };
 thx_color_parse_ChannelInfo.CIInt = function(value) { var $x = ["CIInt",4,value]; $x.__enum__ = thx_color_parse_ChannelInfo; $x.toString = $estr; return $x; };
 thx_color_parse_ChannelInfo.CIBool = function(value) { var $x = ["CIBool",5,value]; $x.__enum__ = thx_color_parse_ChannelInfo; $x.toString = $estr; return $x; };
-var thx_core_Arrays = function() { };
-thx_core_Arrays.__name__ = ["thx","core","Arrays"];
-thx_core_Arrays.mapi = function(array,callback) {
-	var r = [];
-	var _g1 = 0;
-	var _g = array.length;
-	while(_g1 < _g) {
-		var i = _g1++;
-		r.push(callback(array[i],i));
-	}
-	return r;
-};
-thx_core_Arrays.sampleOne = function(array) {
-	return array[Std.random(array.length)];
-};
-var thx_core_ArrayFloats = function() { };
-thx_core_ArrayFloats.__name__ = ["thx","core","ArrayFloats"];
-thx_core_ArrayFloats.resize = function(array,length,fill) {
-	if(fill == null) fill = 0.0;
-	while(array.length < length) array.push(fill);
-	array.splice(length,array.length - length);
-	return array;
-};
-var thx_core_ArrayInts = function() { };
-thx_core_ArrayInts.__name__ = ["thx","core","ArrayInts"];
-thx_core_ArrayInts.resize = function(array,length,fill) {
-	if(fill == null) fill = 0;
-	while(array.length < length) array.push(fill);
-	array.splice(length,array.length - length);
-	return array;
-};
-var thx_core_Floats = function() { };
-thx_core_Floats.__name__ = ["thx","core","Floats"];
-thx_core_Floats.canParse = function(s) {
-	return thx_core_Floats.pattern_parse.match(s);
-};
-thx_core_Floats.interpolate = function(f,a,b) {
-	return (b - a) * f + a;
-};
-thx_core_Floats.parse = function(s) {
-	if(s.substring(0,1) == "+") s = s.substring(1);
-	return parseFloat(s);
-};
-thx_core_Floats.roundTo = function(f,decimals) {
-	var p = Math.pow(10,decimals);
-	return Math.round(f * p) / p;
-};
-thx_core_Floats.wrapCircular = function(v,max) {
-	v = v % max;
-	if(v < 0) v += max;
-	return v;
-};
-var thx_core_Functions = function() { };
-thx_core_Functions.__name__ = ["thx","core","Functions"];
-thx_core_Functions.noop = function() {
-};
-var thx_core_Ints = function() { };
-thx_core_Ints.__name__ = ["thx","core","Ints"];
-thx_core_Ints.canParse = function(s) {
-	return thx_core_Ints.pattern_parse.match(s);
-};
-thx_core_Ints.parse = function(s,base) {
-	var v = parseInt(s,base);
-	if(isNaN(v)) return null; else return v;
-};
-thx_core_Ints.range = function(start,stop,step) {
-	if(step == null) step = 1;
-	if(null == stop) {
-		stop = start;
-		start = 0;
-	}
-	if((stop - start) / step == Infinity) throw new js__$Boot_HaxeError("infinite range");
-	var range = [];
-	var i = -1;
-	var j;
-	if(step < 0) while((j = start + step * ++i) > stop) range.push(j); else while((j = start + step * ++i) < stop) range.push(j);
-	return range;
-};
-var thx_core__$Set_Set_$Impl_$ = {};
-thx_core__$Set_Set_$Impl_$.__name__ = ["thx","core","_Set","Set_Impl_"];
-thx_core__$Set_Set_$Impl_$.arrayToSet = function(arr) {
-	var set = [];
-	var _g = 0;
-	while(_g < arr.length) {
-		var v = arr[_g];
-		++_g;
-		thx_core__$Set_Set_$Impl_$.push(set,v);
-	}
-	return set;
-};
-thx_core__$Set_Set_$Impl_$.create = function(arr) {
-	if(null == arr) return []; else return thx_core__$Set_Set_$Impl_$.arrayToSet(arr);
-};
-thx_core__$Set_Set_$Impl_$.add = function(this1,v) {
-	if(thx_core__$Set_Set_$Impl_$.exists(this1,v)) return false; else {
-		this1.push(v);
-		return true;
-	}
-};
-thx_core__$Set_Set_$Impl_$.exists = function(this1,v) {
-	var _g = 0;
-	while(_g < this1.length) {
-		var t = this1[_g];
-		++_g;
-		if(t == v) return true;
-	}
-	return false;
-};
-thx_core__$Set_Set_$Impl_$.push = function(this1,v) {
-	thx_core__$Set_Set_$Impl_$.add(this1,v);
-};
-thx_core__$Set_Set_$Impl_$.setToArray = function(this1) {
-	return this1.slice();
-};
-var thx_core_Strings = function() { };
-thx_core_Strings.__name__ = ["thx","core","Strings"];
-thx_core_Strings.humanize = function(s) {
-	return StringTools.replace(thx_core_Strings.underscore(s),"_"," ");
-};
-thx_core_Strings.underscore = function(s) {
-	s = new EReg("::","g").replace(s,"/");
-	s = new EReg("([A-Z]+)([A-Z][a-z])","g").replace(s,"$1_$2");
-	s = new EReg("([a-z\\d])([A-Z])","g").replace(s,"$1_$2");
-	s = new EReg("-","g").replace(s,"_");
-	return s.toLowerCase();
-};
-var thx_core_Timer = function() { };
-thx_core_Timer.__name__ = ["thx","core","Timer"];
-thx_core_Timer.repeat = function(callback,delayms) {
-	return (function(f,id) {
-		return function() {
-			f(id);
-		};
-	})(thx_core_Timer.clear,setInterval(callback,delayms));
-};
-thx_core_Timer.delay = function(callback,delayms) {
-	return (function(f,id) {
-		return function() {
-			f(id);
-		};
-	})(thx_core_Timer.clear,setTimeout(callback,delayms));
-};
-thx_core_Timer.frame = function(callback) {
-	var cancelled = false;
-	var f = thx_core_Functions.noop;
-	var current = performance.now();
-	var next;
-	f = function() {
-		if(cancelled) return;
-		next = performance.now();
-		callback(next - current);
-		current = next;
-		requestAnimationFrame(f);
-	};
-	requestAnimationFrame(f);
-	return function() {
-		cancelled = true;
-	};
-};
-thx_core_Timer.clear = function(id) {
-	clearTimeout(id);
-	return;
-};
-var thx_core_UUID = function() { };
-thx_core_UUID.__name__ = ["thx","core","UUID"];
-thx_core_UUID.create = function() {
-	var s = [];
-	var _g = 0;
-	while(_g < 8) {
-		var i = _g++;
-		s[i] = "" + Math.floor(Math.random() * 16);
-	}
-	s[8] = "-";
-	var _g1 = 9;
-	while(_g1 < 13) {
-		var i1 = _g1++;
-		s[i1] = "" + Math.floor(Math.random() * 16);
-	}
-	s[13] = "-";
-	s[14] = "4";
-	var _g2 = 15;
-	while(_g2 < 18) {
-		var i2 = _g2++;
-		s[i2] = "" + Math.floor(Math.random() * 16);
-	}
-	s[18] = "-";
-	s[19] = "" + (Math.floor(Math.random() * 16) & 3 | 8);
-	var _g3 = 20;
-	while(_g3 < 23) {
-		var i3 = _g3++;
-		s[i3] = "" + Math.floor(Math.random() * 16);
-	}
-	s[23] = "-";
-	var _g4 = 24;
-	while(_g4 < 36) {
-		var i4 = _g4++;
-		s[i4] = "" + Math.floor(Math.random() * 16);
-	}
-	return s.join("");
-};
 var thx_culture_DateFormatInfo = function(calendarWeekRuleIndex,calendarWeekRuleName,designatorAm,designatorPm,firstDayOfWeekIndex,firstDayOfWeekName,nameCalendar,nameCalendarNative,nameDays,nameDaysAbbreviated,nameDaysShortest,nameMonths,nameMonthsAbbreviated,nameMonthGenitives,nameMonthGenitivesAbbreviated,patternDateLong,patternDateShort,patternDateTimeFull,patternDateTimeSortable,patternMonthDay,patternRfc1123,patternTimeLong,patternTimeShort,patternUniversalSortable,patternYearMonth,separatorDate,separatorTime) {
 	this.calendarWeekRuleIndex = calendarWeekRuleIndex;
 	this.calendarWeekRuleName = calendarWeekRuleName;
@@ -3929,7 +3929,7 @@ thx_format_NumberFormat.splitOnDecimalSeparator = function(f) {
 	if(d.indexOf("e") >= 0) {
 		p = d.split("e");
 		d = p[0];
-		var e = thx_core_Ints.parse(p[1]);
+		var e = thx_Ints.parse(p[1]);
 		if(e < 0) {
 			d = StringTools.rpad("","0",-e - 1) + i + d;
 			i = "0";
@@ -3972,7 +3972,7 @@ thx_math_random__$Random_Random_$Impl_$.lessThan = function(this1,max) {
 	return Std["int"](max * this1["float"]());
 };
 thx_math_random__$Random_Random_$Impl_$.shuffle = function(this1,arr) {
-	var t = thx_core_Ints.range(arr.length);
+	var t = thx_Ints.range(arr.length);
 	var array = [];
 	while(t.length > 0) {
 		var pos = thx_math_random__$Random_Random_$Impl_$.lessThan(this1,t.length);
@@ -4128,10 +4128,10 @@ minicanvas_BrowserCanvas.defaultScaleMode = minicanvas_ScaleMode.Auto;
 minicanvas_BrowserCanvas.parentNode = typeof document != 'undefined' && document.body;
 minicanvas_NodeCanvas.defaultScaleMode = minicanvas_ScaleMode.NoScale;
 minicanvas_NodeCanvas.imagePath = "images";
+thx_Floats.pattern_parse = new EReg("^(\\+|-)?\\d+(\\.\\d+)?(e-?\\d+)?$","");
+thx_Ints.pattern_parse = new EReg("^[+-]?(\\d+|0x[0-9A-F]+)$","i");
 thx_color_parse_ColorParser.parser = new thx_color_parse_ColorParser();
 thx_color_parse_ColorParser.isPureHex = new EReg("^([0-9a-f]{2}){3,4}$","i");
-thx_core_Floats.pattern_parse = new EReg("^(\\+|-)?\\d+(\\.\\d+)?(e-?\\d+)?$","");
-thx_core_Ints.pattern_parse = new EReg("^[+-]?(\\d+|0x[0-9A-F]+)$","i");
 thx_culture_DateFormatInfo.invariant = new thx_culture_DateFormatInfo(0,"FirstDay","AM","PM",0,"Sunday","Gregorian",null,["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],["Su","Mo","Tu","We","Th","Fr","Sa"],["January","February","March","April","May","June","July","August","September","October","November","December",""],["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec",""],["January","February","March","April","May","June","July","August","September","October","November","December",""],["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec",""],"dddd, dd MMMM yyyy","MM/dd/yyyy","dddd, dd MMMM yyyy HH:mm:ss","yyyy'-'MM'-'dd'T'HH':'mm':'ss","MMMM dd","ddd, dd MMM yyyy HH':'mm':'ss 'GMT'","HH:mm:ss","HH:mm","yyyy'-'MM'-'dd HH':'mm':'ss'Z'","yyyy MMMM","/",":");
 thx_culture_NumberFormatInfo.invariant = new thx_culture_NumberFormatInfo(2,2,2,[3],[3],[3],0,1,0,0,0,".",".",".",",",",",",","-","+","¤","NaN","-Infinity","%","‰","Infinity");
 thx_culture_Culture.invariant = new thx_culture_Culture("",thx_culture_DateFormatInfo.invariant,"",false,"iv","IVL",false,127,"Gregorian","Invariant Language","Invariant Language","Invariant Country","Invariant Country",thx_culture_NumberFormatInfo.invariant,",","IVL");

@@ -4,7 +4,7 @@ import edge.*;
 import fly.components.*;
 import js.html.Image;
 import minicanvas.MiniCanvas;
-using thx.core.Floats;
+using thx.Floats;
 import thx.color.*;
 
 class RenderFlower implements ISystem {
