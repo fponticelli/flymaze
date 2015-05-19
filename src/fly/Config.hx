@@ -3,7 +3,7 @@ package fly;
 import thx.math.random.Random;
 import thx.math.random.PseudoRandom;
 
-using thx.color.RGB;
+using thx.color.Rgb;
 
 class Config {
   static public var width  : Int = 660;
@@ -17,7 +17,7 @@ class Config {
   public var flies : Int;
   public var flowers : Int;
   public var timePerLevel : Int;
-  public var backgroundColor : RGB;
+  public var backgroundColor : Rgb;
   public var gen : Random;
   public var cellSize : Float;
   public var flyCircleRadius : Float;

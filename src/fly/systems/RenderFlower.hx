@@ -42,7 +42,7 @@ class RenderFlower implements ISystem {
     var angle = 180 + 200 * Math.random();
     if(angle > 270)
       angle += 70;
-    var pcolor = HSL.create(angle, Math.random(), Math.random() * 0.3 + 0.5);
+    var pcolor = Hsl.create(angle, Math.random(), Math.random() * 0.3 + 0.5);
     for(i in 0...n) {
       var a = sa + Math.PI * 2 * i / n;
       mini.dot(c + Math.cos(a) * r, c + Math.sin(a) * r, rp, pcolor);

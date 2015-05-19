@@ -5,7 +5,7 @@ import js.html.CanvasRenderingContext2D;
 import minicanvas.MiniCanvas;
 import fly.components.Maze;
 import amaze.Cell;
-import thx.color.HSLA;
+import thx.color.Hsla;
 using thx.Floats;
 
 class RenderMaze implements ISystem {
@@ -42,7 +42,7 @@ class RenderMaze implements ISystem {
   }
 
   function createColor() {
-    return HSLA.create(120 + Math.random() * 20, 0.6, 0.3, 1);
+    return Hsla.create(120 + Math.random() * 20, 0.6, 0.3, 1);
   }
 
   function drawCell(cell : Cell, row : Int, col : Int, size : Float, lastRow : Bool, lastCol : Bool) {
@@ -82,14 +82,14 @@ class RenderMaze implements ISystem {
   }
 
   var maxAngleDeviation = 2;
-  function vinePath(x0 : Float, y0 : Float, x1 : Float, y1 : Float, dist : Float, width : Float, color : HSLA, maxAngle : Float) {
+  function vinePath(x0 : Float, y0 : Float, x1 : Float, y1 : Float, dist : Float, width : Float, color : Hsla, maxAngle : Float) {
     if(width < 0.5) return;
     var ctx = mini.ctx,
         d = fdist(x0, y0, x1, y1),
         branches = [],
         angle;
     ctx.beginPath();
-    ctx.strokeStyle = color.toCSS3();
+    ctx.strokeStyle = color.toCss3();
     ctx.lineWidth = width;
     ctx.moveTo(x0, y0);
     while(d >= dist) {

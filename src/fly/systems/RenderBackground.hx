@@ -2,14 +2,14 @@ package fly.systems;
 
 import edge.*;
 import minicanvas.MiniCanvas;
-import thx.color.RGB;
+import thx.color.Rgb;
 
 class RenderBackground implements ISystem {
   var mini : MiniCanvas;
   var color : String;
-  public function new(mini : MiniCanvas, color : RGB) {
+  public function new(mini : MiniCanvas, color : Rgb) {
     this.mini = mini;
-    this.color = color.toCSS3();
+    this.color = color.toCss3();
   }
 
   function update()

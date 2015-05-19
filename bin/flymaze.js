@@ -341,6 +341,9 @@ StringTools.replace = function(s,sub,by) {
 };
 var Type = function() { };
 Type.__name__ = ["Type"];
+Type.getSuperClass = function(c) {
+	return c.__super__;
+};
 Type.getClassName = function(c) {
 	var a = c.__name__;
 	if(a == null) return null;
@@ -548,16 +551,26 @@ edge_Entity.prototype = {
 		this.engine.matchSystems(this);
 	}
 	,_add: function(component) {
-		var type = Type.getClassName(component == null?null:js_Boot.getClass(component));
+		var type = this.key(component);
 		if(this.map.exists(type)) this.remove(this.map.get(type));
 		this.map.set(type,component);
 	}
 	,_remove: function(component) {
-		var type = Type.getClassName(component == null?null:js_Boot.getClass(component));
+		var type = this.key(component);
 		this._removeTypeName(type);
 	}
 	,_removeTypeName: function(type) {
 		this.map.remove(type);
+	}
+	,key: function(component) {
+		var t;
+		if(component == null) t = null; else t = js_Boot.getClass(component);
+		var s = Type.getSuperClass(t);
+		while(s != null && s != edge_IComponent) {
+			t = s;
+			s = Type.getSuperClass(t);
+		}
+		return Type.getClassName(t);
 	}
 	,__class__: edge_Entity
 };
@@ -959,7 +972,7 @@ var fly_components_Droplet = function(radius,color,life) {
 fly_components_Droplet.__name__ = ["fly","components","Droplet"];
 fly_components_Droplet.__interfaces__ = [edge_IComponent];
 fly_components_Droplet.create = function() {
-	return new fly_components_Droplet(Math.random() * 0.5 + 1.2,thx_color__$HSL_HSL_$Impl_$.toRGB(thx_color__$HSL_HSL_$Impl_$.create(20 + 30 * Math.random(),Math.random() * 0.4 + 0.6,0.3)),fly_components_Droplet.maxLife);
+	return new fly_components_Droplet(Math.random() * 0.5 + 1.2,thx_color__$Hsl_Hsl_$Impl_$.toRgb(thx_color__$Hsl_Hsl_$Impl_$.create(20 + 30 * Math.random(),Math.random() * 0.4 + 0.6,0.3)),fly_components_Droplet.maxLife);
 };
 fly_components_Droplet.prototype = {
 	__class__: fly_components_Droplet
@@ -1395,14 +1408,14 @@ fly_systems_PlayAudio_$SystemProcess.prototype = {
 };
 var fly_systems_RenderBackground = function(mini,color) {
 	this.mini = mini;
-	this.color = thx_color__$RGB_RGB_$Impl_$.toCSS3(color);
+	this.color = thx_color__$Rgb_Rgb_$Impl_$.toCss3(color);
 	this.__process__ = new fly_systems_RenderBackground_$SystemProcess(this);
 };
 fly_systems_RenderBackground.__name__ = ["fly","systems","RenderBackground"];
 fly_systems_RenderBackground.__interfaces__ = [edge_ISystem];
 fly_systems_RenderBackground.prototype = {
 	update: function() {
-		this.mini.fill(thx_color__$RGBA_RGBA_$Impl_$.fromString(this.color));
+		this.mini.fill(thx_color__$Rgba_Rgba_$Impl_$.fromString(this.color));
 		return true;
 	}
 	,__class__: fly_systems_RenderBackground
@@ -1494,8 +1507,8 @@ fly_systems_RenderDroplet.__name__ = ["fly","systems","RenderDroplet"];
 fly_systems_RenderDroplet.__interfaces__ = [edge_ISystem];
 fly_systems_RenderDroplet.prototype = {
 	update: function(position,droplet) {
-		this.mini.dot(position.x + 1,position.y + 1,droplet.radius + 0.5,thx_color__$RGB_RGB_$Impl_$.toRGBA(thx_color__$RGB_RGB_$Impl_$.darker(droplet.color,0.5)));
-		this.mini.dot(position.x,position.y,droplet.radius,thx_color__$RGB_RGB_$Impl_$.toRGBA(droplet.color));
+		this.mini.dot(position.x + 1,position.y + 1,droplet.radius + 0.5,thx_color__$Rgb_Rgb_$Impl_$.toRgba(thx_color__$Rgb_Rgb_$Impl_$.darker(droplet.color,0.5)));
+		this.mini.dot(position.x,position.y,droplet.radius,thx_color__$Rgb_Rgb_$Impl_$.toRgba(droplet.color));
 		return true;
 	}
 	,__class__: fly_systems_RenderDroplet
@@ -1629,15 +1642,15 @@ fly_systems_RenderFlower.generate = function(mini,size) {
 	var sa = Math.random() * Math.PI;
 	var angle = 180 + 200 * Math.random();
 	if(angle > 270) angle += 70;
-	var pcolor = thx_color__$HSL_HSL_$Impl_$.create(angle,Math.random(),Math.random() * 0.3 + 0.5);
+	var pcolor = thx_color__$Hsl_Hsl_$Impl_$.create(angle,Math.random(),Math.random() * 0.3 + 0.5);
 	var _g = 0;
 	while(_g < n) {
 		var i = _g++;
 		var a = sa + Math.PI * 2 * i / n;
-		mini.dot(c + Math.cos(a) * r,c + Math.sin(a) * r,rp,thx_color__$HSL_HSL_$Impl_$.toRGBA(pcolor));
+		mini.dot(c + Math.cos(a) * r,c + Math.sin(a) * r,rp,thx_color__$Hsl_Hsl_$Impl_$.toRgba(pcolor));
 	}
-	pcolor = thx_color__$HSL_HSL_$Impl_$.lighter(pcolor,Math.random());
-	mini.dot(c,c,r1,thx_color__$HSL_HSL_$Impl_$.toRGBA(pcolor));
+	pcolor = thx_color__$Hsl_Hsl_$Impl_$.lighter(pcolor,Math.random());
+	mini.dot(c,c,r1,thx_color__$Hsl_Hsl_$Impl_$.toRgba(pcolor));
 	var image = new Image();
 	image.width = mini.width / 2;
 	image.height = mini.height / 2;
@@ -1853,7 +1866,7 @@ fly_systems_RenderMaze.prototype = {
 		}
 	}
 	,createColor: function() {
-		return thx_color__$HSLA_HSLA_$Impl_$.create(120 + Math.random() * 20,0.6,0.3,1);
+		return thx_color__$Hsla_Hsla_$Impl_$.create(120 + Math.random() * 20,0.6,0.3,1);
 	}
 	,drawCell: function(cell,row,col,size,lastRow,lastCol) {
 		var ctx = this.mini.ctx;
@@ -1873,7 +1886,7 @@ fly_systems_RenderMaze.prototype = {
 		var branches = [];
 		var angle;
 		ctx.beginPath();
-		ctx.strokeStyle = thx_color__$HSLA_HSLA_$Impl_$.toCSS3(color);
+		ctx.strokeStyle = thx_color__$Hsla_Hsla_$Impl_$.toCss3(color);
 		ctx.lineWidth = width;
 		ctx.moveTo(x0,y0);
 		while(d >= dist) {
@@ -1896,7 +1909,7 @@ fly_systems_RenderMaze.prototype = {
 		while(_g < branches.length) {
 			var branch = branches[_g];
 			++_g;
-			this.vinePath(branch.x0,branch.y0,branch.x1,branch.y1,branch.d,branch.width,thx_color__$HSLA_HSLA_$Impl_$.lighter(color,0.1),Math.min(maxAngle * this.maxAngleDeviation,90));
+			this.vinePath(branch.x0,branch.y0,branch.x1,branch.y1,branch.d,branch.width,thx_color__$Hsla_Hsla_$Impl_$.lighter(color,0.1),Math.min(maxAngle * this.maxAngleDeviation,90));
 		}
 	}
 	,__class__: fly_systems_RenderMaze
@@ -1956,10 +1969,10 @@ fly_systems_RenderSnake.prototype = {
 		snake.map(function(a,b) {
 			var s = thx_Floats.interpolate(pos / len,snake.trailWidth,snake.headWidth);
 			_g.mini.ctx.lineCap = "round";
-			_g.mini.line(a.x,a.y,b.x,b.y,s * _g.sizeMult(len - pos,snake.jumping),thx_color__$RGBA_RGBA_$Impl_$.fromString(snake.colors[pos % snake.colors.length]));
+			_g.mini.line(a.x,a.y,b.x,b.y,s * _g.sizeMult(len - pos,snake.jumping),thx_color__$Rgba_Rgba_$Impl_$.fromString(snake.colors[pos % snake.colors.length]));
 			pos++;
 		});
-		this.mini.dot(position.x,position.y,snake.headWidth * this.sizeMult(0,snake.jumping) / 1.5,thx_color__$RGBA_RGBA_$Impl_$.fromString(snake.colors[pos % snake.colors.length]));
+		this.mini.dot(position.x,position.y,snake.headWidth * this.sizeMult(0,snake.jumping) / 1.5,thx_color__$Rgba_Rgba_$Impl_$.fromString(snake.colors[pos % snake.colors.length]));
 		return true;
 	}
 	,sizeMult: function(p,jumpings) {
@@ -2975,7 +2988,7 @@ js_Boot.__isNativeObj = function(o) {
 	return js_Boot.__nativeClassName(o) != null;
 };
 js_Boot.__resolveNativeClass = function(name) {
-	if(typeof window != "undefined") return window[name]; else return global[name];
+	return (Function("return typeof " + name + " != \"undefined\" ? " + name + " : null"))();
 };
 var minicanvas_MiniCanvas = function(width,height,scaleMode) {
 	this.scaleMode = scaleMode;
@@ -3007,14 +3020,14 @@ minicanvas_MiniCanvas.prototype = {
 	,dot: function(x,y,radius,color) {
 		if(radius == null) radius = 3.0;
 		this.ctx.beginPath();
-		this.ctx.fillStyle = thx_color__$RGBA_RGBA_$Impl_$.toString((function($this) {
+		this.ctx.fillStyle = thx_color__$Rgba_Rgba_$Impl_$.toString((function($this) {
 			var $r;
 			var t;
 			{
 				var _0 = color;
 				if(null == _0) t = null; else t = _0;
 			}
-			$r = t != null?t:thx_color__$RGBA_RGBA_$Impl_$.fromString("rgba(204,51,0,1)");
+			$r = t != null?t:thx_color__$Rgba_Rgba_$Impl_$.fromString("Rgba(204,51,0,1)");
 			return $r;
 		}(this)));
 		this.ctx.arc(x,y,radius,0,Math.PI * 2,true);
@@ -3022,7 +3035,7 @@ minicanvas_MiniCanvas.prototype = {
 		return this;
 	}
 	,fill: function(color) {
-		this.ctx.fillStyle = thx_color__$RGBA_RGBA_$Impl_$.toString(color);
+		this.ctx.fillStyle = thx_color__$Rgba_Rgba_$Impl_$.toString(color);
 		this.ctx.fillRect(0,0,this.width,this.height);
 		return this;
 	}
@@ -3032,7 +3045,7 @@ minicanvas_MiniCanvas.prototype = {
 		var t;
 		var _0 = color;
 		if(null == _0) t = null; else t = _0;
-		if(t != null) this.ctx.strokeStyle = thx_color__$RGBA_RGBA_$Impl_$.toString(t); else this.ctx.strokeStyle = thx_color__$RGBA_RGBA_$Impl_$.toString(thx_color__$RGBA_RGBA_$Impl_$.fromString("rgba(0,0,0,1)"));
+		if(t != null) this.ctx.strokeStyle = thx_color__$Rgba_Rgba_$Impl_$.toString(t); else this.ctx.strokeStyle = thx_color__$Rgba_Rgba_$Impl_$.toString(thx_color__$Rgba_Rgba_$Impl_$.fromString("Rgba(0,0,0,1)"));
 		this.ctx.beginPath();
 		this.ctx.moveTo(x0,y0);
 		this.ctx.lineTo(x1,y1);
@@ -3475,104 +3488,104 @@ thx_Uuid.create = function() {
 	}
 	return s.join("");
 };
-var thx_color__$HSL_HSL_$Impl_$ = {};
-thx_color__$HSL_HSL_$Impl_$.__name__ = ["thx","color","_HSL","HSL_Impl_"];
-thx_color__$HSL_HSL_$Impl_$.create = function(hue,saturation,lightness) {
+var thx_color__$Hsl_Hsl_$Impl_$ = {};
+thx_color__$Hsl_Hsl_$Impl_$.__name__ = ["thx","color","_Hsl","Hsl_Impl_"];
+thx_color__$Hsl_Hsl_$Impl_$.create = function(hue,saturation,lightness) {
 	var channels = [thx_Floats.wrapCircular(hue,360),saturation < 0?0:saturation > 1?1:saturation,lightness < 0?0:lightness > 1?1:lightness];
 	return channels;
 };
-thx_color__$HSL_HSL_$Impl_$.lighter = function(this1,t) {
+thx_color__$Hsl_Hsl_$Impl_$.lighter = function(this1,t) {
 	var channels = [this1[0],this1[1],thx_Floats.interpolate(t,this1[2],1)];
 	return channels;
 };
-thx_color__$HSL_HSL_$Impl_$.toRGB = function(this1) {
-	return thx_color__$RGBX_RGBX_$Impl_$.toRGB(thx_color__$HSL_HSL_$Impl_$.toRGBX(this1));
+thx_color__$Hsl_Hsl_$Impl_$.toRgb = function(this1) {
+	return thx_color__$Rgbx_Rgbx_$Impl_$.toRgb(thx_color__$Hsl_Hsl_$Impl_$.toRgbx(this1));
 };
-thx_color__$HSL_HSL_$Impl_$.toRGBA = function(this1) {
-	return thx_color__$RGBXA_RGBXA_$Impl_$.toRGBA(thx_color__$HSL_HSL_$Impl_$.toRGBXA(this1));
+thx_color__$Hsl_Hsl_$Impl_$.toRgba = function(this1) {
+	return thx_color__$Rgbxa_Rgbxa_$Impl_$.toRgba(thx_color__$Hsl_Hsl_$Impl_$.toRgbxa(this1));
 };
-thx_color__$HSL_HSL_$Impl_$.toRGBX = function(this1) {
-	var channels = [thx_color__$HSL_HSL_$Impl_$._c(this1[0] + 120,this1[1],this1[2]),thx_color__$HSL_HSL_$Impl_$._c(this1[0],this1[1],this1[2]),thx_color__$HSL_HSL_$Impl_$._c(this1[0] - 120,this1[1],this1[2])];
+thx_color__$Hsl_Hsl_$Impl_$.toRgbx = function(this1) {
+	var channels = [thx_color__$Hsl_Hsl_$Impl_$._c(this1[0] + 120,this1[1],this1[2]),thx_color__$Hsl_Hsl_$Impl_$._c(this1[0],this1[1],this1[2]),thx_color__$Hsl_Hsl_$Impl_$._c(this1[0] - 120,this1[1],this1[2])];
 	return channels;
 };
-thx_color__$HSL_HSL_$Impl_$.toRGBXA = function(this1) {
-	return thx_color__$RGBX_RGBX_$Impl_$.toRGBXA(thx_color__$HSL_HSL_$Impl_$.toRGBX(this1));
+thx_color__$Hsl_Hsl_$Impl_$.toRgbxa = function(this1) {
+	return thx_color__$Rgbx_Rgbx_$Impl_$.toRgbxa(thx_color__$Hsl_Hsl_$Impl_$.toRgbx(this1));
 };
-thx_color__$HSL_HSL_$Impl_$._c = function(d,s,l) {
+thx_color__$Hsl_Hsl_$Impl_$._c = function(d,s,l) {
 	var m2;
 	if(l <= 0.5) m2 = l * (1 + s); else m2 = l + s - l * s;
 	var m1 = 2 * l - m2;
 	d = thx_Floats.wrapCircular(d,360);
 	if(d < 60) return m1 + (m2 - m1) * d / 60; else if(d < 180) return m2; else if(d < 240) return m1 + (m2 - m1) * (240 - d) / 60; else return m1;
 };
-var thx_color__$HSLA_HSLA_$Impl_$ = {};
-thx_color__$HSLA_HSLA_$Impl_$.__name__ = ["thx","color","_HSLA","HSLA_Impl_"];
-thx_color__$HSLA_HSLA_$Impl_$.create = function(hue,saturation,lightness,alpha) {
+var thx_color__$Hsla_Hsla_$Impl_$ = {};
+thx_color__$Hsla_Hsla_$Impl_$.__name__ = ["thx","color","_Hsla","Hsla_Impl_"];
+thx_color__$Hsla_Hsla_$Impl_$.create = function(hue,saturation,lightness,alpha) {
 	var channels = [thx_Floats.wrapCircular(hue,360),saturation < 0?0:saturation > 1?1:saturation,lightness < 0?0:lightness > 1?1:lightness,alpha < 0?0:alpha > 1?1:alpha];
 	return channels;
 };
-thx_color__$HSLA_HSLA_$Impl_$.lighter = function(this1,t) {
+thx_color__$Hsla_Hsla_$Impl_$.lighter = function(this1,t) {
 	var channels = [this1[0],this1[1],thx_Floats.interpolate(t,this1[2],1),this1[3]];
 	return channels;
 };
-thx_color__$HSLA_HSLA_$Impl_$.toCSS3 = function(this1) {
-	return thx_color__$HSLA_HSLA_$Impl_$.toString(this1);
+thx_color__$Hsla_Hsla_$Impl_$.toCss3 = function(this1) {
+	return thx_color__$Hsla_Hsla_$Impl_$.toString(this1);
 };
-thx_color__$HSLA_HSLA_$Impl_$.toString = function(this1) {
-	return "hsla(" + this1[0] + "," + this1[1] * 100 + "%," + this1[2] * 100 + "%," + this1[3] + ")";
+thx_color__$Hsla_Hsla_$Impl_$.toString = function(this1) {
+	return "hsla(" + thx_Floats.roundTo(this1[0],6) + "," + thx_Floats.roundTo(this1[1] * 100,6) + "%," + thx_Floats.roundTo(this1[2] * 100,6) + "%," + thx_Floats.roundTo(this1[3],6) + ")";
 };
-var thx_color__$RGB_RGB_$Impl_$ = {};
-thx_color__$RGB_RGB_$Impl_$.__name__ = ["thx","color","_RGB","RGB_Impl_"];
-thx_color__$RGB_RGB_$Impl_$.create = function(red,green,blue) {
+var thx_color__$Rgb_Rgb_$Impl_$ = {};
+thx_color__$Rgb_Rgb_$Impl_$.__name__ = ["thx","color","_Rgb","Rgb_Impl_"];
+thx_color__$Rgb_Rgb_$Impl_$.create = function(red,green,blue) {
 	return (red & 255) << 16 | (green & 255) << 8 | blue & 255;
 };
-thx_color__$RGB_RGB_$Impl_$.createf = function(red,green,blue) {
-	return thx_color__$RGB_RGB_$Impl_$.create(Math.round(red * 255),Math.round(green * 255),Math.round(blue * 255));
+thx_color__$Rgb_Rgb_$Impl_$.createf = function(red,green,blue) {
+	return thx_color__$Rgb_Rgb_$Impl_$.create(Math.round(red * 255),Math.round(green * 255),Math.round(blue * 255));
 };
-thx_color__$RGB_RGB_$Impl_$.fromInts = function(arr) {
+thx_color__$Rgb_Rgb_$Impl_$.fromInts = function(arr) {
 	thx_ArrayInts.resize(arr,3);
-	return thx_color__$RGB_RGB_$Impl_$.create(arr[0],arr[1],arr[2]);
+	return thx_color__$Rgb_Rgb_$Impl_$.create(arr[0],arr[1],arr[2]);
 };
-thx_color__$RGB_RGB_$Impl_$.darker = function(this1,t) {
-	return thx_color__$RGBX_RGBX_$Impl_$.toRGB(thx_color__$RGBX_RGBX_$Impl_$.darker(thx_color__$RGB_RGB_$Impl_$.toRGBX(this1),t));
+thx_color__$Rgb_Rgb_$Impl_$.darker = function(this1,t) {
+	return thx_color__$Rgbx_Rgbx_$Impl_$.toRgb(thx_color__$Rgbx_Rgbx_$Impl_$.darker(thx_color__$Rgb_Rgb_$Impl_$.toRgbx(this1),t));
 };
-thx_color__$RGB_RGB_$Impl_$.withAlpha = function(this1,alpha) {
-	return thx_color__$RGBA_RGBA_$Impl_$.fromInts([thx_color__$RGB_RGB_$Impl_$.get_red(this1),thx_color__$RGB_RGB_$Impl_$.get_green(this1),thx_color__$RGB_RGB_$Impl_$.get_blue(this1),alpha]);
+thx_color__$Rgb_Rgb_$Impl_$.withAlpha = function(this1,alpha) {
+	return thx_color__$Rgba_Rgba_$Impl_$.fromInts([thx_color__$Rgb_Rgb_$Impl_$.get_red(this1),thx_color__$Rgb_Rgb_$Impl_$.get_green(this1),thx_color__$Rgb_Rgb_$Impl_$.get_blue(this1),alpha]);
 };
-thx_color__$RGB_RGB_$Impl_$.toCSS3 = function(this1) {
-	return "rgb(" + thx_color__$RGB_RGB_$Impl_$.get_red(this1) + "," + thx_color__$RGB_RGB_$Impl_$.get_green(this1) + "," + thx_color__$RGB_RGB_$Impl_$.get_blue(this1) + ")";
+thx_color__$Rgb_Rgb_$Impl_$.toCss3 = function(this1) {
+	return "rgb(" + thx_color__$Rgb_Rgb_$Impl_$.get_red(this1) + "," + thx_color__$Rgb_Rgb_$Impl_$.get_green(this1) + "," + thx_color__$Rgb_Rgb_$Impl_$.get_blue(this1) + ")";
 };
-thx_color__$RGB_RGB_$Impl_$.toRGBX = function(this1) {
-	return thx_color__$RGBX_RGBX_$Impl_$.fromInts([thx_color__$RGB_RGB_$Impl_$.get_red(this1),thx_color__$RGB_RGB_$Impl_$.get_green(this1),thx_color__$RGB_RGB_$Impl_$.get_blue(this1)]);
+thx_color__$Rgb_Rgb_$Impl_$.toRgbx = function(this1) {
+	return thx_color__$Rgbx_Rgbx_$Impl_$.fromInts([thx_color__$Rgb_Rgb_$Impl_$.get_red(this1),thx_color__$Rgb_Rgb_$Impl_$.get_green(this1),thx_color__$Rgb_Rgb_$Impl_$.get_blue(this1)]);
 };
-thx_color__$RGB_RGB_$Impl_$.toRGBA = function(this1) {
-	return thx_color__$RGB_RGB_$Impl_$.withAlpha(this1,255);
+thx_color__$Rgb_Rgb_$Impl_$.toRgba = function(this1) {
+	return thx_color__$Rgb_Rgb_$Impl_$.withAlpha(this1,255);
 };
-thx_color__$RGB_RGB_$Impl_$.get_red = function(this1) {
+thx_color__$Rgb_Rgb_$Impl_$.get_red = function(this1) {
 	return this1 >> 16 & 255;
 };
-thx_color__$RGB_RGB_$Impl_$.get_green = function(this1) {
+thx_color__$Rgb_Rgb_$Impl_$.get_green = function(this1) {
 	return this1 >> 8 & 255;
 };
-thx_color__$RGB_RGB_$Impl_$.get_blue = function(this1) {
+thx_color__$Rgb_Rgb_$Impl_$.get_blue = function(this1) {
 	return this1 & 255;
 };
-var thx_color__$RGBA_RGBA_$Impl_$ = {};
-thx_color__$RGBA_RGBA_$Impl_$.__name__ = ["thx","color","_RGBA","RGBA_Impl_"];
-thx_color__$RGBA_RGBA_$Impl_$.create = function(red,green,blue,alpha) {
+var thx_color__$Rgba_Rgba_$Impl_$ = {};
+thx_color__$Rgba_Rgba_$Impl_$.__name__ = ["thx","color","_Rgba","Rgba_Impl_"];
+thx_color__$Rgba_Rgba_$Impl_$.create = function(red,green,blue,alpha) {
 	return (red & 255) << 24 | (green & 255) << 16 | (blue & 255) << 8 | alpha & 255;
 };
-thx_color__$RGBA_RGBA_$Impl_$.fromFloats = function(arr) {
+thx_color__$Rgba_Rgba_$Impl_$.fromFloats = function(arr) {
 	var ints = thx_ArrayFloats.resize(arr,4).map(function(_) {
 		return Math.round(_ * 255);
 	});
-	return thx_color__$RGBA_RGBA_$Impl_$.create(ints[0],ints[1],ints[2],ints[3]);
+	return thx_color__$Rgba_Rgba_$Impl_$.create(ints[0],ints[1],ints[2],ints[3]);
 };
-thx_color__$RGBA_RGBA_$Impl_$.fromInts = function(arr) {
+thx_color__$Rgba_Rgba_$Impl_$.fromInts = function(arr) {
 	thx_ArrayInts.resize(arr,4);
-	return thx_color__$RGBA_RGBA_$Impl_$.create(arr[0],arr[1],arr[2],arr[3]);
+	return thx_color__$Rgba_Rgba_$Impl_$.create(arr[0],arr[1],arr[2],arr[3]);
 };
-thx_color__$RGBA_RGBA_$Impl_$.fromString = function(color) {
+thx_color__$Rgba_Rgba_$Impl_$.fromString = function(color) {
 	var info = thx_color_parse_ColorParser.parseHex(color);
 	if(null == info) info = thx_color_parse_ColorParser.parseColor(color);
 	if(null == info) return null;
@@ -3580,9 +3593,9 @@ thx_color__$RGBA_RGBA_$Impl_$.fromString = function(color) {
 		var _g = info.name;
 		switch(_g) {
 		case "rgb":
-			return thx_color__$RGB_RGB_$Impl_$.toRGBA(thx_color__$RGB_RGB_$Impl_$.fromInts(thx_color_parse_ColorParser.getInt8Channels(info.channels,3)));
+			return thx_color__$Rgb_Rgb_$Impl_$.toRgba(thx_color__$Rgb_Rgb_$Impl_$.fromInts(thx_color_parse_ColorParser.getInt8Channels(info.channels,3)));
 		case "rgba":
-			return thx_color__$RGBA_RGBA_$Impl_$.create(thx_color_parse_ColorParser.getInt8Channel(info.channels[0]),thx_color_parse_ColorParser.getInt8Channel(info.channels[1]),thx_color_parse_ColorParser.getInt8Channel(info.channels[2]),Math.round(thx_color_parse_ColorParser.getFloatChannel(info.channels[3]) * 255));
+			return thx_color__$Rgba_Rgba_$Impl_$.create(thx_color_parse_ColorParser.getInt8Channel(info.channels[0]),thx_color_parse_ColorParser.getInt8Channel(info.channels[1]),thx_color_parse_ColorParser.getInt8Channel(info.channels[2]),Math.round(thx_color_parse_ColorParser.getFloatChannel(info.channels[3]) * 255));
 		default:
 			return null;
 		}
@@ -3591,36 +3604,36 @@ thx_color__$RGBA_RGBA_$Impl_$.fromString = function(color) {
 		return null;
 	}
 };
-thx_color__$RGBA_RGBA_$Impl_$.toString = function(this1) {
+thx_color__$Rgba_Rgba_$Impl_$.toString = function(this1) {
 	return "rgba(" + (this1 >> 24 & 255) + "," + (this1 >> 16 & 255) + "," + (this1 >> 8 & 255) + "," + (this1 & 255) / 255 + ")";
 };
-var thx_color__$RGBX_RGBX_$Impl_$ = {};
-thx_color__$RGBX_RGBX_$Impl_$.__name__ = ["thx","color","_RGBX","RGBX_Impl_"];
-thx_color__$RGBX_RGBX_$Impl_$.create = function(red,green,blue) {
+var thx_color__$Rgbx_Rgbx_$Impl_$ = {};
+thx_color__$Rgbx_Rgbx_$Impl_$.__name__ = ["thx","color","_Rgbx","Rgbx_Impl_"];
+thx_color__$Rgbx_Rgbx_$Impl_$.create = function(red,green,blue) {
 	return [red < 0?0:red > 1?1:red,green < 0?0:green > 1?1:green,blue < 0?0:blue > 1?1:blue];
 };
-thx_color__$RGBX_RGBX_$Impl_$.fromInts = function(arr) {
+thx_color__$Rgbx_Rgbx_$Impl_$.fromInts = function(arr) {
 	thx_ArrayInts.resize(arr,3);
-	return thx_color__$RGBX_RGBX_$Impl_$.create(arr[0] / 255,arr[1] / 255,arr[2] / 255);
+	return thx_color__$Rgbx_Rgbx_$Impl_$.create(arr[0] / 255,arr[1] / 255,arr[2] / 255);
 };
-thx_color__$RGBX_RGBX_$Impl_$.darker = function(this1,t) {
+thx_color__$Rgbx_Rgbx_$Impl_$.darker = function(this1,t) {
 	var channels = [thx_Floats.interpolate(t,this1[0],0),thx_Floats.interpolate(t,this1[1],0),thx_Floats.interpolate(t,this1[2],0)];
 	return channels;
 };
-thx_color__$RGBX_RGBX_$Impl_$.withAlpha = function(this1,alpha) {
+thx_color__$Rgbx_Rgbx_$Impl_$.withAlpha = function(this1,alpha) {
 	var channels = this1.concat([alpha < 0?0:alpha > 1?1:alpha]);
 	return channels;
 };
-thx_color__$RGBX_RGBX_$Impl_$.toRGB = function(this1) {
-	return thx_color__$RGB_RGB_$Impl_$.createf(this1[0],this1[1],this1[2]);
+thx_color__$Rgbx_Rgbx_$Impl_$.toRgb = function(this1) {
+	return thx_color__$Rgb_Rgb_$Impl_$.createf(this1[0],this1[1],this1[2]);
 };
-thx_color__$RGBX_RGBX_$Impl_$.toRGBXA = function(this1) {
-	return thx_color__$RGBX_RGBX_$Impl_$.withAlpha(this1,1.0);
+thx_color__$Rgbx_Rgbx_$Impl_$.toRgbxa = function(this1) {
+	return thx_color__$Rgbx_Rgbx_$Impl_$.withAlpha(this1,1.0);
 };
-var thx_color__$RGBXA_RGBXA_$Impl_$ = {};
-thx_color__$RGBXA_RGBXA_$Impl_$.__name__ = ["thx","color","_RGBXA","RGBXA_Impl_"];
-thx_color__$RGBXA_RGBXA_$Impl_$.toRGBA = function(this1) {
-	return thx_color__$RGBA_RGBA_$Impl_$.fromFloats([this1[0],this1[1],this1[2],this1[3]]);
+var thx_color__$Rgbxa_Rgbxa_$Impl_$ = {};
+thx_color__$Rgbxa_Rgbxa_$Impl_$.__name__ = ["thx","color","_Rgbxa","Rgbxa_Impl_"];
+thx_color__$Rgbxa_Rgbxa_$Impl_$.toRgba = function(this1) {
+	return thx_color__$Rgba_Rgba_$Impl_$.fromFloats([this1[0],this1[1],this1[2],this1[3]]);
 };
 var thx_color_parse_ColorParser = function() {
 	this.pattern_color = new EReg("^\\s*([^(]+)\\s*\\(([^)]*)\\)\\s*$","i");
